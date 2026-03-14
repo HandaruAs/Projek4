@@ -1,42 +1,23 @@
 <?php
-
 namespace App\Models;
 
-use MongoDB\Laravel\Auth\User as Authenticatable;
+use MongoDB\Laravel\Eloquent\Model as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, Notifiable;
+    use Notifiable;
 
     protected $connection = 'mongodb';
     protected $collection = 'users';
 
-    /**
-     * Semua user beroperasi di wilayah Jember.
-     *
-     * Role:
-     *   - "admin"      → akses penuh di Laravel (CRUD, training ML, lihat prediksi)
-     *   - "petugas"    → input data harga & stok via Flutter
-     *   - "masyarakat" → read-only via Flutter (monitoring harga)
-     *
-     * Struktur dokumen MongoDB:
-     * {
-     *   _id: ObjectId,
-     *   name: "Budi Santoso",
-     *   email: "budi@email.com",
-     *   password: "hashed",
-     *   role: "petugas",
-     *   created_at: ...,
-     *   updated_at: ...
-     * }
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
+        'is_active',
     ];
 
     protected $hidden = [
@@ -49,31 +30,37 @@ class User extends Authenticatable
         'password'          => 'hashed',
         'created_at'        => 'datetime',
         'updated_at'        => 'datetime',
+        'is_active'         => 'boolean',
     ];
 
-    const ROLE_ADMIN      = 'admin';
-    const ROLE_PETUGAS    = 'petugas';
-    const ROLE_MASYARAKAT = 'masyarakat';
+    const ROLE_ADMIN = 'admin';
+    const ROLE_USER  = 'user';
+
+    // ── Wajib untuk JWT ──────────────────────────────────────
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims(): array
+    {
+        return [
+            'role' => $this->role,
+        ];
+    }
 
     // ── Helper Role ──────────────────────────────────────────
-
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
     }
 
-    public function isPetugas(): bool
+    public function isUser(): bool
     {
-        return $this->role === self::ROLE_PETUGAS;
-    }
-
-    public function isMasyarakat(): bool
-    {
-        return $this->role === self::ROLE_MASYARAKAT;
+        return $this->role === self::ROLE_USER;
     }
 
     // ── Relasi ───────────────────────────────────────────────
-
     public function trainingJobs()
     {
         return $this->hasMany(TrainingJob::class, 'triggered_by');
