@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
-import 'package:flutter_app/screens/main_screen.dart';
+import 'package:flutter_app/screens/Admin/main_screen.dart';
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:provider/provider.dart';
 

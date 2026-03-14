@@ -3,70 +3,88 @@ import 'package:flutter_app/services/api_service.dart';
 import 'package:flutter_app/services/storage_service.dart';
 
 class AuthService {
+
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
 
+  // LOGIN
   Future<UserModel?> login(String email, String password) async {
-    try {
-      final response = await _apiService.login(email, password);
-      
-      if (response['status'] == 'success' && response['data'] != null) {
-        final userData = response['data']['user'];
-        final token = response['data']['token'];
-        
-        final user = UserModel.fromJson(userData);
-        
-        await _storageService.saveToken(token);
-        await _storageService.saveUser(user);
-        
-        return user;
-      }
-      return null;
-    } catch (e) {
-      rethrow;
+
+    final response = await _apiService.login(email, password);
+
+    if (response['status'] == 'success') {
+
+      final userData = response['data']['user'];
+      final token = response['data']['token'];
+
+      final user = UserModel.fromJson({
+        ...userData,
+        'token': token
+      });
+
+      await _storageService.saveToken(token);
+      await _storageService.saveUser(user);
+
+      return user;
     }
+
+    return null;
   }
 
-  Future<UserModel?> register(String name, String email, String password) async {
-    try {
-      final response = await _apiService.register(name, email, password);
-      
-      if (response['status'] == 'success' && response['data'] != null) {
-        final userData = response['data']['user'];
-        final token = response['data']['token'];
-        
-        final user = UserModel.fromJson(userData);
-        
-        await _storageService.saveToken(token);
-        await _storageService.saveUser(user);
-        
-        return user;
-      }
-      return null;
-    } catch (e) {
-      rethrow;
+  // REGISTER
+  Future<UserModel?> register(
+    String name,
+    String email,
+    String password, {
+    String role = "user",
+  }) async {
+
+    final response = await _apiService.register(
+      name,
+      email,
+      password,
+      role: role,
+    );
+
+    if (response['status'] == 'success') {
+
+      final userData = response['data']['user'];
+      final token = response['data']['token'];
+
+      final user = UserModel.fromJson({
+        ...userData,
+        'token': token
+      });
+
+      await _storageService.saveToken(token);
+      await _storageService.saveUser(user);
+
+      return user;
     }
+
+    return null;
   }
 
+  // FORGOT PASSWORD
   Future<bool> forgotPassword(String email) async {
-    try {
-      final response = await _apiService.forgotPassword(email);
-      return response['status'] == 'success';
-    } catch (e) {
-      rethrow;
+
+    final response = await _apiService.forgotPassword(email);
+
+    if (response['status'] == 'success') {
+      return true;
     }
+
+    return false;
   }
 
+  // LOGOUT
   Future<void> logout() async {
+
     try {
       await _apiService.logout();
-    } catch (e) {
-      // Log error but continue with local logout
-      print('Logout API error: $e');
-    } finally {
-      // Always clear local storage even if API call fails
-      await _storageService.clearAll();
-    }
+    } catch (_) {}
+
+    await _storageService.clearAll();
   }
 
   Future<UserModel?> getCurrentUser() async {
@@ -74,7 +92,13 @@ class AuthService {
   }
 
   Future<bool> isLoggedIn() async {
+
     final token = await _storageService.getToken();
-    return token != null && token.isNotEmpty;
+
+    if (token == null || token.isEmpty) {
+      return false;
+    }
+
+    return true;
   }
 }

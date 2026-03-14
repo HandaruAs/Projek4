@@ -23,12 +23,12 @@ class CommodityProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String get selectedPeriod => _selectedPeriod;
 
-  Future<void> loadCommodities({String? marketId, String? date}) async {
+  Future<void> loadCommodities({String? date}) async {
     _setLoading(true);
     _clearError();
     
     try {
-      final response = await _apiService.getCommodities(marketId: marketId, date: date);
+      final response = await _apiService.getCommodities(date: date);
       
       if (response['status'] == 'success' && response['data'] != null) {
         List<dynamic> commoditiesData = response['data']['commodities'] ?? [];
@@ -54,7 +54,8 @@ class CommodityProvider extends ChangeNotifier {
       final response = await _apiService.getCommodityDetail(commodityId);
       
       if (response['status'] == 'success' && response['data'] != null) {
-        _selectedCommodity = CommodityModel.fromJson(response['data']['commodity']);
+        _selectedCommodity =
+            CommodityModel.fromJson(response['data']['commodity']);
       }
     } catch (e) {
       _errorMessage = e.toString();

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
-import 'package:flutter_app/screens/home_screen.dart';
-import 'package:flutter_app/screens/market_screen.dart';
-import 'package:flutter_app/screens/prediction_screen.dart';
-import 'package:flutter_app/screens/price_chart_screen.dart';
+import 'package:flutter_app/screens/Admin/home_screen.dart';
+import 'package:flutter_app/screens/Admin/prediction_screen.dart';
+import 'package:flutter_app/screens/Admin/price_chart_screen.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -21,14 +20,12 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    MarketScreen(),
     PredictionScreen(),
     PriceChartScreen(),
   ];
 
   final List<String> _titles = [
     'Dashboard',
-    'Pasar',
     'Prediksi',
     'Grafik Harga',
   ];
@@ -65,7 +62,7 @@ class _MainScreenState extends State<MainScreen> {
 
                   const SizedBox(height: 20),
 
-                  /// User avatar
+                  /// Avatar
                   CircleAvatar(
                     radius: 40,
                     backgroundColor:
@@ -115,7 +112,7 @@ class _MainScreenState extends State<MainScreen> {
 
                   const Divider(),
 
-                  /// LOGOUT BUTTON
+                  /// LOGOUT
                   ListTile(
                     leading: const Icon(Icons.logout, color: Colors.red),
                     title: const Text(
@@ -141,7 +138,6 @@ class _MainScreenState extends State<MainScreen> {
   void _showNotifications() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -171,7 +167,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       title: Text("Notifikasi ${index + 1}"),
                       subtitle:
-                          Text("Harga komoditas berubah hari ini"),
+                          const Text("Harga komoditas berubah hari ini"),
                     );
                   },
                 ),
@@ -190,7 +186,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// PROFILE DIALOG
+  /// PROFILE
 
   void _showProfile() {
     final authProvider =
@@ -227,7 +223,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   /// SETTINGS
-  
+
   void _showSettings() {
     showDialog(
       context: context,
@@ -240,7 +236,6 @@ class _MainScreenState extends State<MainScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
 
-                  /// NOTIFICATION SWITCH
                   SwitchListTile(
                     title: const Text("Notifikasi"),
                     value: _notifications,
@@ -251,7 +246,6 @@ class _MainScreenState extends State<MainScreen> {
                     },
                   ),
 
-                  /// DARK MODE SWITCH
                   SwitchListTile(
                     title: const Text("Mode Gelap"),
                     value: _darkMode,
@@ -292,7 +286,9 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+
   /// UI
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -300,13 +296,11 @@ class _MainScreenState extends State<MainScreen> {
         title: Text(_titles[_selectedIndex]),
         actions: [
 
-          /// NOTIFICATION ICON
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: _showNotifications,
           ),
 
-          /// PROFILE ICON
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: _showProfileMenu,
@@ -334,12 +328,6 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: "Home",
-          ),
-
-          BottomNavigationBarItem(
-            icon: Icon(Icons.store_outlined),
-            activeIcon: Icon(Icons.store),
-            label: "Pasar",
           ),
 
           BottomNavigationBarItem(

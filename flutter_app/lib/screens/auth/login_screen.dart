@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/forgot_password_screen.dart';
 import 'package:flutter_app/screens/auth/register_screen.dart';
-import 'package:flutter_app/screens/main_screen.dart';
+import 'package:flutter_app/screens/Admin/main_screen.dart';
+import 'package:flutter_app/screens/User/main_screen.dart';
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -28,23 +29,43 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState?.validate() ?? false) {
+
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       final success = await authProvider.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
-      
+
       if (!mounted) return;
-      
+
       if (success) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-        );
+
+        final user = authProvider.currentUser;
+
+        // Hanya admin yang boleh masuk
+        if (user?.role == "admin") {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const MainScreen(),
+            ),
+          );
+
+        } else {
+
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const UserMainScreen(),
+            ),
+          );
+
+        }
+
       } else {
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Login failed'),
+            content: Text(authProvider.errorMessage ?? 'Login gagal'),
             backgroundColor: Colors.red,
           ),
         );
