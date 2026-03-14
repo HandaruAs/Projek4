@@ -34,10 +34,12 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
   }
 
   Future<void> _loadCommodities() async {
-    final commodityProvider = Provider.of<CommodityProvider>(context, listen: false);
+    final commodityProvider =
+        Provider.of<CommodityProvider>(context, listen: false);
     await commodityProvider.loadCommodities();
-    
-    if (commodityProvider.commodities.isNotEmpty && _selectedCommodityId == null) {
+
+    if (commodityProvider.commodities.isNotEmpty &&
+        _selectedCommodityId == null) {
       setState(() {
         _selectedCommodityId = commodityProvider.commodities.first.id;
       });
@@ -47,7 +49,8 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
 
   Future<void> _loadPriceHistory(String commodityId) async {
     if (!mounted) return;
-    final commodityProvider = Provider.of<CommodityProvider>(context, listen: false);
+    final commodityProvider =
+        Provider.of<CommodityProvider>(context, listen: false);
     await commodityProvider.loadPriceHistory(
       commodityId,
       period: _selectedPeriod,
@@ -236,7 +239,8 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                           currencyFormat.format(
                                             commodityProvider.priceHistory
                                                 .map((e) => e.price)
-                                                .reduce((a, b) => a > b ? a : b),
+                                                .reduce(
+                                                    (a, b) => a > b ? a : b),
                                           ),
                                           Icons.trending_up,
                                           Colors.green,
@@ -251,7 +255,8 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                           currencyFormat.format(
                                             commodityProvider.priceHistory
                                                 .map((e) => e.price)
-                                                .reduce((a, b) => a < b ? a : b),
+                                                .reduce(
+                                                    (a, b) => a < b ? a : b),
                                           ),
                                           Icons.trending_down,
                                           Colors.red,
@@ -278,7 +283,7 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
-                                
+
                                 // Line Chart
                                 Expanded(
                                   child: LineChart(
@@ -300,7 +305,9 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                             reservedSize: 50,
                                             getTitlesWidget: (value, meta) {
                                               return Text(
-                                                currencyFormat.format(value).replaceAll('Rp ', ''),
+                                                currencyFormat
+                                                    .format(value)
+                                                    .replaceAll('Rp ', ''),
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
                                                   fontSize: 10,
@@ -313,17 +320,27 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                           sideTitles: SideTitles(
                                             showTitles: true,
                                             reservedSize: 30,
-                                            interval: _getIntervalForPeriod(_selectedPeriod),
+                                            interval: _getIntervalForPeriod(
+                                                _selectedPeriod),
                                             getTitlesWidget: (value, meta) {
-                                              if (value.toInt() >= 0 && 
-                                                  value.toInt() < commodityProvider.priceHistory.length) {
-                                                final date = commodityProvider.priceHistory[value.toInt()].date;
+                                              if (value.toInt() >= 0 &&
+                                                  value.toInt() <
+                                                      commodityProvider
+                                                          .priceHistory
+                                                          .length) {
+                                                final date = commodityProvider
+                                                    .priceHistory[value.toInt()]
+                                                    .date;
                                                 return Padding(
-                                                  padding: const EdgeInsets.only(top: 8),
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 8),
                                                   child: Text(
-                                                    _formatDateForPeriod(date, _selectedPeriod),
+                                                    _formatDateForPeriod(
+                                                        date, _selectedPeriod),
                                                     style: TextStyle(
-                                                      color: Colors.grey.shade600,
+                                                      color:
+                                                          Colors.grey.shade600,
                                                       fontSize: 10,
                                                     ),
                                                   ),
@@ -333,11 +350,13 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                             },
                                           ),
                                         ),
-                                        rightTitles: AxisTitles(
-                                          sideTitles: SideTitles(showTitles: false),
+                                        rightTitles: const AxisTitles(
+                                          sideTitles:
+                                              SideTitles(showTitles: false),
                                         ),
-                                        topTitles: AxisTitles(
-                                          sideTitles: SideTitles(showTitles: false),
+                                        topTitles: const AxisTitles(
+                                          sideTitles:
+                                              SideTitles(showTitles: false),
                                         ),
                                       ),
                                       borderData: FlBorderData(
@@ -347,11 +366,16 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                           width: 1,
                                         ),
                                       ),
-                                      minY: _getMinY(commodityProvider.priceHistory),
-                                      maxY: _getMaxY(commodityProvider.priceHistory),
+                                      minY: _getMinY(
+                                          commodityProvider.priceHistory),
+                                      maxY: _getMaxY(
+                                          commodityProvider.priceHistory),
                                       lineBarsData: [
                                         LineChartBarData(
-                                          spots: commodityProvider.priceHistory.asMap().entries.map((entry) {
+                                          spots: commodityProvider.priceHistory
+                                              .asMap()
+                                              .entries
+                                              .map((entry) {
                                             return FlSpot(
                                               entry.key.toDouble(),
                                               entry.value.price,
@@ -363,26 +387,32 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                           isStrokeCapRound: true,
                                           dotData: FlDotData(
                                             show: true,
-                                            getDotPainter: (spot, percent, barData, index) {
+                                            getDotPainter: (spot, percent,
+                                                barData, index) {
                                               return FlDotCirclePainter(
                                                 radius: 4,
                                                 color: Colors.white,
                                                 strokeWidth: 2,
-                                                strokeColor: const Color(0xFF1976D2),
+                                                strokeColor:
+                                                    const Color(0xFF1976D2),
                                               );
                                             },
                                           ),
                                           belowBarData: BarAreaData(
                                             show: true,
-                                            color: const Color(0xFF1976D2).withValues(alpha: 0.1),
+                                            color: const Color(0xFF1976D2)
+                                                .withValues(alpha: 0.1),
                                           ),
                                         ),
                                       ],
                                       lineTouchData: LineTouchData(
                                         touchTooltipData: LineTouchTooltipData(
-                                          getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                                          getTooltipItems:
+                                              (List<LineBarSpot> touchedSpots) {
                                             return touchedSpots.map((spot) {
-                                              final date = commodityProvider.priceHistory[spot.x.toInt()].date;
+                                              final date = commodityProvider
+                                                  .priceHistory[spot.x.toInt()]
+                                                  .date;
                                               return LineTooltipItem(
                                                 '${DateFormat('dd MMM yyyy').format(date)}\n',
                                                 const TextStyle(
@@ -392,10 +422,12 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                                                 ),
                                                 children: [
                                                   TextSpan(
-                                                    text: currencyFormat.format(spot.y),
+                                                    text: currencyFormat
+                                                        .format(spot.y),
                                                     style: const TextStyle(
                                                       color: Colors.white,
-                                                      fontWeight: FontWeight.normal,
+                                                      fontWeight:
+                                                          FontWeight.normal,
                                                       fontSize: 12,
                                                     ),
                                                   ),
@@ -419,7 +451,8 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
+  Widget _buildSummaryItem(
+      String label, String value, IconData icon, Color color) {
     return Column(
       children: [
         Icon(icon, color: color, size: 20),
@@ -445,13 +478,15 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
 
   double _getMinY(List<dynamic> priceHistory) {
     if (priceHistory.isEmpty) return 0;
-    final minPrice = priceHistory.map((e) => e.price).reduce((a, b) => a < b ? a : b);
+    final minPrice =
+        priceHistory.map((e) => e.price).reduce((a, b) => a < b ? a : b);
     return minPrice * 0.95;
   }
 
   double _getMaxY(List<dynamic> priceHistory) {
     if (priceHistory.isEmpty) return 10000;
-    final maxPrice = priceHistory.map((e) => e.price).reduce((a, b) => a > b ? a : b);
+    final maxPrice =
+        priceHistory.map((e) => e.price).reduce((a, b) => a > b ? a : b);
     return maxPrice * 1.05;
   }
 
