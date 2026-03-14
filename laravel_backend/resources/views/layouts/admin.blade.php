@@ -49,18 +49,6 @@
         <i class="fas fa-right-from-bracket"></i> Logout
     </a>
 </nav>
-
-    <nav class="nav-section bordered">
-        <div class="nav-label">System</div>
-        <a href="/admin/settings" class="nav-item {{ Request::is('admin/settings*') ? 'active' : '' }}">
-            <i class="fas fa-gear"></i> Settings
-        </a>
-        <a href="#" class="nav-item"
-           onclick="document.getElementById('logout-form').submit(); return false;">
-            <i class="fas fa-right-from-bracket"></i> Logout
-        </a>
-    </nav>
-
     <div class="sidebar-footer">
         <div class="avatar">{{ strtoupper(substr($user->name ?? 'A', 0, 1)) }}</div>
         <div>
