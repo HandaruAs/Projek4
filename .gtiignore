@@ -10,6 +10,12 @@ flask_ml/venv/
 flask_ml/__pycache__/
 flask_ml/*.pyc
 
+# Flutter generated files
+**/generated_plugin_registrant.*
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.swift
+
+
 # ======================
 # Flutter
 # ======================
