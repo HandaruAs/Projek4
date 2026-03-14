@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/providers/commodity_provider.dart';
-import 'package:flutter_app/providers/market_provider.dart';
 import 'package:flutter_app/screens/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +18,6 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CommodityProvider()),
-        ChangeNotifierProvider(create: (_) => MarketProvider()),
       ],
       child: MaterialApp(
         title: 'Monitoring Harga Pangan',

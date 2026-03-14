@@ -4,78 +4,52 @@ namespace App\Models;
 
 use MongoDB\Laravel\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, Notifiable;
+    use Notifiable;
 
     protected $connection = 'mongodb';
     protected $collection = 'users';
 
-    /**
-     * Semua user beroperasi di wilayah Jember.
-     *
-     * Role:
-     *   - "admin"      → akses penuh di Laravel (CRUD, training ML, lihat prediksi)
-     *   - "petugas"    → input data harga & stok via Flutter
-     *   - "masyarakat" → read-only via Flutter (monitoring harga)
-     *
-     * Struktur dokumen MongoDB:
-     * {
-     *   _id: ObjectId,
-     *   name: "Budi Santoso",
-     *   email: "budi@email.com",
-     *   password: "hashed",
-     *   role: "petugas",
-     *   created_at: ...,
-     *   updated_at: ...
-     * }
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
+        'created_at'
     ];
 
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password'
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password'          => 'hashed',
-        'created_at'        => 'datetime',
-        'updated_at'        => 'datetime',
+        'created_at' => 'datetime',
     ];
 
-    const ROLE_ADMIN      = 'admin';
-    const ROLE_PETUGAS    = 'petugas';
-    const ROLE_MASYARAKAT = 'masyarakat';
+    const ROLE_ADMIN = 'admin';
+    const ROLE_USER  = 'user';
 
-    // ── Helper Role ──────────────────────────────────────────
-
-    public function isAdmin(): bool
+    public function isAdmin()
     {
         return $this->role === self::ROLE_ADMIN;
     }
 
-    public function isPetugas(): bool
+    public function isUser()
     {
-        return $this->role === self::ROLE_PETUGAS;
+        return $this->role === self::ROLE_USER;
     }
 
-    public function isMasyarakat(): bool
+    // WAJIB UNTUK JWT
+    public function getJWTIdentifier()
     {
-        return $this->role === self::ROLE_MASYARAKAT;
+        return $this->getKey();
     }
 
-    // ── Relasi ───────────────────────────────────────────────
-
-    public function trainingJobs()
+    public function getJWTCustomClaims()
     {
-        return $this->hasMany(TrainingJob::class, 'triggered_by');
+        return [];
     }
 }

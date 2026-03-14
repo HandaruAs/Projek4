@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/commodity_provider.dart';
-import 'package:flutter_app/screens/commodity_detail_screen.dart';
+import 'package:flutter_app/screens/Admin/commodity_detail_screen.dart';
 import 'package:flutter_app/widgets/commodity_card.dart';
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:intl/intl.dart';
