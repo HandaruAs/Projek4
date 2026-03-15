@@ -107,7 +107,7 @@ class CommodityCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 2),
                         Text(
-                          commodity.changePercentage,
+                          '${commodity.changePercentage}',
                           style: TextStyle(
                             fontSize: 11,
                             color: commodity.isIncreasing
@@ -130,7 +130,7 @@ class CommodityCard extends StatelessWidget {
 
   IconData _getCommodityIcon(String commodityName) {
     final name = commodityName.toLowerCase();
-
+    
     if (name.contains('beras')) {
       return Icons.grass;
     } else if (name.contains('bawang')) {

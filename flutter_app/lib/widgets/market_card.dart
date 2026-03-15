@@ -66,7 +66,7 @@ class MarketCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-
+                    
                     // Address Row
                     Row(
                       children: [
@@ -89,9 +89,9 @@ class MarketCard extends StatelessWidget {
                         ),
                       ],
                     ),
-
+                    
                     const SizedBox(height: 4),
-
+                    
                     // District Row
                     Row(
                       children: [
@@ -132,10 +132,10 @@ class MarketCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.shopping_basket,
                           size: 12,
-                          color: Color(0xFF1976D2),
+                          color: const Color(0xFF1976D2),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -150,7 +150,7 @@ class MarketCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-
+                  
                   // Arrow Icon
                   Icon(
                     Icons.arrow_forward_ios,
