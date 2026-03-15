@@ -49,6 +49,7 @@
         <i class="fas fa-right-from-bracket"></i> Logout
     </a>
 </nav>
+
     <div class="sidebar-footer">
         <div class="avatar">{{ strtoupper(substr($user->name ?? 'A', 0, 1)) }}</div>
         <div>
@@ -71,12 +72,28 @@
         </div>
         <div class="topbar-right">
             <span class="last-updated">
-                <i class="fas fa-clock" style="margin-right:4px"></i>
+                {{-- style="margin-right:4px" dipindah ke admin.css (.last-updated i) --}}
+                <i class="fas fa-clock"></i>
                 Last updated: Today, {{ now()->format('H:i') }} WIB
             </span>
             <button class="btn-refresh" onclick="window.location.reload()">
                 <i class="fas fa-rotate-right"></i> Refresh
             </button>
+
+            {{-- ── TAMBAHAN: info user yang login ── --}}
+            <div class="topbar-divider"></div>
+            <div class="topbar-user">
+                <div class="topbar-avatar">
+                    {{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}
+                </div>
+                <div class="topbar-user-info">
+                    <div class="topbar-user-name">{{ auth()->user()->name ?? 'Admin User' }}</div>
+                    <div class="topbar-user-role">Administrator</div>
+                </div>
+                <i class="fas fa-chevron-down topbar-caret"></i>
+            </div>
+            {{-- ── END TAMBAHAN ── --}}
+
         </div>
     </header>
 
