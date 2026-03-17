@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('admin.layouts')
 
 @section('title', 'Generate Prediksi')
 @section('page-title', 'Generate Prediksi')
@@ -6,111 +6,79 @@
 
 @section('content')
 
-{{-- STAT CARDS --}}
-<div class="stats-grid">
-    <div class="stat-card">
-        <div>
-            <div class="stat-label">Total Predictions</div>
-            <div class="stat-value">248</div>
-            <div class="stat-change up">
-                <i class="fas fa-wand-magic-sparkles"></i>
-                <span class="stat-change-sub">all predictions</span>
-            </div>
-        </div>
-        <div class="stat-icon icon-purple"><i class="fas fa-wand-magic-sparkles"></i></div>
-    </div>
-    <div class="stat-card">
-        <div>
-            <div class="stat-label">This Month</div>
-            <div class="stat-value">34</div>
-            <div class="stat-change up">
-                <i class="fas fa-arrow-trend-up"></i> +8
-                <span class="stat-change-sub">from last month</span>
-            </div>
-        </div>
-        <div class="stat-icon icon-blue"><i class="fas fa-chart-line"></i></div>
-    </div>
-    <div class="stat-card">
-        <div>
-            <div class="stat-label">Avg. Accuracy</div>
-            <div class="stat-value">94.2%</div>
-            <div class="stat-change up">
-                <i class="fas fa-circle-check"></i>
-                <span class="stat-change-sub">active model</span>
-            </div>
-        </div>
-        <div class="stat-icon icon-green"><i class="fas fa-bullseye"></i></div>
-    </div>
-</div>
+{{-- TWO PANEL ROW --}}
+<div class="prediksi-panels">
 
-{{-- GENERATE FORM --}}
-<div class="card" style="margin-bottom:20px">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-wand-magic-sparkles" style="color:var(--purple); margin-right:8px"></i>
-            Generate New Prediction
+    {{-- PANEL 1: Import Historical Data --}}
+    <div class="panel-card">
+        <div class="panel-step-badge">1</div>
+        <div class="panel-header">
+            <div class="panel-title">Import Historical Data</div>
+            <div class="panel-sub">Upload latest price records</div>
         </div>
+        <form method="POST" action="/admin/prediksi/upload" enctype="multipart/form-data">
+            @csrf
+            <div class="upload-zone" id="uploadZone">
+                <i class="fas fa-file-arrow-up upload-zone-icon"></i>
+                <p class="upload-zone-text">Drop Excel or CSV file</p>
+                <input type="file" id="fileInput" name="file" accept=".xlsx,.csv" hidden>
+                <button type="button" class="btn-secondary" onclick="document.getElementById('fileInput').click()">
+                    Browse Files
+                </button>
+            </div>
+            <div class="panel-footer-row">
+                <a href="#" class="template-link"><i class="fas fa-download"></i> Template</a>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-check-circle"></i> Validate & Upload
+                </button>
+            </div>
+        </form>
     </div>
-    <div class="card-body">
+
+    {{-- PANEL 2: Model Parameters --}}
+    <div class="panel-card">
+        <div class="panel-step-badge">2</div>
+        <div class="panel-header">
+            <div class="panel-title">Model Parameters</div>
+            <div class="panel-sub">Configure Prophet forecasting settings</div>
+        </div>
         <form method="POST" action="/admin/prediksi/generate">
             @csrf
-            <div class="form-grid" style="margin-bottom:18px">
+            <div class="param-grid">
                 <div class="form-group-admin">
-                    <label class="form-label-admin">Commodity</label>
+                    <label class="form-label-admin">COMMODITY FOCUS</label>
                     <select class="form-select" name="commodity_id">
-                        <option value="">-- Select Commodity --</option>
                         <option>Beras Premium</option>
                         <option>Cabai Merah Keriting</option>
                         <option>Minyak Goreng Curah</option>
                         <option>Bawang Merah</option>
                         <option>Daging Ayam Ras</option>
-                        <option>Gula Pasir Lokal</option>
-                        <option>Telur Ayam Ras</option>
                     </select>
                 </div>
                 <div class="form-group-admin">
-                    <label class="form-label-admin">Region</label>
-                    <select class="form-select" name="region">
-                        <option value="">-- Select Region --</option>
-                        <option>Jakarta Selatan</option>
-                        <option>Bandung</option>
-                        <option>Surabaya</option>
-                        <option>Medan</option>
-                        <option>Makassar</option>
-                        <option>Semarang</option>
-                        <option>Yogyakarta</option>
-                        <option>All Regions</option>
-                    </select>
-                </div>
-                <div class="form-group-admin">
-                    <label class="form-label-admin">Prediction Period</label>
+                    <label class="form-label-admin">PREDICTION HORIZON</label>
                     <select class="form-select" name="period">
-                        <option>7 Days Ahead</option>
-                        <option>14 Days Ahead</option>
-                        <option>30 Days Ahead</option>
-                        <option>90 Days Ahead</option>
+                        <option>30 Days</option>
+                        <option>7 Days</option>
+                        <option>14 Days</option>
+                        <option>90 Days</option>
                     </select>
                 </div>
-                <div class="form-group-admin">
-                    <label class="form-label-admin">Prediction Model</label>
-                    <select class="form-select" name="model">
-                        <option>ARIMA</option>
-                        <option>LSTM</option>
-                        <option>Linear Regression</option>
-                        <option>Random Forest</option>
+                <div class="form-group-admin param-full">
+                    <label class="form-label-admin">UPDATE FREQUENCY</label>
+                    <select class="form-select" name="frequency">
+                        <option>Daily Update</option>
+                        <option>Weekly Update</option>
+                        <option>Monthly Update</option>
                     </select>
                 </div>
             </div>
-            <div class="form-actions" style="margin-top:0; padding-top:16px">
-                <button type="reset" class="btn-secondary">
-                    <i class="fas fa-rotate-left"></i> Reset
-                </button>
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-wand-magic-sparkles"></i> Generate Prediction
-                </button>
-            </div>
+            <button type="submit" class="btn-run-model">
+                <i class="fas fa-wand-magic-sparkles"></i> Run Prediction Model
+            </button>
         </form>
     </div>
+
 </div>
 
 {{-- PREDICTION HISTORY TABLE --}}
@@ -118,24 +86,20 @@
     <div class="table-header">
         <div>
             <div class="table-title">Prediction History</div>
-            <div class="table-subtitle">Previously generated predictions and their accuracy results.</div>
         </div>
-        <div class="search-box">
-            <i class="fas fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search predictions...">
-        </div>
+        <a href="#" class="view-all">View All Logs</a>
     </div>
 
     <table>
         <thead>
             <tr>
+                <th>Date/Time</th>
                 <th>Commodity</th>
                 <th>Region</th>
-                <th>Model</th>
-                <th>Predicted Price</th>
-                <th>Period</th>
-                <th>Accuracy</th>
-                <th>Generated At</th>
+                <th>Horizon</th>
+                <th>Accuracy (MAE)</th>
+                <th>Accuracy (RMSE)</th>
+                <th>Status</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -143,77 +107,95 @@
             {{--
                 @foreach($predictions as $item)
                 <tr>
+                    <td class="date-text">{{ \Carbon\Carbon::parse($item->created_at)->format('M d, Y H:i') }}</td>
                     <td class="commodity-name">{{ $item->commodity->name }}</td>
-                    <td class="region-text">{{ $item->region }}</td>
-                    <td><span class="badge badge-blue">{{ $item->model }}</span></td>
-                    <td class="price-text">Rp {{ number_format($item->predicted_price, 0, ',', '.') }}</td>
-                    <td class="region-text">{{ \Carbon\Carbon::parse($item->period_end)->format('M d, Y') }}</td>
-                    <td><span class="badge {{ $item->accuracy >= 90 ? 'badge-green' : 'badge-orange' }}">{{ $item->accuracy }}%</span></td>
-                    <td class="date-text">{{ \Carbon\Carbon::parse($item->created_at)->format('M d, Y') }}</td>
+                    <td class="date-text">{{ $item->region }}</td>
+                    <td class="date-text">{{ $item->horizon }}</td>
+                    <td class="date-text">{{ $item->mae }}</td>
+                    <td class="date-text">{{ $item->rmse }}</td>
                     <td>
-                        <div class="action-group">
-                            <a href="/admin/prediksi/{{ $item->id }}" class="action-btn"><i class="fas fa-eye"></i></a>
-                            <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                        </div>
+                        <span class="badge badge-status-{{ $item->status }}">
+                            {{ strtoupper($item->status) }}
+                        </span>
+                    </td>
+                    <td>
+                        @if($item->status === 'failed')
+                            <a href="/admin/prediksi/{{ $item->id }}/retry" class="pred-action-link retry">Retry</a>
+                        @else
+                            <div style="display:flex;flex-direction:column;gap:2px">
+                                <a href="/admin/prediksi/{{ $item->id }}" class="pred-action-link">View</a>
+                                <a href="/admin/prediksi/{{ $item->id }}/report" class="pred-action-link">Report</a>
+                            </div>
+                        @endif
                     </td>
                 </tr>
                 @endforeach
             --}}
             <tr>
+                <td class="date-text">Oct 24, 2023<br>14:30</td>
                 <td class="commodity-name">Beras Premium</td>
-                <td class="region-text">Jakarta Selatan</td>
-                <td><span class="badge badge-blue">ARIMA</span></td>
-                <td class="price-text">Rp 15,200</td>
-                <td class="region-text">Nov 30, 2023</td>
-                <td><span class="badge badge-green">94.8%</span></td>
-                <td class="date-text">Oct 24, 2023</td>
+                <td class="date-text">National</td>
+                <td class="date-text">30 Days</td>
+                <td class="date-text">145.20</td>
+                <td class="date-text">189.45</td>
+                <td><span class="badge badge-status-completed">COMPLETED</span></td>
                 <td>
-                    <div class="action-group">
-                        <a href="/admin/prediksi/1" class="action-btn"><i class="fas fa-eye"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                    <div style="display:flex;flex-direction:column;gap:2px">
+                        <a href="#" class="pred-action-link">View</a>
+                        <a href="#" class="pred-action-link">Report</a>
                     </div>
                 </td>
             </tr>
             <tr>
-                <td class="commodity-name">Cabai Merah Keriting</td>
-                <td class="region-text">All Regions</td>
-                <td><span class="badge" style="background:#f5f3ff; color:#7c3aed">LSTM</span></td>
-                <td class="price-text">Rp 42,000</td>
-                <td class="region-text">Nov 30, 2023</td>
-                <td><span class="badge badge-green">96.1%</span></td>
-                <td class="date-text">Oct 23, 2023</td>
+                <td class="date-text">Oct 24, 2023<br>10:15</td>
+                <td class="commodity-name">Cabai Merah</td>
+                <td class="date-text">West Java</td>
+                <td class="date-text">60 Days</td>
+                <td class="date-text">890.50</td>
+                <td class="date-text">1250.10</td>
+                <td><span class="badge badge-status-review">REVIEW NEEDED</span></td>
                 <td>
-                    <div class="action-group">
-                        <a href="/admin/prediksi/2" class="action-btn"><i class="fas fa-eye"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                    <div style="display:flex;flex-direction:column;gap:2px">
+                        <a href="#" class="pred-action-link">View</a>
+                        <a href="#" class="pred-action-link">Report</a>
                     </div>
                 </td>
             </tr>
             <tr>
-                <td class="commodity-name">Minyak Goreng Curah</td>
-                <td class="region-text">Surabaya</td>
-                <td><span class="badge badge-blue">ARIMA</span></td>
-                <td class="price-text">Rp 13,000</td>
-                <td class="region-text">Nov 15, 2023</td>
-                <td><span class="badge badge-orange">88.5%</span></td>
-                <td class="date-text">Oct 22, 2023</td>
+                <td class="date-text">Oct 23, 2023<br>16:45</td>
+                <td class="commodity-name">Bawang Merah</td>
+                <td class="date-text">East Java</td>
+                <td class="date-text">90 Days</td>
+                <td class="date-text">210.15</td>
+                <td class="date-text">305.80</td>
+                <td><span class="badge badge-status-completed">COMPLETED</span></td>
                 <td>
-                    <div class="action-group">
-                        <a href="/admin/prediksi/3" class="action-btn"><i class="fas fa-eye"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                    <div style="display:flex;flex-direction:column;gap:2px">
+                        <a href="#" class="pred-action-link">View</a>
+                        <a href="#" class="pred-action-link">Report</a>
                     </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="date-text">Oct 23, 2023<br>09:20</td>
+                <td class="commodity-name">Minyak Goreng</td>
+                <td class="date-text">National</td>
+                <td class="date-text">30 Days</td>
+                <td class="date-text">55.30</td>
+                <td class="date-text">82.10</td>
+                <td><span class="badge badge-status-failed">FAILED</span></td>
+                <td>
+                    <a href="#" class="pred-action-link retry">Retry</a>
                 </td>
             </tr>
         </tbody>
     </table>
 
     <div class="table-footer">
-        <span class="table-footer-text">Showing 3 of 248 predictions</span>
+        <span class="table-footer-text">Showing 4 of 128 results</span>
         <div class="pagination">
-            <button class="page-btn active">1</button>
-            <button class="page-btn">2</button>
-            <button class="page-btn">3</button>
-            <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+            <button class="page-btn">Previous</button>
+            <button class="page-btn active">Next</button>
         </div>
     </div>
 </div>
