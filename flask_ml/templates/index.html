@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PanganWatch Jember — Prediksi Harga Bahan Pokok</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--border:#21262d;--text:#e6edf3;--muted:#8b949e;--accent:#f0a500;--accent2:#e85d04;--green:#3fb950;--red:#f85149;--blue:#58a6ff}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+.glow{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;opacity:.15}
+.glow-1{width:600px;height:600px;background:var(--accent);top:-200px;right:-100px}
+.glow-2{width:400px;height:400px;background:var(--blue);bottom:10%;left:-100px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1.2rem 3rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(13,17,23,.85);backdrop-filter:blur(12px)}
+.logo{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--accent)}.logo span{color:var(--text)}
+.nav-links{display:flex;gap:1rem}
+.nav-links a{text-decoration:none;padding:.5rem 1.2rem;border-radius:6px;font-size:.9rem;font-weight:500;transition:all .2s;color:var(--muted);border:1px solid transparent}
+.nav-links a:hover{color:var(--text);border-color:var(--border)}
+.nav-links a.primary{background:var(--accent);color:#000;border-color:var(--accent)}
+.nav-links a.primary:hover{background:#d4920a}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:8rem 3rem 10rem;position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:999px;padding:.35rem 1rem;font-size:.78rem;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2rem;animation:fadeUp .6s ease forwards}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(3rem,8vw,6.5rem);font-weight:900;line-height:1.05;max-width:800px;margin-bottom:1.5rem;animation:fadeUp .6s .1s ease both}
+.hero h1 em{color:var(--accent);font-style:normal}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:520px;line-height:1.7;margin-bottom:3rem;animation:fadeUp .6s .2s ease both}
+.hero-cta{display:flex;gap:1rem;flex-wrap:wrap;animation:fadeUp .6s .3s ease both}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 2rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;text-decoration:none;transition:all .2s;cursor:pointer;border:none}
+.btn-primary{background:var(--accent);color:#000;border:2px solid var(--accent)}
+.btn-primary:hover{background:#d4920a;transform:translateY(-2px);box-shadow:0 8px 24px rgba(240,165,0,.25)}
+.btn-ghost{background:transparent;color:var(--text);border:2px solid var(--border)}
+.btn-ghost:hover{border-color:var(--muted);transform:translateY(-2px)}
+.stats-strip{position:absolute;bottom:3rem;left:3rem;right:3rem;display:flex;gap:3rem;border-top:1px solid var(--border);padding-top:2rem;animation:fadeUp .6s .4s ease both;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:.2rem}
+.stat-val{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--text)}
+.stat-label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+section.features,section.roles{padding:6rem 3rem;position:relative;z-index:1;border-top:1px solid var(--border)}
+.section-tag{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:700;margin-bottom:3rem;max-width:600px}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;transition:all .3s;position:relative;overflow:hidden}
+.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .3s}
+.feature-card:hover{border-color:rgba(240,165,0,.3);transform:translateY(-4px)}.feature-card:hover::before{opacity:1}
+.feature-icon{width:48px;height:48px;background:rgba(240,165,0,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:1.2rem}
+.feature-card h3{font-size:1.05rem;font-weight:600;margin-bottom:.5rem}
+.feature-card p{font-size:.88rem;color:var(--muted);line-height:1.6}
+.roles-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem}
+.role-card{border-radius:16px;padding:3rem;border:1px solid var(--border);position:relative;overflow:hidden;transition:all .3s}
+.role-card.admin{background:linear-gradient(135deg,rgba(88,166,255,.08),transparent)}
+.role-card.user{background:linear-gradient(135deg,rgba(63,185,80,.08),transparent)}
+.role-card:hover{transform:translateY(-4px)}
+.role-card.admin:hover{border-color:rgba(88,166,255,.4)}
+.role-card.user:hover{border-color:rgba(63,185,80,.4)}
+.role-icon{font-size:3rem;margin-bottom:1.5rem}
+.role-card h3{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;margin-bottom:.75rem}
+.role-card p{color:var(--muted);line-height:1.65;margin-bottom:1.5rem;font-size:.95rem}
+.role-features{list-style:none;display:flex;flex-direction:column;gap:.5rem;margin-bottom:2rem}
+.role-features li{font-size:.88rem;color:var(--muted);display:flex;align-items:center;gap:.5rem}
+.role-features li::before{content:'→';color:var(--accent);font-weight:600}
+.btn-admin{background:var(--blue);color:#000}.btn-admin:hover{background:#4a97ff;transform:translateY(-2px)}
+.btn-user{background:var(--green);color:#000}.btn-user:hover{background:#35a845;transform:translateY(-2px)}
+footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+footer p{font-size:.83rem;color:var(--muted)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){nav{padding:1rem 1.5rem}.hero{padding:7rem 1.5rem 10rem}.stats-strip{left:1.5rem;right:1.5rem}section.features,section.roles{padding:4rem 1.5rem}.roles-grid{grid-template-columns:1fr}footer{flex-direction:column;gap:1rem;text-align:center}}
+</style>
+</head>
+<body>
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+<nav>
+  <div class="logo">Pangan<span>Watch</span></div>
+  <div class="nav-links">
+    <a href="/login">Masuk / Daftar</a>
+    <a href="/login" class="primary">🛒 Cek Harga</a>
+  </div>
+</nav>
+<section class="hero">
+  <div class="hero-badge">🌾 Kabupaten Jember · MongoDB Live Data</div>
+  <h1>Prediksi Harga<br><em>Bahan Pokok</em><br>Akurat & Cepat</h1>
+  <p>Platform analitik berbasis machine learning untuk memantau dan memprediksi harga bahan pokok di Kabupaten Jember. Bantu warga belanja lebih cerdas.</p>
+  <div class="hero-cta">
+    <a href="/login" class="btn btn-primary">🛒 Cek Rekomendasi Beli</a>
+    <a href="/login" class="btn btn-ghost">📊 Dashboard Admin</a>
+  </div>
+  <div class="stats-strip">
+    <div class="stat"><span class="stat-val">{{ komoditas_list|length }}</span><span class="stat-label">Komoditas</span></div>
+    <div class="stat"><span class="stat-val">{{ "{:,}".format(total_records) }}</span><span class="stat-label">Data Harga</span></div>
+    <div class="stat"><span class="stat-val">30 Hari</span><span class="stat-label">Horizon Prediksi</span></div>
+    <div class="stat"><span class="stat-val">HW</span><span class="stat-label">Model AI</span></div>
+  </div>
+</section>
+<section class="features">
+  <div class="section-tag">Fitur Unggulan</div>
+  <h2 class="section-title">Semua yang Anda Butuhkan untuk Belanja Cerdas</h2>
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon">🍃</div><h3>Data MongoDB Live</h3><p>Langsung terhubung ke database MongoDB <code>monitoring_harga_pangan</code>. Data selalu segar dari koleksi price_histories.</p></div>
+    <div class="feature-card"><div class="feature-icon">📈</div><h3>Prediksi Time Series</h3><p>Holt-Winters Exponential Smoothing menangkap trend jangka panjang dan pola musiman mingguan harga pangan.</p></div>
+    <div class="feature-card"><div class="feature-icon">🎯</div><h3>Akurasi Terukur</h3><p>Metrik MAPE, MAE, RMSE dari validasi walk-forward 80/20. Hasil prediksi di-cache di koleksi predictions.</p></div>
+    <div class="feature-card"><div class="feature-icon">💡</div><h3>Rekomendasi Pintar</h3><p>Scoring otomatis berdasarkan tren, volatilitas, dan selisih harga untuk saran beli/tunda yang transparan.</p></div>
+    <div class="feature-card"><div class="feature-icon">🔐</div><h3>Autentikasi User</h3><p>Login & registrasi berbasis MongoDB users. Role admin dan user dengan hak akses berbeda.</p></div>
+    <div class="feature-card"><div class="feature-icon">📋</div><h3>Riwayat Simulasi</h3><p>Setiap simulasi user tersimpan di koleksi simulations untuk analisis perilaku pembelian.</p></div>
+  </div>
+</section>
+<section class="roles">
+  <div class="section-tag">Pilih Mode</div>
+  <h2 class="section-title">Dua Mode untuk Dua Kebutuhan</h2>
+  <div class="roles-grid">
+    <div class="role-card admin">
+      <div class="role-icon">📊</div>
+      <h3>Mode Admin</h3>
+      <p>Analisis mendalam dengan akses penuh ke data MongoDB, visualisasi lengkap, dan metrik akurasi model.</p>
+      <ul class="role-features">
+        <li>Dashboard semua komoditas sekaligus</li>
+        <li>Grafik historis + forecast + CI</li>
+        <li>Metrik akurasi: MAPE, MAE, RMSE</li>
+        <li>Stats total records, users, simulasi</li>
+        <li>Browse raw price_histories</li>
+      </ul>
+      <a href="/login" class="btn btn-admin">Login sebagai Admin →</a>
+    </div>
+    <div class="role-card user">
+      <div class="role-icon">🛒</div>
+      <h3>Mode Warga / User</h3>
+      <p>Antarmuka sederhana untuk rekomendasi belanja berdasarkan komoditas dan kebutuhan konsumsi mingguan.</p>
+      <ul class="role-features">
+        <li>Pilih komoditas dari database</li>
+        <li>Input konsumsi per minggu</li>
+        <li>Rekomendasi: Beli Sekarang / Tunggu</li>
+        <li>Estimasi budget & penjelasan alasan</li>
+        <li>Riwayat simulasi tersimpan</li>
+      </ul>
+      <a href="/login" class="btn btn-user">Daftar / Masuk →</a>
+    </div>
+  </div>
+</section>
+<footer>
+  <p>© 2025 PanganWatch Jember · MongoDB: <code>{{ total_records|default(0) }}</code> records live</p>
+  <p>Model: Holt-Winters · Flask + PyMongo · Data: SISKAPERBAPO Jatim</p>
+</footer>
+</body>
+</html>
