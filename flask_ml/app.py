@@ -3,6 +3,7 @@ PanganWatch Jember — Flask + MongoDB + Holt-Winters Time Series
 Koleksi MongoDB: price_histories, commodities, categories, predictions, users, simulations
 """
 import os, warnings, hashlib, secrets
+import bcrypt
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -53,7 +54,30 @@ col_prediction.create_index([("commodity_name", ASCENDING), ("created_at", DESCE
 # AUTH HELPERS
 # ═══════════════════════════════════════════════════════════════════
 def hash_pw(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
+    """Hash baru pakai bcrypt."""
+    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+
+def verify_pw(plain: str, stored: str) -> bool:
+    """
+    Support 3 format password:
+    1. bcrypt  $2b$ / $2y$  (MongoDB dari Laravel/PHP atau bcrypt Python)
+    2. sha256  hex 64 char  (format lama app ini)
+    3. plain text           (dummy login)
+    """
+    if not plain or not stored:
+        return False
+    # bcrypt — ganti $2y$ → $2b$ agar Python bcrypt bisa baca
+    if stored.startswith(("$2y$", "$2b$", "$2a$")):
+        try:
+            normalized = stored.replace("$2y$", "$2b$").encode()
+            return bcrypt.checkpw(plain.encode(), normalized)
+        except Exception:
+            return False
+    # sha256 hex lama
+    if len(stored) == 64:
+        return hashlib.sha256(plain.encode()).hexdigest() == stored
+    # plain text (dummy)
+    return stored == plain
 
 def login_required(f):
     @wraps(f)
@@ -333,61 +357,84 @@ def login_page():
         return redirect(url_for("index"))
     return render_template("login.html")
 
-# ── DUMMY ACCOUNTS (hapus setelah MongoDB siap) ─────────────────
-DUMMY_USERS = {
-    "admin":  {"password": "admin123", "role": "admin", "nama": "Administrator"},
-    "warga":  {"password": "warga123", "role": "user",  "nama": "Budi Santoso"},
-    "user1":  {"password": "user123",  "role": "user",  "nama": "User Satu"},
-}
+@app.route("/api/debug/login_test")
+def debug_login_test():
+    """Cek apakah user ada di DB dan bcrypt bekerja — HAPUS di production!"""
+    email  = request.args.get("email", "admin@gmail.com").lower()
+    user   = col_user.find_one({"email": email}, {"password": 1, "role": 1, "is_active": 1, "name": 1})
+    if not user:
+        return jsonify({"found": False, "email": email,
+                        "hint": "User tidak ada di DB — cek koleksi users"})
+    pw_stored = user.get("password", "")
+    return jsonify({
+        "found":       True,
+        "email":       email,
+        "name":        user.get("name",""),
+        "role":        user.get("role",""),
+        "is_active":   user.get("is_active", None),
+        "pw_prefix":   pw_stored[:10] if pw_stored else "KOSONG",
+        "pw_format":   "bcrypt" if pw_stored.startswith(("$2y$","$2b$","$2a$")) else
+                       "sha256" if len(pw_stored)==64 else "unknown",
+        "verify_test": verify_pw("password", pw_stored),
+    })
 
 @app.route("/api/auth/login", methods=["POST"])
 def api_login():
     body     = request.get_json()
-    username = body.get("username", "").strip()
+    email    = body.get("email", "").strip().lower()
     password = body.get("password", "")
 
-    # Cek dummy dulu
-    dummy = DUMMY_USERS.get(username)
-    if dummy and dummy["password"] == password:
-        session["user_id"]  = username
-        session["username"] = username
-        session["role"]     = dummy["role"]
-        return jsonify({"role": dummy["role"], "username": username})
+    if not email or not password:
+        return jsonify({"error": "Email dan password wajib diisi"}), 400
 
-    # Fallback ke MongoDB
-    user = col_user.find_one({"username": username})
-    if not user or user.get("password") != hash_pw(password):
-        return jsonify({"error": "Username atau password salah"}), 401
+    # Cari user berdasarkan email
+    user = col_user.find_one({"email": email})
+    if not user:
+        return jsonify({"error": "Email atau password salah"}), 401
+
+    # Cek aktif
+    if not user.get("is_active", True):
+        return jsonify({"error": "Akun tidak aktif"}), 403
+
+    # Verifikasi password (support bcrypt & sha256)
+    if not verify_pw(password, user.get("password", "")):
+        return jsonify({"error": "Email atau password salah"}), 401
 
     session["user_id"]  = str(user["_id"])
-    session["username"] = user["username"]
+    session["username"] = user.get("name") or user.get("username") or email.split("@")[0]
+    session["email"]    = email
     session["role"]     = user.get("role", "user")
     return jsonify({"role": session["role"], "username": session["username"]})
 
 @app.route("/api/auth/register", methods=["POST"])
 def api_register():
-    body = request.get_json()
-    username = body.get("username", "").strip()
+    body     = request.get_json()
+    email    = body.get("email", "").strip().lower()
     password = body.get("password", "")
     nama     = body.get("nama", "").strip()
 
-    if not username or not password:
-        return jsonify({"error": "Username dan password wajib diisi"}), 400
-    if col_user.find_one({"username": username}):
-        return jsonify({"error": "Username sudah digunakan"}), 409
+    if not email or not password:
+        return jsonify({"error": "Email dan password wajib diisi"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password minimal 6 karakter"}), 400
+    if col_user.find_one({"email": email}):
+        return jsonify({"error": "Email sudah terdaftar"}), 409
 
     doc = {
-        "username":   username,
+        "name":       nama or email.split("@")[0],
+        "email":      email,
         "password":   hash_pw(password),
-        "nama":       nama or username,
         "role":       "user",
-        "created_at": datetime.utcnow()
+        "is_active":  True,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
     }
     result = col_user.insert_one(doc)
     session["user_id"]  = str(result.inserted_id)
-    session["username"] = username
+    session["username"] = doc["name"]
+    session["email"]    = email
     session["role"]     = "user"
-    return jsonify({"role": "user", "username": username}), 201
+    return jsonify({"role": "user", "username": doc["name"]}), 201
 
 @app.route("/api/auth/logout", methods=["POST"])
 def api_logout():
@@ -401,7 +448,9 @@ def api_me():
     return jsonify({
         "logged_in": True,
         "username":  session.get("username"),
+        "email":     session.get("email", ""),
         "role":      session.get("role"),
+        "user_id":   session.get("user_id"),
     })
 
 # ═══════════════════════════════════════════════════════════════════
@@ -614,6 +663,7 @@ def api_admin_stats():
     total_records   = col_price.count_documents({})
     total_komoditas = len(get_komoditas_list())
     total_users     = col_user.count_documents({})
+    total_active    = col_user.count_documents({"is_active": True})
     total_sim       = col_simulation.count_documents({})
     total_pred      = col_prediction.count_documents({})
 
@@ -636,6 +686,7 @@ def api_admin_stats():
         "total_records":   total_records,
         "total_komoditas": total_komoditas,
         "total_users":     total_users,
+        "total_active":    total_active,
         "total_simulasi":  total_sim,
         "total_prediksi":  total_pred,
         "latest_date":     latest_date,
@@ -701,11 +752,13 @@ def seed_admin():
         return jsonify({"error": "Admin sudah ada"}), 409
     body = request.get_json()
     col_user.insert_one({
-        "username":   body.get("username", "admin"),
+        "name":       body.get("nama", "Administrator"),
+        "email":      body.get("email", "admin@gmail.com"),
         "password":   hash_pw(body.get("password", "admin123")),
-        "nama":       body.get("nama", "Administrator"),
         "role":       "admin",
+        "is_active":  True,
         "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
     })
     return jsonify({"ok": True, "message": "Admin berhasil dibuat"})
 
@@ -716,8 +769,9 @@ def debug_users():
     users = list(col_user.find({}, {"password": 0}))
     for u in users:
         u["_id"] = str(u["_id"])
-        if isinstance(u.get("created_at"), datetime):
-            u["created_at"] = u["created_at"].strftime("%Y-%m-%d %H:%M")
+        for field in ("created_at", "updated_at"):
+            if isinstance(u.get(field), datetime):
+                u[field] = u[field].strftime("%Y-%m-%d %H:%M")
     return jsonify({"total": len(users), "users": users})
 
 
@@ -838,11 +892,13 @@ def api_users_list():
     result = []
     for d in docs:
         result.append({
-            "id":       str(d["_id"]),
-            "username": d.get("username",""),
-            "nama":     d.get("nama",""),
-            "role":     d.get("role","user"),
-            "created_at": d["created_at"].strftime("%Y-%m-%d") if d.get("created_at") else "—",
+            "id":        str(d["_id"]),
+            "name":      d.get("name") or d.get("nama") or d.get("username") or "—",
+            "email":     d.get("email", "—"),
+            "role":      d.get("role", "user"),
+            "is_active": d.get("is_active", True),
+            "created_at": d["created_at"].strftime("%Y-%m-%d %H:%M")
+                          if d.get("created_at") else "—",
         })
     return jsonify(result)
 
@@ -887,12 +943,15 @@ def auto_seed_admin():
     if col_user.count_documents({"role": "admin"}) == 0:
         username = os.getenv("ADMIN_USERNAME", "admin")
         password = os.getenv("ADMIN_PASSWORD", "admin123")
+        email_admin = os.getenv("ADMIN_EMAIL", "admin@gmail.com")
         col_user.insert_one({
-            "username":   username,
+            "name":       "Administrator",
+            "email":      email_admin,
             "password":   hash_pw(password),
-            "nama":       "Administrator",
             "role":       "admin",
+            "is_active":  True,
             "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
         })
         print("\n" + "="*50)
         print("  Akun admin dibuat otomatis!")

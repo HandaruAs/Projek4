@@ -213,7 +213,11 @@ let userChart = null;
 
 // Init
 fetch('/api/auth/me').then(r=>r.json()).then(d=>{
-  if(d.logged_in) document.getElementById('user-pill').textContent = '👤 '+d.username;
+  if(d.logged_in) {
+    document.getElementById('user-pill').textContent = '👤 '+d.username;
+    // simpan email untuk keperluan display
+    window._userEmail = d.email || '';
+  }
 });
 loadRiwayat();
 

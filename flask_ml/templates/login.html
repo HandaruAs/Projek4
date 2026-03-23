@@ -4,71 +4,108 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login — PanganWatch Jember</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#21262d;--text:#e6edf3;--muted:#8b949e;--accent:#f0a500;--green:#3fb950;--red:#f85149;--blue:#58a6ff}
+:root{--bg:#f0f2f5;--surface:#fff;--border:#e2e8f0;--text:#1a202c;--muted:#718096;--accent:#2563eb;--accent-light:#eff6ff;--red:#dc2626;--red-bg:#fef2f2}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 60% 30%,rgba(240,165,0,.07),transparent);pointer-events:none}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3rem 2.5rem;width:100%;max-width:420px;position:relative;z-index:1}
-.logo{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:var(--accent);text-align:center;margin-bottom:.25rem}
-.logo span{color:var(--text)}
-.subtitle{text-align:center;font-size:.85rem;color:var(--muted);margin-bottom:2.5rem}
-.tabs{display:flex;background:var(--surface2);border-radius:10px;padding:4px;gap:4px;margin-bottom:2rem}
-.tab{flex:1;padding:.6rem;text-align:center;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s;border:none;background:transparent;font-family:'DM Sans',sans-serif}
-.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.4)}
-.field{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
-.field label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.field input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.75rem 1rem;border-radius:10px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;width:100%}
-.field input:focus{border-color:var(--accent)}
-.btn-submit{width:100%;margin-top:.5rem;background:var(--accent);color:#000;border:none;border-radius:10px;padding:1rem;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s}
-.btn-submit:hover{background:#d4920a;transform:translateY(-1px)}
-.btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.err{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);color:var(--red);border-radius:8px;padding:.6rem .9rem;font-size:.84rem;margin-bottom:1rem;display:none}
-.back-link{text-align:center;margin-top:1.5rem;font-size:.83rem;color:var(--muted)}
-.back-link a{color:var(--accent);text-decoration:none}
-.spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:.4rem}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(135deg,rgba(37,99,235,.04) 0%,transparent 60%);pointer-events:none}
+
+.brand{display:flex;align-items:center;gap:.6rem;margin-bottom:2rem}
+.brand-icon{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:700}
+.brand-name{font-size:1.1rem;font-weight:700;color:var(--text)}
+.brand-sub{font-size:.72rem;color:var(--muted);margin-top:.05rem}
+
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:2.25rem 2rem;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.card-title{font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+.card-sub{font-size:.82rem;color:var(--muted);margin-bottom:1.75rem}
+
+.tabs{display:flex;background:#f8fafc;border-radius:8px;padding:3px;gap:3px;margin-bottom:1.5rem;border:1px solid var(--border)}
+.tab{flex:1;padding:.5rem;text-align:center;border-radius:6px;font-size:.83rem;font-weight:500;cursor:pointer;color:var(--muted);transition:all .15s;border:none;background:transparent;font-family:'Inter',sans-serif}
+.tab.active{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
+.field label{font-size:.78rem;font-weight:600;color:var(--text)}
+.input-wrap{position:relative}
+.field input{width:100%;background:#fff;border:1px solid var(--border);color:var(--text);padding:.7rem .9rem;border-radius:8px;font-size:.9rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.field input.error{border-color:var(--red)}
+.pw-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:.2rem;line-height:1}
+.pw-toggle:hover{color:var(--text)}
+
+.err-box{background:var(--red-bg);border:1px solid #fecaca;border-radius:8px;padding:.6rem .85rem;font-size:.82rem;color:var(--red);margin-bottom:1rem;display:none;align-items:center;gap:.5rem}
+.err-box.show{display:flex}
+
+.btn-submit{width:100%;margin-top:.25rem;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:.85rem;font-family:'Inter',sans-serif;font-size:.92rem;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-submit:hover{background:#1d4ed8;box-shadow:0 4px 12px rgba(37,99,235,.25)}
+.btn-submit:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+
+.divider{display:flex;align-items:center;gap:.75rem;margin:1.25rem 0;color:var(--muted);font-size:.75rem}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.back-link{text-align:center;margin-top:1.25rem;font-size:.8rem;color:var(--muted)}
+.back-link a{color:var(--accent);text-decoration:none;font-weight:500}.back-link a:hover{text-decoration:underline}
+
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+footer{margin-top:2rem;font-size:.75rem;color:var(--muted);text-align:center}
 </style>
 </head>
 <body>
+<div class="brand">
+  <div class="brand-icon">PW</div>
+  <div>
+    <div class="brand-name">PanganWatch</div>
+    <div class="brand-sub">Kabupaten Jember</div>
+  </div>
+</div>
+
 <div class="card">
-  <div class="logo">Pangan<span>Watch</span></div>
-  <div class="subtitle">Kabupaten Jember · Sistem Prediksi Harga</div>
+  <div class="card-title" id="card-title">Selamat Datang</div>
+  <div class="card-sub" id="card-sub">Masuk untuk melanjutkan ke dashboard</div>
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('login')">Masuk</button>
     <button class="tab" onclick="switchTab('register')">Daftar</button>
   </div>
 
-  <div id="err" class="err"></div>
+  <div class="err-box" id="err-box">
+    <span>⚠</span><span id="err-msg"></span>
+  </div>
 
-  <!-- LOGIN FORM -->
+  <!-- LOGIN -->
   <div id="form-login">
     <div class="field">
-      <label>Username</label>
-      <input type="text" id="l-username" placeholder="Masukkan username" autocomplete="username">
+      <label>Email</label>
+      <input type="email" id="l-email" placeholder="nama@email.com" autocomplete="email">
     </div>
     <div class="field">
       <label>Password</label>
-      <input type="password" id="l-password" placeholder="Masukkan password" autocomplete="current-password">
+      <div class="input-wrap">
+        <input type="password" id="l-password" placeholder="Masukkan password" autocomplete="current-password">
+        <button class="pw-toggle" onclick="togglePw('l-password',this)" tabindex="-1">👁</button>
+      </div>
     </div>
     <button class="btn-submit" id="btn-login" onclick="doLogin()">Masuk</button>
   </div>
 
-  <!-- REGISTER FORM -->
+  <!-- REGISTER -->
   <div id="form-register" style="display:none">
     <div class="field">
       <label>Nama Lengkap</label>
-      <input type="text" id="r-nama" placeholder="Nama Anda">
+      <input type="text" id="r-nama" placeholder="Nama Anda" autocomplete="name">
     </div>
     <div class="field">
-      <label>Username</label>
-      <input type="text" id="r-username" placeholder="Pilih username" autocomplete="username">
+      <label>Email</label>
+      <input type="email" id="r-email" placeholder="nama@email.com" autocomplete="email">
     </div>
     <div class="field">
       <label>Password</label>
-      <input type="password" id="r-password" placeholder="Min. 6 karakter" autocomplete="new-password">
+      <div class="input-wrap">
+        <input type="password" id="r-password" placeholder="Minimal 6 karakter" autocomplete="new-password">
+        <button class="pw-toggle" onclick="togglePw('r-password',this)" tabindex="-1">👁</button>
+      </div>
     </div>
     <button class="btn-submit" id="btn-register" onclick="doRegister()">Buat Akun</button>
   </div>
@@ -76,66 +113,89 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="back-link"><a href="/">← Kembali ke Beranda</a></div>
 </div>
 
+<footer>© 2025 PanganWatch Jember · Data: SISKAPERBAPO Jawa Timur</footer>
+
 <script>
 function switchTab(t) {
-  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', (i===0&&t==='login')||(i===1&&t==='register')));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));
   document.getElementById('form-login').style.display    = t==='login'    ? '' : 'none';
   document.getElementById('form-register').style.display = t==='register' ? '' : 'none';
-  document.getElementById('err').style.display = 'none';
+  document.getElementById('card-title').textContent = t==='login' ? 'Selamat Datang' : 'Buat Akun Baru';
+  document.getElementById('card-sub').textContent   = t==='login' ? 'Masuk untuk melanjutkan ke dashboard' : 'Daftar untuk menggunakan PanganWatch';
+  hideErr();
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
 }
 
 function showErr(msg) {
-  const el = document.getElementById('err');
-  el.textContent = msg; el.style.display = '';
+  document.getElementById('err-msg').textContent = msg;
+  document.getElementById('err-box').classList.add('show');
+}
+function hideErr() {
+  document.getElementById('err-box').classList.remove('show');
 }
 
-function setLoading(btnId, loading) {
+function setLoading(btnId, loading, label) {
   const btn = document.getElementById(btnId);
   btn.disabled = loading;
-  btn.innerHTML = loading ? '<span class="spinner"></span> Memproses...' : (btnId==='btn-login' ? 'Masuk' : 'Buat Akun');
+  btn.innerHTML = loading ? '<span class="spinner"></span> Memproses...' : label;
 }
 
 async function doLogin() {
-  const u = document.getElementById('l-username').value.trim();
-  const p = document.getElementById('l-password').value;
-  if (!u || !p) return showErr('Isi username dan password terlebih dahulu');
-  setLoading('btn-login', true);
+  hideErr();
+  const email    = document.getElementById('l-email').value.trim();
+  const password = document.getElementById('l-password').value;
+  if (!email || !password) return showErr('Email dan password wajib diisi');
+
+  setLoading('btn-login', true, 'Masuk');
   try {
     const r = await fetch('/api/auth/login', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({username:u, password:p})
+      body: JSON.stringify({email, password})
     });
     const d = await r.json();
-    if (!r.ok) { showErr(d.error); return; }
+    if (!r.ok) return showErr(d.error || 'Login gagal');
     window.location.href = d.role === 'admin' ? '/admin' : '/user';
-  } catch(e) { showErr('Terjadi kesalahan, coba lagi'); }
-  finally { setLoading('btn-login', false); }
+  } catch(e) {
+    showErr('Terjadi kesalahan, coba lagi');
+  } finally {
+    setLoading('btn-login', false, 'Masuk');
+  }
 }
 
 async function doRegister() {
-  const nama = document.getElementById('r-nama').value.trim();
-  const u    = document.getElementById('r-username').value.trim();
-  const p    = document.getElementById('r-password').value;
-  if (!u || !p) return showErr('Username dan password wajib diisi');
-  if (p.length < 6) return showErr('Password minimal 6 karakter');
-  setLoading('btn-register', true);
+  hideErr();
+  const nama     = document.getElementById('r-nama').value.trim();
+  const email    = document.getElementById('r-email').value.trim();
+  const password = document.getElementById('r-password').value;
+  if (!email || !password) return showErr('Email dan password wajib diisi');
+  if (password.length < 6)  return showErr('Password minimal 6 karakter');
+
+  setLoading('btn-register', true, 'Buat Akun');
   try {
     const r = await fetch('/api/auth/register', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({username:u, password:p, nama})
+      body: JSON.stringify({email, password, nama})
     });
     const d = await r.json();
-    if (!r.ok) { showErr(d.error); return; }
+    if (!r.ok) return showErr(d.error || 'Registrasi gagal');
     window.location.href = '/user';
-  } catch(e) { showErr('Terjadi kesalahan, coba lagi'); }
-  finally { setLoading('btn-register', false); }
+  } catch(e) {
+    showErr('Terjadi kesalahan, coba lagi');
+  } finally {
+    setLoading('btn-register', false, 'Buat Akun');
+  }
 }
 
-// Enter key
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
-  if (document.getElementById('form-login').style.display !== 'none') doLogin();
-  else doRegister();
+  const loginVisible = document.getElementById('form-login').style.display !== 'none';
+  loginVisible ? doLogin() : doRegister();
 });
 </script>
 </body>

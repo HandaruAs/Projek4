@@ -203,7 +203,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
     <div class="user-avatar" id="avatar-init">A</div>
     <div>
       <div class="user-name" id="sidebar-username">Admin</div>
-      <div class="user-role">Administrator</div>
+      <div class="user-role" id="sidebar-email" style="font-size:.68rem;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px"></div>
     </div>
   </div>
 </aside>
@@ -441,7 +441,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
       </div>
       <div class="table-card">
         <table class="data-table">
-          <thead><tr><th>User</th><th>Username</th><th>Role</th><th>Terdaftar</th></tr></thead>
+          <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Terdaftar</th></tr></thead>
           <tbody id="users-tbody">
             <tr><td colspan="4"><div class="loading"><div class="spinner spinner-dark"></div></div></td></tr>
           </tbody>
@@ -473,7 +473,8 @@ document.addEventListener('DOMContentLoaded', () => {
   fetch('/api/auth/me').then(r=>r.json()).then(d => {
     if (d.logged_in) {
       document.getElementById('sidebar-username').textContent = d.username;
-      document.getElementById('avatar-init').textContent = d.username[0].toUpperCase();
+      document.getElementById('sidebar-email').textContent    = d.email || '';
+      document.getElementById('avatar-init').textContent      = (d.username||'A')[0].toUpperCase();
     }
   });
   showPage('data-harga');
@@ -867,19 +868,30 @@ async function loadUsers() {
   const data = await r.json();
 
   if (!data.length) {
-    document.getElementById('users-tbody').innerHTML = '<tr><td colspan="4"><div class="empty">Belum ada pengguna</div></td></tr>';
+    document.getElementById('users-tbody').innerHTML = '<tr><td colspan="5"><div class="empty">Belum ada pengguna</div></td></tr>';
     return;
   }
   let html = '';
   data.forEach(u => {
+    const init    = (u.name||u.email||'?')[0].toUpperCase();
+    const roleTag = u.role==='admin'
+      ? '<span class="badge badge-blue">Admin</span>'
+      : '<span class="badge badge-gray">User</span>';
+    const statusTag = u.is_active
+      ? '<span class="badge" style="background:#dcfce7;color:#15803d">Aktif</span>'
+      : '<span class="badge" style="background:#fee2e2;color:#b91c1c">Nonaktif</span>';
     html += `<tr>
       <td><div class="kom-cell">
-        <div class="user-row-avatar">${u.username[0].toUpperCase()}</div>
-        <div><div class="kom-name">${u.nama||u.username}</div><div class="kom-cat">${u.username}</div></div>
+        <div class="user-row-avatar">${init}</div>
+        <div>
+          <div class="kom-name">${u.name||'—'}</div>
+          <div class="kom-cat" style="font-size:.7rem">${u.email||'—'}</div>
+        </div>
       </div></td>
-      <td>${u.username}</td>
-      <td><span class="badge ${u.role==='admin'?'badge-blue':'badge-gray'}">${u.role}</span></td>
-      <td>${u.created_at}</td>
+      <td style="font-size:.82rem;color:var(--muted)">${u.email||'—'}</td>
+      <td>${roleTag}</td>
+      <td>${statusTag}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${u.created_at}</td>
     </tr>`;
   });
   document.getElementById('users-tbody').innerHTML = html;
