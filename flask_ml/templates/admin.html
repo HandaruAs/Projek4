@@ -329,17 +329,16 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
                 <div class="step-sub">Upload latest price records</div>
               </div>
             </div>
-            <div class="upload-zone">
-              <div class="uz-icon">📄</div>
+            <div class="upload-zone" style="padding:1.25rem">
+              <div class="uz-icon" style="font-size:1.4rem">📄</div>
               <p>Drop Excel or CSV file</p>
               <span class="uz-link">Browse Files</span>
             </div>
-            <div class="upload-btn-row">
+            <div class="upload-btn-row" style="margin-top:.75rem">
               <button class="topbar-btn" style="flex:1">⬇ Template</button>
               <button class="topbar-btn primary" style="flex:1">✓ Validate &amp; Upload</button>
             </div>
           </div>
-
           <div class="panel-card">
             <div class="step-row">
               <div class="step-num">2</div>
@@ -356,13 +355,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
                 </select>
               </div>
               <div class="field-sm">
-                <label>Target Region</label>
-                <select id="pred-region">
-                  <option value="jember">Jember</option>
-                  <option value="national">National</option>
-                </select>
-              </div>
-              <div class="field-sm">
                 <label>Prediction Horizon</label>
                 <select id="pred-horizon">
                   <option value="30">30 Days</option>
@@ -370,43 +362,38 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
                   <option value="90">90 Days</option>
                 </select>
               </div>
-              <div class="field-sm">
-                <label>Update Frequency</label>
-                <select>
-                  <option>Daily Update</option>
-                  <option>Weekly Update</option>
-                </select>
-              </div>
             </div>
-            <button class="run-btn" id="run-pred-btn" onclick="runPrediksi()">
+            <button class="run-btn" id="run-pred-btn" onclick="runPrediksi()" style="margin-top:.5rem">
               ✦ Run Prediction Model
             </button>
           </div>
         </div>
 
         <!-- KANAN: LOG -->
-        <div class="panel-card">
-          <div class="log-header">
+        <div class="panel-card" style="display:flex;flex-direction:column">
+          <div class="log-header" style="margin-bottom:.75rem">
             <h3>Prediction History</h3>
             <span class="view-all" onclick="loadPredLogs()">↻ Refresh</span>
           </div>
-          <table class="data-table" style="font-size:.78rem">
-            <thead>
-              <tr>
-                <th>Date/Time</th>
-                <th>Commodity</th>
-                <th>Horizon</th>
-                <th>Accuracy (MAE)</th>
-                <th>Accuracy (RMSE)</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="pred-log-tbody">
-              <tr><td colspan="7"><div class="loading"><div class="spinner spinner-dark"></div></div></td></tr>
-            </tbody>
-          </table>
-          <div id="pred-log-footer" style="padding:.65rem 1rem;font-size:.75rem;color:var(--muted);border-top:1px solid var(--border)">—</div>
+          <div style="overflow-y:auto;flex:1;max-height:420px;border:1px solid var(--border);border-radius:8px">
+            <table class="data-table" style="font-size:.78rem;table-layout:fixed;width:100%;border-collapse:collapse">
+              <thead style="position:sticky;top:0;z-index:1;background:var(--surface2)">
+                <tr>
+                  <th style="width:80px">Tanggal</th>
+                  <th>Komoditas</th>
+                  <th style="width:55px;text-align:center">Hari</th>
+                  <th style="width:60px;text-align:right">MAE</th>
+                  <th style="width:65px;text-align:right">RMSE</th>
+                  <th style="width:95px;text-align:center">Status</th>
+                  <th style="width:70px;text-align:center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="pred-log-tbody">
+                <tr><td colspan="7"><div class="loading"><div class="spinner spinner-dark"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="pred-log-footer" style="padding:.5rem .25rem;font-size:.72rem;color:var(--muted);margin-top:.5rem">—</div>
         </div>
       </div>
     </div>
@@ -808,9 +795,12 @@ async function loadPredLogs() {
     const sc = statusMap[d.status] || 'sb-completed';
     const statusLabel = {completed:'COMPLETED',running:'RUNNING',failed:'FAILED','review needed':'REVIEW NEEDED'};
     html += `<tr>
-      <td style="color:var(--muted)">${d.created_at}</td>
-      <td><strong>${d.commodity}</strong></td>
-      <td>${d.steps} Days</td>
+      <td style="color:var(--muted);font-size:.72rem;white-space:nowrap;line-height:1.4">${(()=>{
+        try{const dt=new Date(d.created_at);const m=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        return dt.getDate()+' '+m[dt.getMonth()]+'<br>'+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');}
+        catch(e){return d.created_at;}})()}</td>
+      <td style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0">${d.commodity}</td>
+      <td style="text-align:center;white-space:nowrap">${d.steps}h</td>
       <td>${d.accuracy_mae != null ? d.accuracy_mae.toFixed(2) : '—'}</td>
       <td>${d.accuracy_rmse != null ? d.accuracy_rmse.toFixed(2) : '—'}</td>
       <td><span class="status-badge ${sc}">${statusLabel[d.status]||d.status.toUpperCase()}</span></td>
