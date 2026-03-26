@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
+import 'package:flutter_app/screens/auth/otp_verification_screen.dart';
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -13,7 +14,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  bool _isSuccess = false;
 
   @override
   void dispose() {
@@ -24,21 +24,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _handleForgotPassword() async {
     if (_formKey.currentState?.validate() ?? false) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       final success = await authProvider.forgotPassword(
         _emailController.text.trim(),
       );
-      
+
       if (!mounted) return;
-      
+
       if (success) {
-        setState(() {
-          _isSuccess = true;
-        });
+        // Navigasi ke halaman verifikasi OTP, bawa email sebagai argumen
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationScreen(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Failed to send reset email'),
+            content: Text(
+              authProvider.errorMessage ?? 'Gagal mengirim kode OTP',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -66,8 +73,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 20),
-                    
-                    // Icon & Description
+
+                    // Icon
                     Center(
                       child: Container(
                         width: 80,
@@ -84,112 +91,66 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+
                     Text(
-                      'Reset Password',
+                      'Lupa Password?',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 8),
+
+                    // ✅ DIPERBAIKI: teks sekarang menyebutkan kode OTP, bukan link
                     Text(
-                      'Masukkan email Anda. Kami akan mengirimkan link untuk mereset password Anda.',
+                      'Masukkan email Anda. Kami akan mengirimkan kode OTP untuk mereset password Anda.',
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
-                    if (!_isSuccess) ...[
-                      // Email Field
-                      Form(
-                        key: _formKey,
-                        child: TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            hintText: 'Email',
-                            prefixIcon: Icon(Icons.email_outlined),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Email tidak boleh kosong';
-                            }
-                            if (!value.contains('@')) {
-                              return 'Email tidak valid';
-                            }
-                            return null;
-                          },
+
+                    // Email Field
+                    Form(
+                      key: _formKey,
+                      child: TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          hintText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Email tidak boleh kosong';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Email tidak valid';
+                          }
+                          return null;
+                        },
                       ),
-                      const SizedBox(height: 24),
-                      
-                      // Send Button
-                      ElevatedButton(
-                        onPressed: authProvider.isLoading ? null : _handleForgotPassword,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 50),
-                        ),
-                        child: const Text(
-                          'Kirim Link Reset',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ✅ DIPERBAIKI: label tombol sekarang "Kirim Kode OTP"
+                    ElevatedButton(
+                      onPressed:
+                          authProvider.isLoading ? null : _handleForgotPassword,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
                       ),
-                    ] else ...[
-                      // Success Message
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.green.shade200),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              size: 48,
-                              color: Colors.green.shade600,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Email Terkirim!',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green.shade800,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Link reset password telah dikirim ke ${_emailController.text}. Silakan cek email Anda.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                minimumSize: const Size(double.infinity, 50),
-                              ),
-                              child: const Text('Kembali ke Login'),
-                            ),
-                          ],
-                        ),
+                      child: const Text(
+                        'Kirim Kode OTP',
+                        style: TextStyle(fontSize: 16),
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),
-              
+
               // Loading Overlay
-              if (authProvider.isLoading)
-                const LoadingWidget(),
+              if (authProvider.isLoading) const LoadingWidget(),
             ],
           );
         },
