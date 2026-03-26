@@ -18,7 +18,9 @@ class User extends Authenticatable implements JWTSubject
         'email',
         'password',
         'role',
-        'created_at'
+        'created_at',
+        'otp',
+        'otp_expired_at',
     ];
 
     protected $hidden = [
@@ -27,6 +29,7 @@ class User extends Authenticatable implements JWTSubject
 
     protected $casts = [
         'created_at' => 'datetime',
+        'otp_expired_at' => 'datetime',
     ];
 
     const ROLE_ADMIN = 'admin';

@@ -23,6 +23,14 @@ Route::get('/login',           [AuthController::class, 'showLogin'])->name('logi
 Route::post('/login',          [AuthController::class, 'login']);
 Route::post('/logout',         [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot.password');
+Route::post('/forgot-password', [AuthController::class, 'sendOtp']);
+
+Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+
+Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('reset.password');
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // ── ADMIN ROUTES ─────────────────────────────────────────────
 Route::get('/admin/dashboard', [App\Http\Controllers\Web\AdminController::class, 'dashboard'])->name('dashboard');

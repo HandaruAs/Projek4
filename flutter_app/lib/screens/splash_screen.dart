@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
 import 'package:flutter_app/screens/Admin/main_screen.dart';
+import 'package:flutter_app/screens/User/main_screen.dart'; // ✅ tambah import ini
 import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -56,9 +57,18 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     if (authProvider.isAuthenticated) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
+      final role = authProvider.currentUser?.role;
+
+      // ✅ Routing berdasarkan role
+      if (role == 'admin') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const UserMainScreen()),
+        );
+      }
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -84,7 +94,6 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo with gradient background
                 Container(
                   width: 120,
                   height: 120,
@@ -116,7 +125,6 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 32),
 
-                // App Name
                 const Text(
                   'Monitoring Harga Pangan',
                   style: TextStyle(
@@ -127,7 +135,6 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 8),
 
-                // Region
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -148,7 +155,6 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 48),
 
-                // Custom Loading Animation
                 Column(
                   children: [
                     SizedBox(
