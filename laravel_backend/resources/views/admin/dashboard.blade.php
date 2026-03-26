@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('admin.layouts')
 
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard Overview')
@@ -11,16 +11,16 @@
 
     <div class="stat-card">
         <div>
-            <div class="stat-label">Total Data Points</div>
-            <div class="stat-value">12,450</div>
+            <div class="stat-label">Harga Tertinggi</div>
+            <div class="stat-value">Rp 45.000</div>
+            {{-- Dinamis: {{ 'Rp ' . number_format($hargaTertinggi->price, 0, ',', '.') }} --}}
             <div class="stat-change up">
-                <i class="fas fa-arrow-trend-up"></i> +12%
-                <span class="stat-change-sub">vs last month</span>
+                <i class="fas fa-arrow-trend-up"></i>
+                <span class="stat-change-sub">Cabai Merah Keriting</span>
+                {{-- Dinamis: {{ $hargaTertinggi->commodity->name ?? '-' }} --}}
             </div>
         </div>
-        <div class="stat-icon icon-blue">
-            <i class="fas fa-database"></i>
-        </div>
+        <div class="stat-icon icon-orange"><i class="fas fa-arrow-trend-up"></i></div>
     </div>
 
     <div class="stat-card">
@@ -37,18 +37,18 @@
         </div>
     </div>
 
-    <div class="stat-card">
+   <div class="stat-card">
         <div>
-            <div class="stat-label">Total Daerah</div>
-            <div class="stat-value">18</div>
+            <div class="stat-label">Harga Terendah</div>
+            <div class="stat-value">Rp 13.200</div>
+            {{-- Dinamis: {{ 'Rp ' . number_format($hargaTerendah->price, 0, ',', '.') }} --}}
             <div class="stat-change neutral">
-                <i class="fas fa-minus"></i> 0%
-                <span class="stat-change-sub">no changes detected</span>
+                <i class="fas fa-minus"></i>
+                <span class="stat-change-sub">Minyak Goreng Curah</span>
+                {{-- Dinamis: {{ $hargaTerendah->commodity->name ?? '-' }} --}}
             </div>
         </div>
-        <div class="stat-icon icon-purple">
-            <i class="fas fa-map-location-dot"></i>
-        </div>
+        <div class="stat-icon icon-blue"><i class="fas fa-arrow-trend-down"></i></div>
     </div>
 
 </div>

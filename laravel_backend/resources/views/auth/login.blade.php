@@ -107,7 +107,11 @@
                             value="{{ old('email') }}"
                             required
                             autofocus
+                            oninput="validateEmail(this)"
                         >
+                    </div>
+                    <div class="field-error" id="email-error" style="display:none">
+                        <i class="fas fa-circle-exclamation"></i> Format email tidak valid.
                     </div>
                     @error('email')
                         <div class="field-error">
@@ -130,10 +134,15 @@
                             class="form-input {{ $errors->has('password') ? 'is-error' : '' }}"
                             placeholder="Masukkan kata sandi"
                             required
+                            minlength="6"
+                            oninput="validatePassword(this)"
                         >
                         <button type="button" class="toggle-password" onclick="togglePassword()">
                             <i class="fas fa-eye" id="eye-icon"></i>
                         </button>
+                    </div>
+                    <div class="field-error" id="password-error" style="display:none">
+                        <i class="fas fa-circle-exclamation"></i> Password minimal 6 karakter.
                     </div>
                     @error('password')
                         <div class="field-error">
@@ -183,6 +192,44 @@
             eyeIcon.className = 'fas fa-eye';
         }
     }
+
+    function validateEmail(input) {
+        const error = document.getElementById('email-error');
+        const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value);
+        if (!valid && input.value.length > 0) {
+            input.classList.add('is-error');
+            error.style.display = 'flex';
+        } else {
+            input.classList.remove('is-error');
+            error.style.display = 'none';
+        }
+    }
+
+    function validatePassword(input) {
+        const error = document.getElementById('password-error');
+        if (input.value.length > 0 && input.value.length < 6) {
+            input.classList.add('is-error');
+            error.style.display = 'flex';
+        } else {
+            input.classList.remove('is-error');
+            error.style.display = 'none';
+        }
+    }
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const email    = document.getElementById('email');
+        const password = document.getElementById('password');
+        let blocked    = false;
+
+        validateEmail(email);
+        validatePassword(password);
+
+        if (email.classList.contains('is-error'))    blocked = true;
+        if (password.classList.contains('is-error')) blocked = true;
+        if (!email.value || !password.value)         blocked = true;
+
+        if (blocked) e.preventDefault();
+    });
 </script>
 
 </body>

@@ -1,15 +1,11 @@
-@extends('layouts.admin')
-
-@section('title', 'Settings')
-@section('page-title', 'Settings')
-@section('page-sub', 'Manage your account settings and system configuration.')
+@extends('admin.layouts')
 
 @section('content')
 
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start">
 
     {{-- PROFILE --}}
-    <div class="card">
+    <div class="card" style="margin-bottom:0">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-user-circle" style="color:var(--accent); margin-right:8px"></i>
@@ -57,7 +53,7 @@
     </div>
 
     {{-- CHANGE PASSWORD --}}
-    <div class="card">
+    <div class="card" style="margin-bottom:0">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-lock" style="color:var(--orange); margin-right:8px"></i>
@@ -90,64 +86,6 @@
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    {{-- SYSTEM INFO --}}
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-server" style="color:var(--green); margin-right:8px"></i>
-                System Information
-            </div>
-        </div>
-        <div class="card-body">
-            @php
-                $info = [
-                    ['label' => 'App Version',   'value' => 'SIMOPANG v1.0.0'],
-                    ['label' => 'Framework',      'value' => 'Laravel 12.x'],
-                    ['label' => 'Database',       'value' => 'MongoDB 7.x'],
-                    ['label' => 'PHP Version',    'value' => phpversion()],
-                    ['label' => 'Server Time',    'value' => now()->format('M d, Y — H:i') . ' WIB'],
-                    ['label' => 'Environment',    'value' => ucfirst(app()->environment())],
-                    ['label' => 'Total Records',  'value' => '12,450 data points'],
-                    ['label' => 'Total Regions',  'value' => '18 daerah'],
-                ];
-            @endphp
-            @foreach($info as $item)
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border)">
-                <span style="font-size:13px; font-weight:600; color:var(--text-secondary)">{{ $item['label'] }}</span>
-                <span style="font-size:13px; color:var(--text-primary); font-weight:500">{{ $item['value'] }}</span>
-            </div>
-            @endforeach
-        </div>
-    </div>
-
-    {{-- DANGER ZONE --}}
-    <div class="card" style="border-color:#fecaca">
-        <div class="card-header" style="background:#fef2f2; border-color:#fecaca">
-            <div class="card-title" style="color:var(--red)">
-                <i class="fas fa-triangle-exclamation" style="margin-right:8px"></i>
-                Danger Zone
-            </div>
-        </div>
-        <div class="card-body">
-            <div style="display:flex; flex-direction:column; gap:16px">
-                <div style="padding:14px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px">
-                    <div style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:4px">Reset All Prediction Data</div>
-                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px">Delete all stored prediction data. This action cannot be undone.</div>
-                    <button class="btn-danger" style="width:100%; justify-content:center">
-                        <i class="fas fa-trash"></i> Reset Prediction Data
-                    </button>
-                </div>
-                <div style="padding:14px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px">
-                    <div style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:4px">Logout All Devices</div>
-                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px">Invalidate all active sessions across all logged-in devices.</div>
-                    <button class="btn-danger" style="width:100%; justify-content:center">
-                        <i class="fas fa-right-from-bracket"></i> Logout All Devices
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 

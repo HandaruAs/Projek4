@@ -99,11 +99,12 @@
                         <i class="fas fa-lock input-icon"></i>
                         <input type="password" id="password" name="password"
                             class="form-input {{ $errors->has('password') ? 'is-error' : '' }}"
-                            placeholder="Minimal 8 karakter" required oninput="checkStrength(this.value)">
+                          placeholder="Minimal 6 karakter" oninput="checkStrength(this.value)">
                         <button type="button" class="toggle-password" onclick="togglePass('password','eye1')">
                             <i class="fas fa-eye" id="eye1"></i>
                         </button>
                     </div>
+                    
                     <div class="strength-bar-wrap" id="strengthWrap" style="display:none">
                         <div class="bar" id="bar1"></div>
                         <div class="bar" id="bar2"></div>
@@ -111,6 +112,16 @@
                         <div class="bar" id="bar4"></div>
                         <span class="strength-text" id="strengthText"></span>
                     </div>
+
+                    <div class="pass-hints" id="passHints">
+    <div class="hint-item" id="hint-length"><i class="fas fa-circle-dot"></i> Minimal 6 karakter</div>
+    <div class="hint-item" id="hint-upper"><i class="fas fa-circle-dot"></i> Mengandung huruf besar (A-Z)</div>
+    <div class="hint-item" id="hint-lower"><i class="fas fa-circle-dot"></i> Mengandung huruf kecil (a-z)</div>
+    <div class="hint-item" id="hint-number"><i class="fas fa-circle-dot"></i> Mengandung angka (0-9)</div>
+    <div class="hint-item" id="hint-special"><i class="fas fa-circle-dot"></i> Mengandung karakter spesial (!@#$%^&*()-+)</div>
+    
+                     </div>
+
                     @error('password')
                         <div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ $message }}</div>
                     @enderror
@@ -155,25 +166,48 @@
         icon.className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
     }
 
-    function checkStrength(val) {
-        const wrap = document.getElementById('strengthWrap');
-        const bars = ['bar1','bar2','bar3','bar4'].map(id => document.getElementById(id));
-        const text = document.getElementById('strengthText');
-        if (!val) { wrap.style.display = 'none'; return; }
-        wrap.style.display = 'flex';
-        bars.forEach(b => b.className = 'bar');
-        let score = 0;
-        if (val.length >= 8)          score++;
-        if (/[A-Z]/.test(val))        score++;
-        if (/[0-9]/.test(val))        score++;
-        if (/[^A-Za-z0-9]/.test(val)) score++;
-        const cls = {1:'active-weak',2:'active-medium',3:'active-medium',4:'active-strong'};
-        const lbl = {1:'Lemah',2:'Sedang',3:'Baik',4:'Kuat'};
-        const col = {1:'#ef4444',2:'#f59e0b',3:'#f59e0b',4:'#22c55e'};
-        for (let i = 0; i < score; i++) bars[i].classList.add(cls[score]);
-        text.textContent = lbl[score] || '';
-        text.style.color = col[score] || '#94a3b8';
+  // GANTI fungsi checkStrength yang lama dengan ini
+function checkStrength(val) {
+    const wrap = document.getElementById('strengthWrap');
+    const bars = ['bar1','bar2','bar3','bar4'].map(id => document.getElementById(id));
+    const text = document.getElementById('strengthText');
+    const hints = document.getElementById('passHints');
+
+    // Tampilkan/sembunyikan hint & bar
+    if (!val) {
+        wrap.style.display  = 'none';
+        hints.style.display = 'none';
+        return;
     }
+    wrap.style.display  = 'flex';
+    hints.style.display = 'flex';
+
+    // Update tiap hint
+    const setHint = (id, ok) => {
+        const el = document.getElementById(id);
+        el.classList.toggle('hint-ok', ok);
+    };
+    setHint('hint-length', val.length >= 6);
+    setHint('hint-upper',  /[A-Z]/.test(val));
+    setHint('hint-lower',  /[a-z]/.test(val));
+    setHint('hint-number', /[0-9]/.test(val));
+
+    // Strength score (min 6 karakter)
+    bars.forEach(b => b.className = 'bar');
+    let score = 0;
+    if (val.length >= 6)          score++;
+    if (/[A-Z]/.test(val))        score++;
+    if (/[0-9]/.test(val))        score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const cls = {1:'active-weak', 2:'active-medium', 3:'active-medium', 4:'active-strong'};
+    const lbl = {1:'Lemah', 2:'Sedang', 3:'Baik', 4:'Kuat'};
+    const col = {1:'#ef4444', 2:'#f59e0b', 3:'#f59e0b', 4:'#22c55e'};
+    for (let i = 0; i < score; i++) bars[i].classList.add(cls[score]);
+    text.textContent  = lbl[score] || '';
+    text.style.color  = col[score] || '#94a3b8';
+}
+
 </script>
 
 </body>

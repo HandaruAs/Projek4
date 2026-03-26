@@ -649,5 +649,133 @@ tbody td { padding: 13px 22px; font-size: 13.5px; vertical-align: middle; }
 }
 .topbar-user:hover .topbar-caret { transform: rotate(180deg); }
 
+/* ═══════════════════════════════════════════
+   GENERATE PREDIKSI — Tambahan
+═══════════════════════════════════════════ */
+
+/* Two-panel layout */
+.prediksi-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.panel-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 22px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    animation: fadeUp 0.35s ease both;
+}
+
+.panel-step-badge {
+    width: 26px; height: 26px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.panel-header { margin-bottom: 18px; }
+.panel-title  { font-size: 14.5px; font-weight: 700; color: var(--text-primary); }
+.panel-sub    { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* Upload zone */
+.upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 32px 20px;
+    text-align: center;
+    background: var(--bg);
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+.upload-zone:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+.upload-zone-icon {
+    font-size: 28px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: block;
+}
+.upload-zone-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.panel-footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.template-link {
+    font-size: 12.5px; font-weight: 600;
+    color: var(--accent); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px;
+    transition: opacity 0.15s;
+}
+.template-link:hover { opacity: 0.75; }
+
+/* Param grid 2x2 */
+.param-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px; 
+}
+.param-grid .param-full {
+    grid-column: 1 / -1;
+}
+
+/* Run model button */
+.btn-run-model {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #0f172a; color: #fff;
+    border: none; border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 13.5px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 10px rgba(15,23,42,0.18);
+}
+.btn-run-model:hover {
+    background: #1e293b;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(15,23,42,0.25);
+}
+
+/* Status badges */
+.badge-status-completed { background: #f0fdf4; color: #16a34a; }
+.badge-status-review    { background: #fffbeb; color: #b45309; }
+.badge-status-failed    { background: #fef2f2; color: #dc2626; }
+
+/* Pred action links */
+.pred-action-link {
+    font-size: 12px; font-weight: 600;
+    color: var(--accent); text-decoration: none;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+.pred-action-link:hover { opacity: 0.7; }
+.pred-action-link.retry { color: var(--red); }
+
+/* Pagination Previous/Next style */
+.page-btn-text {
+    padding: 6px 14px;
+    width: auto;
+}
+
 /* ── LOGOUT ── */
 .logout-form { display: none; }
