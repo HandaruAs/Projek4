@@ -103,8 +103,12 @@
                     <td class="date-text">{{ \Carbon\Carbon::parse($item->date)->format('M d, Y') }}</td>
                     <td>
                         <div class="action-group">
-                            <a href="/admin/harga/{{ $item->id }}/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                            <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                            <a href="/admin/harga/{{ $item->id }}/edit" class="btn-action-edit">
+                                <i class="fas fa-pen"></i> Edit
+                            </a>
+                            <button class="btn-action-delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -119,8 +123,12 @@
                 <td class="date-text">Oct 24, 2023</td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/harga/1/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/harga/1/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -133,8 +141,12 @@
                 <td class="date-text">Oct 24, 2023</td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/harga/2/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/harga/2/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -147,8 +159,12 @@
                 <td class="date-text">Oct 23, 2023</td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/harga/3/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/harga/3/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -161,8 +177,12 @@
                 <td class="date-text">Oct 23, 2023</td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/harga/4/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/harga/4/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -175,8 +195,12 @@
                 <td class="date-text">Oct 22, 2023</td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/harga/5/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/harga/5/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -189,8 +213,12 @@
                 <td class="date-text">Oct 22, 2023</td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/harga/6/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/harga/6/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -203,8 +231,12 @@
                 <td class="date-text">Oct 21, 2023</td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/harga/7/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/harga/7/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>

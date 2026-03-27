@@ -599,6 +599,7 @@ tbody td { padding: 13px 22px; font-size: 13.5px; vertical-align: middle; }
 .stat-card:nth-child(2) { animation-delay: 0.08s; }
 .stat-card:nth-child(3) { animation-delay: 0.12s; }
 .table-card, .card { animation: fadeUp 0.35s ease both; animation-delay: 0.15s; }
+.filter-bar { animation: fadeUp 0.35s ease both; animation-delay: 0.10s; }
 
 
 /* ═══════════════════════════════════════════
@@ -777,5 +778,205 @@ tbody td { padding: 13px 22px; font-size: 13.5px; vertical-align: middle; }
     width: auto;
 }
 
+/* ── ACTION BUTTONS MODERN ── */
+.btn-action-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.btn-action-edit:hover {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.btn-action-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.btn-action-delete:hover {
+    background: #ef4444;
+    color: #fff;
+    border-color: #ef4444;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+}
+
 /* ── LOGOUT ── */
 .logout-form { display: none; }
+/* ═══════════════════════════════════════════
+   MODERN UI OVERRIDES — Tambahan
+═══════════════════════════════════════════ */
+
+/* ── TOMBOL PRIMARY lebih hidup ── */
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35) !important;
+    border-radius: 10px !important;
+    letter-spacing: 0.1px;
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* ── TOMBOL SECONDARY lebih bersih ── */
+.btn-secondary {
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+}
+.btn-secondary:hover {
+    background: #f8fafc !important;
+    border-color: #6366f1 !important;
+    color: #6366f1 !important;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.12) !important;
+}
+
+/* ── ACTION EDIT — gradient pill style ── */
+.btn-action-edit {
+    background: linear-gradient(135deg, #eff6ff, #eef2ff) !important;
+    color: #4f46e5 !important;
+    border: 1px solid #c7d2fe !important;
+    border-radius: 20px !important;
+    padding: 5px 14px !important;
+    font-size: 11.5px !important;
+    letter-spacing: 0.1px;
+    box-shadow: 0 1px 4px rgba(99,102,241,0.1);
+}
+.btn-action-edit:hover {
+    background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+    color: #fff !important;
+    border-color: #4f46e5 !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
+    transform: translateY(-1px) !important;
+}
+.btn-action-edit i { font-size: 10px; }
+
+/* ── ACTION DELETE — icon rounded ── */
+.btn-action-delete {
+    background: #fef2f2 !important;
+    color: #ef4444 !important;
+    border: 1px solid #fecaca !important;
+    border-radius: 50% !important;
+    width: 30px !important;
+    height: 30px !important;
+    box-shadow: 0 1px 4px rgba(239,68,68,0.1);
+}
+.btn-action-delete:hover {
+    background: linear-gradient(135deg, #ef4444, #f97316) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35) !important;
+    transform: translateY(-1px) rotate(10deg) !important;
+}
+
+/* ── STAT CARDS — accent line warna berbeda tiap card ── */
+.stat-card:nth-child(1)::before { background: linear-gradient(90deg, #f97316, #fb923c); }
+.stat-card:nth-child(2)::before { background: linear-gradient(90deg, #10b981, #34d399); }
+.stat-card:nth-child(3)::before { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+.stat-card::before { opacity: 1 !important; }
+.stat-card:hover { box-shadow: 0 8px 24px rgba(15,23,42,0.1) !important; }
+
+/* ── FILTER BAR — lebih rounded ── */
+.filter-bar {
+    border-radius: 14px !important;
+    padding: 12px 16px !important;
+}
+
+/* ── TABLE ROWS — hover lebih stylish ── */
+tbody tr:hover {
+    background: linear-gradient(90deg, #f8fbff, #f5f3ff22) !important;
+}
+
+/* ── BADGE lebih modern ── */
+.badge-green {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7) !important;
+    color: #16a34a !important;
+    box-shadow: 0 1px 4px rgba(16,185,129,0.15);
+}
+.badge-orange {
+    background: linear-gradient(135deg, #fff7ed, #ffedd5) !important;
+    color: #ea580c !important;
+    box-shadow: 0 1px 4px rgba(249,115,22,0.15);
+}
+
+/* ── PAGE BTN pagination ── */
+.page-btn {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+.page-btn.active {
+    background: linear-gradient(135deg, #3b82f6, #6366f1) !important;
+    border-color: transparent !important;
+    box-shadow: 0 3px 10px rgba(99,102,241,0.3) !important;
+}
+
+/* ── ADD COMMODITY / PRIMARY BUTTON di filter ── */
+.filter-bar .btn-primary {
+    border-radius: 10px !important;
+    padding: 9px 20px !important;
+}
+
+/* ── SEARCH BOX ── */
+.search-box {
+    border-radius: 10px !important;
+}
+.search-box:focus-within {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important;
+}
+
+/* ── TABLE CARD shadow lebih dalam saat hover row ── */
+.table-card {
+    box-shadow: 0 2px 12px rgba(15,23,42,0.07) !important;
+    border-radius: 14px !important;
+}
+
+/* ── VIEW ALL button ── */
+.view-all {
+    background: linear-gradient(135deg, #eff6ff, #eef2ff) !important;
+    color: #4f46e5 !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    border: 1px solid #c7d2fe;
+}
+.view-all:hover {
+    background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(79,70,229,0.25) !important;
+}
+/* ── TABLE ACTIONS (search + view all) ── */
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
