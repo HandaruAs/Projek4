@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — PanganWatch Jember</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f0f2f5;--surface:#fff;--surface2:#f8fafc;--border:#e2e8f0;
+  --text:#1a202c;--muted:#718096;--muted2:#a0aec0;
+  --accent:#2563eb;--accent-light:#eff6ff;--accent-dark:#1d4ed8;
+  --green:#16a34a;--green-bg:#f0fdf4;--green-border:#bbf7d0;
+  --red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;
+  --yellow:#d97706;--yellow-bg:#fffbeb;--yellow-border:#fde68a;
+  --orange:#ea580c;--purple:#7c3aed;
+  --sidebar-w:220px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto}
+.sidebar-brand{display:flex;align-items:center;gap:.6rem;padding:1.1rem 1.25rem;border-bottom:1px solid var(--border)}
+.brand-icon{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;font-weight:700}
+.brand-name{font-size:.92rem;font-weight:700;color:var(--text)}
+.brand-sub{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.nav-section{padding:.75rem 1rem .25rem;font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted2)}
+.nav-item{display:flex;align-items:center;gap:.65rem;padding:.55rem 1rem;margin:.1rem .5rem;border-radius:7px;font-size:.83rem;color:var(--muted);cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--accent-light);color:var(--accent);font-weight:500}
+.nav-item .ni-icon{font-size:.9rem;width:18px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:1rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.65rem}
+.user-avatar{width:34px;height:34px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:600;flex-shrink:0}
+.user-name{font-size:.83rem;font-weight:500;color:var(--text)}
+.user-role{font-size:.7rem;color:var(--muted)}
+
+/* ── MAIN WRAP ── */
+.main-wrap{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;position:sticky;top:0;z-index:40}
+.topbar-title{font-size:.92rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:.5rem}
+.topbar-right{display:flex;align-items:center;gap:.75rem}
+.topbar-btn{display:flex;align-items:center;gap:.4rem;padding:.4rem .85rem;border-radius:7px;font-size:.78rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text);font-family:'Inter',sans-serif;transition:all .15s}
+.topbar-btn:hover{border-color:var(--accent);color:var(--accent)}
+.topbar-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.topbar-btn.primary:hover{background:var(--accent-dark)}
+.notif-btn{width:32px;height:32px;border-radius:7px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;color:var(--muted)}
+
+/* ── CONTENT ── */
+.content{padding:1.5rem 1.75rem;flex:1}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:1.5rem}
+.page-header h1{font-size:1.25rem;font-weight:700;color:var(--text);margin-bottom:.2rem}
+.page-header p{font-size:.8rem;color:var(--muted)}
+
+/* ── STAT CARDS ── */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;display:flex;align-items:flex-start;justify-content:space-between}
+.stat-card .sc-label{font-size:.73rem;color:var(--muted);margin-bottom:.3rem}
+.stat-card .sc-val{font-size:1.4rem;font-weight:700;color:var(--text);line-height:1.1}
+.stat-card .sc-sub{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+.stat-card .sc-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.95rem}
+.sc-icon.blue{background:var(--accent-light);color:var(--accent)}
+.sc-icon.green{background:var(--green-bg);color:var(--green)}
+.sc-icon.yellow{background:var(--yellow-bg);color:var(--yellow)}
+.sc-icon.orange{background:#fff7ed;color:var(--orange)}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap}
+.search-input{flex:1;min-width:200px;max-width:320px;position:relative}
+.search-input input{width:100%;background:#fff;border:1px solid var(--border);color:var(--text);padding:.5rem .85rem .5rem 2.1rem;border-radius:8px;font-size:.82rem;outline:none;font-family:'Inter',sans-serif}
+.search-input input:focus{border-color:var(--accent)}
+.search-input .si-icon{position:absolute;left:.7rem;top:50%;transform:translateY(-50%);color:var(--muted2);font-size:.82rem}
+.filter-select{background:#fff;border:1px solid var(--border);color:var(--text);padding:.5rem .85rem;border-radius:8px;font-size:.82rem;outline:none;font-family:'Inter',sans-serif;cursor:pointer}
+.filter-select:focus{border-color:var(--accent)}
+.ml-auto{margin-left:auto}
+
+/* ── TABLE ── */
+.table-card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.data-table th{background:var(--surface2);padding:.65rem 1rem;text-align:left;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+.data-table td{padding:.7rem 1rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#fafafa}
+.kom-cell{display:flex;align-items:center;gap:.65rem}
+.kom-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.kom-name{font-weight:500;color:var(--text);font-size:.83rem}
+.kom-cat{font-size:.7rem;color:var(--muted)}
+.harga-val{font-weight:600;color:var(--text)}
+.trigger-btns{display:flex;gap:.35rem}
+.trig-btn{padding:.22rem .6rem;border-radius:5px;font-size:.72rem;font-weight:600;border:none;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif}
+.trig-btn.t30{background:#dbeafe;color:#1d4ed8}.trig-btn.t30:hover{background:#bfdbfe}
+.trig-btn.t60{background:#dcfce7;color:#15803d}.trig-btn.t60:hover{background:#bbf7d0}
+.trig-btn.t90{background:#fef9c3;color:#a16207}.trig-btn.t90:hover{background:#fde68a}
+.trig-btn:disabled{opacity:.5;cursor:not-allowed}
+.action-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:.8rem;transition:all .15s}
+.action-btn:hover{border-color:var(--accent);color:var(--accent)}
+.action-btn.danger:hover{border-color:var(--red);color:var(--red)}
+
+/* ── PAGINATION ── */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
+.pg-controls{display:flex;align-items:center;gap:.35rem}
+.pg-btn{padding:.3rem .65rem;border-radius:5px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:.78rem;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.pg-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pg-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── PANEL (Generate Prediksi) ── */
+.panel-wrap{display:grid;grid-template-columns:1fr 1.4fr;gap:1.25rem;margin-top:1.5rem}
+.panel-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:1.25rem}
+.panel-title{font-size:.92rem;font-weight:600;color:var(--text);margin-bottom:.2rem}
+.panel-sub{font-size:.75rem;color:var(--muted);margin-bottom:1.25rem}
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:2rem;text-align:center;margin-bottom:1rem;background:var(--bg)}
+.upload-zone .uz-icon{font-size:1.75rem;margin-bottom:.5rem;color:var(--muted2)}
+.upload-zone p{font-size:.8rem;color:var(--muted);margin-bottom:.35rem}
+.upload-zone .uz-link{font-size:.78rem;color:var(--accent);cursor:pointer;text-decoration:underline}
+.upload-btn-row{display:flex;gap:.65rem}
+.field-sm{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.85rem}
+.field-sm label{font-size:.73rem;font-weight:600;color:var(--text)}
+.field-sm select,.field-sm input{background:#fff;border:1px solid var(--border);color:var(--text);padding:.5rem .7rem;border-radius:7px;font-size:.82rem;outline:none;font-family:'Inter',sans-serif}
+.field-sm select:focus,.field-sm input:focus{border-color:var(--accent)}
+.fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.step-row{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:1.1rem}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem}
+.step-content{flex:1}
+.step-title{font-size:.83rem;font-weight:600;color:var(--text);margin-bottom:.2rem}
+.step-sub{font-size:.73rem;color:var(--muted)}
+.run-btn{width:100%;padding:.8rem;border-radius:8px;background:#1a1a2e;color:#fff;border:none;font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.75rem}
+.run-btn:hover{background:#0f0f1e}
+.run-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── LOG TABLE ── */
+.log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem}
+.log-header h3{font-size:.88rem;font-weight:600}
+.view-all{font-size:.75rem;color:var(--accent);cursor:pointer;text-decoration:none}
+.status-badge{padding:.18rem .55rem;border-radius:999px;font-size:.68rem;font-weight:600}
+.sb-completed{background:var(--green-bg);color:var(--green)}
+.sb-running{background:var(--accent-light);color:var(--accent)}
+.sb-failed{background:var(--red-bg);color:var(--red)}
+.sb-review{background:var(--yellow-bg);color:var(--yellow)}
+
+/* ── USERS PAGE ── */
+.user-row-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-size:.75rem;font-weight:600;display:flex;align-items:center;justify-content:center}
+
+/* ── CHART PANEL ── */
+.chart-wrap{height:240px;position:relative;margin-top:.75rem}
+
+/* ── MISC ── */
+.badge{padding:.18rem .5rem;border-radius:4px;font-size:.68rem;font-weight:600}
+.badge-blue{background:var(--accent-light);color:var(--accent)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-gray{background:#f1f5f9;color:var(--muted)}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;align-items:center;justify-content:center;min-height:120px;color:var(--muted);font-size:.83rem;gap:.5rem}
+.spinner-dark{border-color:rgba(100,100,100,.2);border-top-color:var(--muted)}
+.empty{text-align:center;padding:2.5rem;color:var(--muted);font-size:.83rem}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1a202c;color:#fff;padding:.75rem 1.25rem;border-radius:8px;font-size:.83rem;z-index:999;display:none;align-items:center;gap:.5rem;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.show{display:flex}
+.toast.success{background:#15803d}
+.toast.error{background:#dc2626}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">PW</div>
+    <div>
+      <div class="brand-name">PANGANWATCH</div>
+      <div class="brand-sub">Admin Dashboard</div>
+    </div>
+  </div>
+
+  <div class="nav-section">Main Menu</div>
+  <a class="nav-item" onclick="showPage('dashboard')">
+    <span class="ni-icon">⊞</span> Overview
+  </a>
+  <a class="nav-item active" id="nav-data-harga" onclick="showPage('data-harga')">
+    <span class="ni-icon">📋</span> Data Harga
+  </a>
+  <a class="nav-item" onclick="showPage('prediksi')">
+    <span class="ni-icon">🔮</span> Prediksi Harga
+  </a>
+  <a class="nav-item" onclick="showPage('komoditas')">
+    <span class="ni-icon">🌾</span> Komoditas
+  </a>
+
+  <div class="nav-section">System</div>
+  <a class="nav-item" onclick="showPage('pengguna')">
+    <span class="ni-icon">👥</span> Pengguna
+  </a>
+  <a class="nav-item" onclick="logout()">
+    <span class="ni-icon">↩</span> Logout
+  </a>
+
+  <div class="sidebar-footer">
+    <div class="user-avatar" id="avatar-init">A</div>
+    <div>
+      <div class="user-name" id="sidebar-username">Admin</div>
+      <div class="user-role" id="sidebar-email" style="font-size:.68rem;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px"></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN WRAP -->
+<div class="main-wrap">
+
+  <!-- TOPBAR -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-title">
+      <span>⊞</span> <span id="topbar-title-text">Admin: Data Harga Management</span>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="showPage('prediksi')">🔮 Prediction Logs</button>
+      <button class="topbar-btn primary" id="topbar-reload-btn" onclick="reloadCurrentPage()">↻ Reload Data</button>
+      <div class="notif-btn">🔔</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══════════════════ PAGE: DASHBOARD ══════════════════ -->
+    <div id="page-dashboard" style="display:none">
+      <div class="page-header">
+        <h1>Overview Dashboard</h1>
+        <p>Ringkasan data harga pangan Kabupaten Jember</p>
+      </div>
+      <div class="stat-row" id="dash-stat-row">
+        <div class="stat-card"><div><div class="sc-label">Total Komoditas</div><div class="sc-val" id="d-komoditas">—</div><div class="sc-sub">Item Terdaftar</div></div><div class="sc-icon blue">📦</div></div>
+        <div class="stat-card"><div><div class="sc-label">Harga Tertinggi</div><div class="sc-val" id="d-harga-max">—</div><div class="sc-sub" id="d-harga-max-name">—</div></div><div class="sc-icon green">↗</div></div>
+        <div class="stat-card"><div><div class="sc-label">Total Records</div><div class="sc-val" id="d-records">—</div><div class="sc-sub" id="d-latest">—</div></div><div class="sc-icon yellow">🗄</div></div>
+        <div class="stat-card"><div><div class="sc-label">Harga Terendah</div><div class="sc-val" id="d-harga-min">—</div><div class="sc-sub" id="d-harga-min-name">—</div></div><div class="sc-icon orange">↘</div></div>
+      </div>
+      <div class="table-card">
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);font-size:.88rem;font-weight:600">Tabel Harga & Status Prediksi</div>
+        <div id="dash-table-wrap"><div class="loading"><div class="spinner spinner-dark"></div> Memuat...</div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PAGE: DATA HARGA ══════════════════ -->
+    <div id="page-data-harga">
+      <div class="page-header">
+        <h1>Tabel Harga &amp; Prediksi Aktif</h1>
+        <p>Kelola data harga harian dan jalankan prediksi per komoditas</p>
+      </div>
+
+      <!-- STAT ROW -->
+      <div class="stat-row">
+        <div class="stat-card"><div><div class="sc-label">Total Komoditas</div><div class="sc-val" id="st-komoditas">—</div><div class="sc-sub">Item Terdaftar</div></div><div class="sc-icon blue">📦</div></div>
+        <div class="stat-card"><div><div class="sc-label">Harga Tertinggi</div><div class="sc-val" id="st-harga-max">—</div><div class="sc-sub" id="st-harga-max-name">—</div></div><div class="sc-icon green">↗</div></div>
+        <div class="stat-card"><div><div class="sc-label">Total Records</div><div class="sc-val" id="st-records">—</div><div class="sc-sub" id="st-latest">—</div></div><div class="sc-icon yellow">🗄</div></div>
+        <div class="stat-card"><div><div class="sc-label">Harga Terendah</div><div class="sc-val" id="st-harga-min">—</div><div class="sc-sub" id="st-harga-min-name">—</div></div><div class="sc-icon orange">↘</div></div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <div class="search-input">
+          <span class="si-icon">🔍</span>
+          <input type="text" id="search-komoditas" placeholder="Cari komoditas..." oninput="filterTable()">
+        </div>
+        <select class="filter-select" id="filter-kategori" onchange="filterTable()">
+          <option value="">Semua Kategori</option>
+        </select>
+        <div class="ml-auto" style="display:flex;gap:.5rem">
+          <button class="topbar-btn" onclick="showPage('prediksi')">🔮 Generate Prediksi</button>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-card">
+        <table class="data-table" id="harga-table">
+          <thead>
+            <tr>
+              <th>Komoditas</th>
+              <th>Harga Saat Ini (RP)</th>
+              <th>Satuan</th>
+              <th>Data Terakhir</th>
+              <th>Trigger Prediksi</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="harga-tbody">
+            <tr><td colspan="6"><div class="loading"><div class="spinner spinner-dark"></div> Memuat dari MongoDB...</div></td></tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <span id="pg-info-dh">—</span>
+          <div class="pg-controls" id="pg-controls-dh"></div>
+        </div>
+      </div>
+
+      <!-- CHART DETAIL -->
+      <div id="chart-panel" style="display:none;margin-top:1.25rem">
+        <div class="table-card" style="padding:1.25rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <div>
+              <div style="font-size:.92rem;font-weight:600" id="chart-title">—</div>
+              <div style="font-size:.75rem;color:var(--muted)" id="chart-meta">—</div>
+            </div>
+            <button class="topbar-btn" onclick="document.getElementById('chart-panel').style.display='none'">✕ Tutup</button>
+          </div>
+          <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PAGE: PREDIKSI ══════════════════ -->
+    <div id="page-prediksi" style="display:none">
+      <div class="page-header">
+        <h1>Generate Prediksi</h1>
+        <p>Forecasting management and historical data pipeline.</p>
+      </div>
+
+      <div class="panel-wrap">
+        <!-- KIRI: FORM -->
+        <div>
+          <div class="panel-card" style="margin-bottom:1.25rem">
+            <div class="step-row">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Import Historical Data</div>
+                <div class="step-sub">Upload latest price records</div>
+              </div>
+            </div>
+            <div class="upload-zone" style="padding:1.25rem">
+              <div class="uz-icon" style="font-size:1.4rem">📄</div>
+              <p>Drop Excel or CSV file</p>
+              <span class="uz-link">Browse Files</span>
+            </div>
+            <div class="upload-btn-row" style="margin-top:.75rem">
+              <button class="topbar-btn" style="flex:1">⬇ Template</button>
+              <button class="topbar-btn primary" style="flex:1">✓ Validate &amp; Upload</button>
+            </div>
+          </div>
+          <div class="panel-card">
+            <div class="step-row">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Model Parameters</div>
+                <div class="step-sub">Configure Holt-Winters forecasting settings</div>
+              </div>
+            </div>
+            <div class="fields-grid">
+              <div class="field-sm">
+                <label>Commodity Focus</label>
+                <select id="pred-komoditas">
+                  <option value="">— Semua —</option>
+                </select>
+              </div>
+              <div class="field-sm">
+                <label>Prediction Horizon</label>
+                <select id="pred-horizon">
+                  <option value="30">30 Days</option>
+                  <option value="60">60 Days</option>
+                  <option value="90">90 Days</option>
+                </select>
+              </div>
+            </div>
+            <button class="run-btn" id="run-pred-btn" onclick="runPrediksi()" style="margin-top:.5rem">
+              ✦ Run Prediction Model
+            </button>
+          </div>
+        </div>
+
+        <!-- KANAN: LOG -->
+        <div class="panel-card" style="display:flex;flex-direction:column">
+          <div class="log-header" style="margin-bottom:.75rem">
+            <h3>Prediction History</h3>
+            <span class="view-all" onclick="loadPredLogs()">↻ Refresh</span>
+          </div>
+          <div style="overflow-y:auto;flex:1;max-height:420px;border:1px solid var(--border);border-radius:8px">
+            <table class="data-table" style="font-size:.78rem;table-layout:fixed;width:100%;border-collapse:collapse">
+              <thead style="position:sticky;top:0;z-index:1;background:var(--surface2)">
+                <tr>
+                  <th style="width:80px">Tanggal</th>
+                  <th>Komoditas</th>
+                  <th style="width:55px;text-align:center">Hari</th>
+                  <th style="width:60px;text-align:right">MAE</th>
+                  <th style="width:65px;text-align:right">RMSE</th>
+                  <th style="width:95px;text-align:center">Status</th>
+                  <th style="width:70px;text-align:center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="pred-log-tbody">
+                <tr><td colspan="7"><div class="loading"><div class="spinner spinner-dark"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="pred-log-footer" style="padding:.5rem .25rem;font-size:.72rem;color:var(--muted);margin-top:.5rem">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PAGE: KOMODITAS ══════════════════ -->
+    <div id="page-komoditas" style="display:none">
+      <div class="page-header">
+        <h1>Kelola Komoditas</h1>
+        <p>Daftar komoditas yang tersedia di database</p>
+      </div>
+      <div class="table-card">
+        <div class="toolbar" style="padding:.75rem 1rem;border-bottom:1px solid var(--border)">
+          <div class="search-input">
+            <span class="si-icon">🔍</span>
+            <input type="text" id="search-kom2" placeholder="Cari komoditas..." oninput="filterKomTable()">
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Komoditas</th><th>Kategori</th><th>Satuan</th><th>Harga Kini</th><th>Data Terakhir</th><th>Total Records</th></tr></thead>
+          <tbody id="kom-tbody">
+            <tr><td colspan="6"><div class="loading"><div class="spinner spinner-dark"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PAGE: PENGGUNA ══════════════════ -->
+    <div id="page-pengguna" style="display:none">
+      <div class="page-header">
+        <h1>Kelola Pengguna</h1>
+        <p>Daftar user yang terdaftar di sistem</p>
+      </div>
+      <div class="table-card">
+        <table class="data-table">
+          <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Terdaftar</th></tr></thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="4"><div class="loading"><div class="spinner spinner-dark"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main-wrap -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+let allKomoditas = [];
+let filteredKomoditas = [];
+let currentPage = 1;
+const perPage = 8;
+let mainChart = null;
+let currentChartKom = null;
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('/api/auth/me').then(r=>r.json()).then(d => {
+    if (d.logged_in) {
+      document.getElementById('sidebar-username').textContent = d.username;
+      document.getElementById('sidebar-email').textContent    = d.email || '';
+      document.getElementById('avatar-init').textContent      = (d.username||'A')[0].toUpperCase();
+    }
+  });
+  showPage('data-harga');
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// PAGE ROUTING
+// ═══════════════════════════════════════════════════════════════════
+const pageConfig = {
+  'dashboard':  {title:'Overview Dashboard',        topbar:'Overview'},
+  'data-harga': {title:'Data Harga Management',     topbar:'Admin: Data Harga Management'},
+  'prediksi':   {title:'Generate Prediksi',         topbar:'Generate Prediksi'},
+  'komoditas':  {title:'Kelola Komoditas',          topbar:'Kelola Komoditas'},
+  'pengguna':   {title:'Kelola Pengguna',           topbar:'Pengguna'},
+};
+
+function showPage(name) {
+  // Hide all pages
+  document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+  // Active nav
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  // Show target
+  const target = document.getElementById('page-'+name);
+  if (target) target.style.display = '';
+  // Topbar
+  const cfg = pageConfig[name] || {};
+  document.getElementById('topbar-title-text').textContent = cfg.topbar || name;
+  // Load data
+  if (name === 'dashboard')  loadDashboard();
+  if (name === 'data-harga') loadDataHarga();
+  if (name === 'prediksi')   { loadPredLogs(); loadKomSelectPred(); }
+  if (name === 'komoditas')  loadKomPage();
+  if (name === 'pengguna')   loadUsers();
+}
+
+function reloadCurrentPage() {
+  const visible = document.querySelector('[id^="page-"]:not([style*="none"])');
+  if (visible) showPage(visible.id.replace('page-',''));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════
+async function loadDashboard() {
+  const [statsRes, komRes] = await Promise.all([
+    fetch('/api/admin/stats'),
+    fetch('/api/admin/komoditas_detail'),
+  ]);
+  const stats = await statsRes.json();
+  const koms  = await komRes.json();
+
+  document.getElementById('d-komoditas').textContent = stats.total_komoditas;
+  document.getElementById('d-records').textContent   = stats.total_records.toLocaleString('id-ID');
+  document.getElementById('d-latest').textContent    = 'Data s/d ' + stats.latest_date;
+
+  if (koms.length) {
+    const sorted = [...koms].sort((a,b) => b.harga_kini - a.harga_kini);
+    document.getElementById('d-harga-max').textContent      = 'Rp ' + sorted[0].harga_kini.toLocaleString('id-ID');
+    document.getElementById('d-harga-max-name').textContent = sorted[0].nama;
+    document.getElementById('d-harga-min').textContent      = 'Rp ' + sorted[sorted.length-1].harga_kini.toLocaleString('id-ID');
+    document.getElementById('d-harga-min-name').textContent = sorted[sorted.length-1].nama;
+  }
+
+  let html = `<table class="data-table"><thead><tr>
+    <th>Komoditas</th><th>Kategori</th><th>Harga Kini</th><th>Satuan</th><th>Records</th>
+  </tr></thead><tbody>`;
+  koms.slice(0,10).forEach(k => {
+    html += `<tr>
+      <td><div class="kom-cell"><div class="kom-icon" style="background:#eff6ff">${k.nama[0]}</div>
+        <div><div class="kom-name">${k.nama}</div></div></div></td>
+      <td><span class="badge badge-blue">${k.kategori}</span></td>
+      <td class="harga-val">Rp ${k.harga_kini.toLocaleString('id-ID')}</td>
+      <td>${k.satuan}</td>
+      <td>${k.total_rec.toLocaleString('id-ID')}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('dash-table-wrap').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA HARGA PAGE
+// ═══════════════════════════════════════════════════════════════════
+async function loadDataHarga() {
+  const [statsRes, komRes] = await Promise.all([
+    fetch('/api/admin/stats'),
+    fetch('/api/admin/komoditas_detail'),
+  ]);
+  const stats = await statsRes.json();
+  const koms  = await komRes.json();
+
+  // Stats row
+  document.getElementById('st-komoditas').textContent = stats.total_komoditas;
+  document.getElementById('st-records').textContent   = stats.total_records.toLocaleString('id-ID');
+  document.getElementById('st-latest').textContent    = 'Data s/d ' + stats.latest_date;
+
+  if (koms.length) {
+    const sorted = [...koms].sort((a,b) => b.harga_kini - a.harga_kini);
+    document.getElementById('st-harga-max').textContent      = 'Rp ' + sorted[0].harga_kini.toLocaleString('id-ID');
+    document.getElementById('st-harga-max-name').textContent = sorted[0].nama;
+    document.getElementById('st-harga-min').textContent      = 'Rp ' + sorted[sorted.length-1].harga_kini.toLocaleString('id-ID');
+    document.getElementById('st-harga-min-name').textContent = sorted[sorted.length-1].nama;
+  }
+
+  allKomoditas = koms;
+
+  // Populate kategori filter
+  const cats = [...new Set(koms.map(k=>k.kategori).filter(Boolean))].sort();
+  const catSel = document.getElementById('filter-kategori');
+  catSel.innerHTML = '<option value="">Semua Kategori</option>' +
+    cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+
+  filterTable();
+}
+
+function filterTable() {
+  const q    = document.getElementById('search-komoditas').value.toLowerCase();
+  const cat  = document.getElementById('filter-kategori').value;
+  filteredKomoditas = allKomoditas.filter(k => {
+    const matchQ   = !q || k.nama.toLowerCase().includes(q) || (k.kategori||'').toLowerCase().includes(q);
+    const matchCat = !cat || k.kategori === cat;
+    return matchQ && matchCat;
+  });
+  currentPage = 1;
+  renderTable();
+}
+
+function renderTable() {
+  const start = (currentPage-1)*perPage;
+  const slice = filteredKomoditas.slice(start, start+perPage);
+  const total = filteredKomoditas.length;
+  const totalPages = Math.ceil(total/perPage);
+
+  const iconColors = ['#eff6ff','#f0fdf4','#fef9c3','#fff7ed','#fdf4ff','#fef2f2'];
+  let html = '';
+  slice.forEach((k,i) => {
+    const bg = iconColors[(start+i) % iconColors.length];
+    html += `<tr>
+      <td>
+        <div class="kom-cell">
+          <div class="kom-icon" style="background:${bg}">${k.nama[0]}</div>
+          <div>
+            <div class="kom-name">${k.nama}</div>
+            <div class="kom-cat">${k.kategori||'—'}</div>
+          </div>
+        </div>
+      </td>
+      <td class="harga-val">Rp ${k.harga_kini.toLocaleString('id-ID')}</td>
+      <td>${k.satuan}</td>
+      <td>${k.last_date}</td>
+      <td>
+        <div class="trigger-btns">
+          <button class="trig-btn t30" onclick="triggerPred('${k.nama}',30,this)">30 Hari</button>
+          <button class="trig-btn t60" onclick="triggerPred('${k.nama}',60,this)">60 Hari</button>
+          <button class="trig-btn t90" onclick="triggerPred('${k.nama}',90,this)">90 Hari</button>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;gap:.3rem">
+          <button class="action-btn" title="Lihat grafik" onclick="showChart('${k.nama}')">📈</button>
+          <button class="action-btn" title="Lihat raw data" onclick="showPage('prediksi')">🔮</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('harga-tbody').innerHTML = html || '<tr><td colspan="6"><div class="empty">Tidak ada data</div></td></tr>';
+
+  // Pagination info
+  document.getElementById('pg-info-dh').textContent =
+    `Menampilkan ${start+1} sampai ${Math.min(start+perPage, total)} dari ${total} data`;
+
+  // Pagination buttons
+  let pg = '';
+  if (totalPages > 1) {
+    pg += `<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>Previous</button>`;
+    for (let p=1; p<=totalPages; p++) {
+      if (p===1||p===totalPages||Math.abs(p-currentPage)<=1) {
+        pg += `<button class="pg-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+      } else if (Math.abs(p-currentPage)===2) {
+        pg += `<span style="padding:.3rem .4rem;color:var(--muted)">…</span>`;
+      }
+    }
+    pg += `<button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next</button>`;
+  }
+  document.getElementById('pg-controls-dh').innerHTML = pg;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(filteredKomoditas.length/perPage);
+  currentPage = Math.max(1, Math.min(p, totalPages));
+  renderTable();
+}
+
+// ─── Trigger prediksi dari tabel ──────────────────────────────────
+async function triggerPred(komoditas, steps, btn) {
+  const row = btn.closest('tr');
+  const btns = row.querySelectorAll('.trig-btn');
+  btns.forEach(b => b.disabled = true);
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const r = await fetch('/api/admin/run_prediksi', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({komoditas, steps})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      showToast(`✓ Prediksi ${komoditas} ${steps}h selesai — Akurasi ${d.accuracy.accuracy??'—'}%`, 'success');
+    } else {
+      showToast('Gagal: ' + (d.error||'Unknown error'), 'error');
+    }
+  } catch(e) {
+    showToast('Error: '+e.message, 'error');
+  }
+  btns.forEach(b => b.disabled = false);
+  btn.textContent = steps + ' Hari';
+}
+
+// ─── Chart detail ──────────────────────────────────────────────────
+async function showChart(komoditas) {
+  currentChartKom = komoditas;
+  document.getElementById('chart-panel').style.display = '';
+  document.getElementById('chart-title').textContent   = komoditas;
+  document.getElementById('chart-meta').textContent    = 'Memuat data...';
+
+  const [hRes, pRes] = await Promise.all([
+    fetch(`/api/historis/${encodeURIComponent(komoditas)}?days=90`),
+    fetch(`/api/prediksi/${encodeURIComponent(komoditas)}?steps=30&cache=1`)
+  ]);
+  const hist = await hRes.json();
+  const pred = await pRes.json();
+
+  document.getElementById('chart-meta').textContent =
+    `Harga terakhir: Rp ${pred.harga_terakhir.toLocaleString('id-ID')} / ${pred.satuan} — Akurasi: ${pred.accuracy.accuracy??'—'}%`;
+
+  buildMainChart(hist, pred);
+  document.getElementById('chart-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function buildMainChart(hist, pred) {
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  if (mainChart) mainChart.destroy();
+
+  const allVals = [...hist.harga, ...pred.forecast,
+    ...(pred.ci_lower||[]), ...(pred.ci_upper||[])].filter(v=>v!=null&&!isNaN(v));
+  const dMin = Math.min(...allVals), dMax = Math.max(...allVals);
+  const pad  = Math.max((dMax-dMin)*0.2, dMin*0.005, 500);
+  const yMin = Math.floor((dMin-pad)/500)*500;
+  const yMax = Math.ceil((dMax+pad)/500)*500;
+
+  const ds = [
+    {label:'Historis',data:hist.harga.map((v,i)=>({x:hist.tanggal[i],y:v})),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.06)',borderWidth:2,pointRadius:0,tension:.3,fill:false},
+    {label:'Forecast',data:pred.forecast.map((v,i)=>({x:pred.tanggal_pred[i],y:v})),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.06)',borderWidth:2,borderDash:[5,3],pointRadius:0,tension:.3,fill:false},
+  ];
+  if (pred.ci_lower && pred.ci_upper) {
+    ds.push({label:'CI+',data:pred.ci_upper.map((v,i)=>({x:pred.tanggal_pred[i],y:v})),borderColor:'rgba(245,158,11,.2)',backgroundColor:'rgba(245,158,11,.07)',borderWidth:.5,pointRadius:0,tension:.3,fill:'+1'});
+    ds.push({label:'CI-',data:pred.ci_lower.map((v,i)=>({x:pred.tanggal_pred[i],y:v})),borderColor:'rgba(245,158,11,.2)',backgroundColor:'rgba(245,158,11,.07)',borderWidth:.5,pointRadius:0,tension:.3,fill:false});
+  }
+
+  mainChart = new Chart(ctx, {type:'line',data:{datasets:ds},options:{
+    responsive:true,maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{labels:{color:'#718096',font:{family:'Inter',size:11},boxWidth:12,filter:i=>!i.text.startsWith('CI')}},
+      tooltip:{backgroundColor:'#fff',borderColor:'#e2e8f0',borderWidth:1,titleColor:'#1a202c',bodyColor:'#718096',
+        callbacks:{label:c=>{if(c.dataset.label.startsWith('CI'))return null;return ` ${c.dataset.label}: Rp ${Math.round(c.parsed.y).toLocaleString('id-ID')}`}}}
+    },
+    scales:{
+      x:{type:'category',ticks:{color:'#a0aec0',maxRotation:0,maxTicksLimit:9,font:{size:10}},grid:{color:'rgba(226,232,240,.8)'}},
+      y:{min:yMin,max:yMax,ticks:{color:'#a0aec0',maxTicksLimit:6,callback:v=>'Rp '+Math.round(v).toLocaleString('id-ID'),font:{size:10}},grid:{color:'rgba(226,232,240,.8)'}}
+    }
+  }});
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PREDIKSI PAGE
+// ═══════════════════════════════════════════════════════════════════
+async function loadKomSelectPred() {
+  const r = await fetch('/api/komoditas');
+  const list = await r.json();
+  const sel = document.getElementById('pred-komoditas');
+  sel.innerHTML = '<option value="">— Semua —</option>' +
+    list.map(k=>`<option value="${k}">${k}</option>`).join('');
+}
+
+async function runPrediksi() {
+  const k     = document.getElementById('pred-komoditas').value;
+  const steps = parseInt(document.getElementById('pred-horizon').value)||30;
+  if (!k) { showToast('Pilih komoditas terlebih dahulu', 'error'); return; }
+
+  const btn = document.getElementById('run-pred-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+
+  try {
+    const r = await fetch('/api/admin/run_prediksi', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({komoditas: k, steps})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      showToast(`✓ Prediksi ${k} ${steps}h selesai — Akurasi ${d.accuracy.accuracy??'—'}%`, 'success');
+      loadPredLogs();
+    } else {
+      showToast('Gagal: '+(d.error||'Unknown'), 'error');
+    }
+  } catch(e) {
+    showToast('Error: '+e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '✦ Run Prediction Model';
+}
+
+async function loadPredLogs() {
+  document.getElementById('pred-log-tbody').innerHTML =
+    '<tr><td colspan="7"><div class="loading"><div class="spinner spinner-dark"></div></div></td></tr>';
+  const r = await fetch('/api/admin/prediction_logs?limit=20');
+  const data = await r.json();
+
+  if (!data.length) {
+    document.getElementById('pred-log-tbody').innerHTML =
+      '<tr><td colspan="7"><div class="empty">Belum ada riwayat prediksi</div></td></tr>';
+    return;
+  }
+
+  let html = '';
+  data.forEach(d => {
+    const statusMap = {completed:'sb-completed',running:'sb-running',failed:'sb-failed','review needed':'sb-review'};
+    const sc = statusMap[d.status] || 'sb-completed';
+    const statusLabel = {completed:'COMPLETED',running:'RUNNING',failed:'FAILED','review needed':'REVIEW NEEDED'};
+    html += `<tr>
+      <td style="color:var(--muted);font-size:.72rem;white-space:nowrap;line-height:1.4">${(()=>{
+        try{const dt=new Date(d.created_at);const m=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        return dt.getDate()+' '+m[dt.getMonth()]+'<br>'+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');}
+        catch(e){return d.created_at;}})()}</td>
+      <td style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0">${d.commodity}</td>
+      <td style="text-align:center;white-space:nowrap">${d.steps}h</td>
+      <td>${d.accuracy_mae != null ? d.accuracy_mae.toFixed(2) : '—'}</td>
+      <td>${d.accuracy_rmse != null ? d.accuracy_rmse.toFixed(2) : '—'}</td>
+      <td><span class="status-badge ${sc}">${statusLabel[d.status]||d.status.toUpperCase()}</span></td>
+      <td><a style="font-size:.73rem;color:var(--accent);cursor:pointer" onclick="showPage('data-harga');setTimeout(()=>showChart('${d.commodity}'),300)">View Report</a></td>
+    </tr>`;
+  });
+  document.getElementById('pred-log-tbody').innerHTML = html;
+  document.getElementById('pred-log-footer').textContent =
+    `Showing ${data.length} results`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// KOMODITAS PAGE
+// ═══════════════════════════════════════════════════════════════════
+let allKomPage = [];
+async function loadKomPage() {
+  const r    = await fetch('/api/admin/komoditas_detail');
+  allKomPage = await r.json();
+  renderKomTable(allKomPage);
+}
+
+function filterKomTable() {
+  const q = document.getElementById('search-kom2').value.toLowerCase();
+  renderKomTable(allKomPage.filter(k => k.nama.toLowerCase().includes(q) || (k.kategori||'').toLowerCase().includes(q)));
+}
+
+function renderKomTable(list) {
+  if (!list.length) {
+    document.getElementById('kom-tbody').innerHTML = '<tr><td colspan="6"><div class="empty">Tidak ada data</div></td></tr>';
+    return;
+  }
+  const iconColors = ['#eff6ff','#f0fdf4','#fef9c3','#fff7ed','#fdf4ff','#fef2f2'];
+  let html = '';
+  list.forEach((k,i) => {
+    html += `<tr>
+      <td><div class="kom-cell">
+        <div class="kom-icon" style="background:${iconColors[i%iconColors.length]}">${k.nama[0]}</div>
+        <div class="kom-name">${k.nama}</div>
+      </div></td>
+      <td><span class="badge badge-blue">${k.kategori||'—'}</span></td>
+      <td>${k.satuan}</td>
+      <td class="harga-val">Rp ${k.harga_kini.toLocaleString('id-ID')}</td>
+      <td>${k.last_date}</td>
+      <td>${k.total_rec.toLocaleString('id-ID')}</td>
+    </tr>`;
+  });
+  document.getElementById('kom-tbody').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PENGGUNA PAGE
+// ═══════════════════════════════════════════════════════════════════
+async function loadUsers() {
+  const r    = await fetch('/api/admin/users_list');
+  const data = await r.json();
+
+  if (!data.length) {
+    document.getElementById('users-tbody').innerHTML = '<tr><td colspan="5"><div class="empty">Belum ada pengguna</div></td></tr>';
+    return;
+  }
+  let html = '';
+  data.forEach(u => {
+    const init    = (u.name||u.email||'?')[0].toUpperCase();
+    const roleTag = u.role==='admin'
+      ? '<span class="badge badge-blue">Admin</span>'
+      : '<span class="badge badge-gray">User</span>';
+    const statusTag = u.is_active
+      ? '<span class="badge" style="background:#dcfce7;color:#15803d">Aktif</span>'
+      : '<span class="badge" style="background:#fee2e2;color:#b91c1c">Nonaktif</span>';
+    html += `<tr>
+      <td><div class="kom-cell">
+        <div class="user-row-avatar">${init}</div>
+        <div>
+          <div class="kom-name">${u.name||'—'}</div>
+          <div class="kom-cat" style="font-size:.7rem">${u.email||'—'}</div>
+        </div>
+      </div></td>
+      <td style="font-size:.82rem;color:var(--muted)">${u.email||'—'}</td>
+      <td>${roleTag}</td>
+      <td>${statusTag}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${u.created_at}</td>
+    </tr>`;
+  });
+  document.getElementById('users-tbody').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+async function logout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+</script>
+</body>
+</html>

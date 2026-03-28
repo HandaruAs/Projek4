@@ -29,7 +29,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState?.validate() ?? false) {
-
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       final success = await authProvider.login(
@@ -40,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (success) {
-
         final user = authProvider.currentUser;
 
         // Hanya admin yang boleh masuk
@@ -50,19 +48,14 @@ class _LoginScreenState extends State<LoginScreen> {
               builder: (_) => const MainScreen(),
             ),
           );
-
         } else {
-
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => const UserMainScreen(),
             ),
           );
-
         }
-
       } else {
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage ?? 'Login gagal'),
@@ -87,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 40),
-                      
+
                       // Header
                       Center(
                         child: Container(
@@ -108,10 +101,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       Center(
                         child: Text(
                           'Selamat Datang',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1976D2),
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1976D2),
+                              ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -125,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 40),
-                      
+
                       // Form
                       Form(
                         key: _formKey,
@@ -150,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             const SizedBox(height: 16),
-                            
+
                             // Password Field
                             TextFormField(
                               controller: _passwordController,
@@ -185,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Login Button
                       ElevatedButton(
                         onPressed: authProvider.isLoading ? null : _handleLogin,
@@ -198,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Forgot Password Link
                       Center(
                         child: TextButton(
@@ -209,17 +205,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             );
                           },
-                          child: Text(
+                          child: const Text(
                             'Lupa Password?',
                             style: TextStyle(
-                              color: const Color(0xFF1976D2),
+                              color: Color(0xFF1976D2),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Register Link
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -250,10 +246,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              
+
               // Loading Overlay
-              if (authProvider.isLoading)
-                const LoadingWidget(),
+              if (authProvider.isLoading) const LoadingWidget(),
             ],
           );
         },

@@ -28,7 +28,7 @@ class CommodityModel {
     double previous = (json['previous_price'] ?? 0).toDouble();
     double change = current - previous;
     bool isIncreasing = change > 0;
-    
+
     return CommodityModel(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
@@ -37,7 +37,9 @@ class CommodityModel {
       currentPrice: current,
       previousPrice: previous,
       priceChange: change.abs(),
-      changePercentage: previous != 0 ? ((change / previous) * 100).toStringAsFixed(1) + '%' : '0%',
+      changePercentage: previous != 0
+          ? '${((change / previous) * 100).toStringAsFixed(1)}%'
+          : '0%',
       isIncreasing: isIncreasing,
       imageUrl: json['image_url'],
     );

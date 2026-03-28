@@ -7,17 +7,15 @@ use App\Http\Controllers\Api\CommodityController;
 use App\Http\Controllers\Api\PriceHistoryController;
 use App\Http\Controllers\Api\PredictionController;
 
-Route::get('/test', function () {
-    return response()->json([
-        'status' => 'success',
-        'message' => 'API Laravel berhasil diakses',
-        'server_time' => now()
-    ]);
-});
+// ── Authentication ──────────────────────────────────────
+Route::post('/login',           [AuthController::class, 'login']);
+Route::post('/register/user',   [AuthController::class, 'registerUser']);
+Route::post('/register/admin',  [AuthController::class, 'registerAdmin']);
 
-// Handle API routes for authentication
-Route::post('/login', [AuthController::class,'login']);
+// ── Forgot Password Flow (OTP) ──────────────────────────
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']); // 1. Kirim OTP
+Route::post('/verify-otp',      [AuthController::class, 'verifyOtp']);       // 2. Verifikasi OTP
+Route::post('/reset-password',  [AuthController::class, 'resetPassword']);   // 3. Set password baru
 
-Route::post('/register/user', [AuthController::class,'registerUser']);
-Route::post('/register/admin', [AuthController::class,'registerAdmin']);
-Route::middleware('auth:api')->post('/logout', [AuthController::class,'logout']);
+// ── Protected Routes ────────────────────────────────────
+Route::middleware('auth:api')->post('/logout', [AuthController::class, 'logout']);

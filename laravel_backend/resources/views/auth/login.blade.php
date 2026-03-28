@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login — SIMOPANG Admin</title>
+    <title>Login — SIMOPANG</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ asset('css/loginadmin.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/login.css') }}" rel="stylesheet">
 </head>
 <body>
 
 <nav class="navbar">
     <a href="/" class="navbar-brand">
         <div class="brand-icon"><i class="fas fa-chart-line"></i></div>
-        <span class="brand-name">SIMOPANG Admin</span>
+        <span class="brand-name">SIMOPANG</span>
     </a>
     <div class="navbar-links">
         <a href="#"><i class="fas fa-circle-question"></i>Bantuan</a>
@@ -52,7 +52,7 @@
                 </div>
             </div>
 
-            <div class="left-title">Panel Administrasi</div>
+            <div class="left-title">Panel SIMOPANG</div>
             <div class="left-desc">
                 Kelola operasional dan data sistem dengan aman
                 melalui enkripsi MongoDB dan Laravel Auth.
@@ -65,10 +65,7 @@
 
         <div class="login-right">
 
-            <div class="form-tag">
-                <i class="fas fa-lock"></i>
-                Admin Access
-            </div>
+            {{-- [~] Badge "Admin Access" dihapus --}}
 
             <div class="form-heading">Selamat Datang 👋</div>
             <div class="form-subheading">
@@ -123,7 +120,7 @@
                 <div class="form-group">
                     <div class="label-row">
                         <label class="form-label" for="password">Password</label>
-                        <a href="#" class="forgot-link">Lupa Password?</a>
+                        <a href="{{ route('forgot.password') }}" class="forgot-link">Lupa Password?</a>
                     </div>
                     <div class="input-wrapper">
                         <i class="fas fa-lock input-icon"></i>
@@ -157,14 +154,14 @@
                 </div>
 
                 <button type="submit" class="btn-login">
-                    Login Ke Panel Admin
+                    Login
                     <i class="fas fa-arrow-right-to-bracket"></i>
                 </button>
 
             </form>
 
             <div class="register-redirect">
-                Belum punya akun? <a href="{{ route('register.admin') }}">Daftar di sini</a>
+                Belum punya akun? <a href="{{ route('register') }}">Daftar di sini</a>
             </div>
 
             <div class="powered-by">

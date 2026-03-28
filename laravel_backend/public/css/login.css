@@ -500,7 +500,10 @@ body {
     transition: opacity 0.15s;
 }
 
-.forgot-link:hover { opacity: 0.7; }
+.forgot-link:hover {
+    opacity: 0.7;
+    text-decoration: underline;
+}
 
 .input-wrapper {
     position: relative;

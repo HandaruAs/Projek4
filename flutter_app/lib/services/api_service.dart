@@ -8,7 +8,7 @@ class ApiService {
   ApiService._internal();
 
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://192.168.1.103:8000/api',
+    baseUrl: 'http://192.168.1.101:8000/api',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -21,7 +21,6 @@ class ApiService {
 
   Future<void> _addAuthHeader() async {
     String? token = await _storageService.getToken();
-
     if (token != null && token.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Bearer $token';
     }
@@ -32,16 +31,15 @@ class ApiService {
     try {
       final response = await _dio.post(
         '/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
-
-      print(response.data);
       return Map<String, dynamic>.from(response.data);
-
     } on DioException catch (e) {
+      // ✅ Kalau server return error (401, 422, dll), kembalikan response-nya
+      // supaya auth_service bisa baca 'status' dan 'message'-nya
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -53,13 +51,8 @@ class ApiService {
     String password, {
     String role = "user",
   }) async {
-
     try {
-
-      final endpoint = role == "admin"
-          ? '/register/admin'
-          : '/register/user';
-
+      final endpoint = role == "admin" ? '/register/admin' : '/register/user';
       final response = await _dio.post(
         endpoint,
         data: {
@@ -69,10 +62,12 @@ class ApiService {
           'password_confirmation': password,
         },
       );
-
       return Map<String, dynamic>.from(response.data);
-
     } on DioException catch (e) {
+      // ✅ Kembalikan response error dari server (termasuk pesan "email sudah terdaftar")
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -82,14 +77,55 @@ class ApiService {
     try {
       final response = await _dio.post(
         '/forgot-password',
+        data: {'email': email},
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
+      throw _handleError(e);
+    }
+  }
+
+  // VERIFY OTP
+  Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
+    try {
+      final response = await _dio.post(
+        '/verify-otp',
+        data: {'email': email, 'otp': otp},
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
+      throw _handleError(e);
+    }
+  }
+
+  // RESET PASSWORD
+  Future<Map<String, dynamic>> resetPassword(
+    String email,
+    String otp,
+    String password,
+    String passwordConfirmation,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/reset-password',
         data: {
           'email': email,
+          'otp': otp,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
         },
       );
-
       return Map<String, dynamic>.from(response.data);
-
     } on DioException catch (e) {
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -98,17 +134,15 @@ class ApiService {
   Future<Map<String, dynamic>> getCommodities({String? date}) async {
     try {
       await _addAuthHeader();
-
       final response = await _dio.get(
         '/commodities',
-        queryParameters: {
-          'date': date,
-        },
+        queryParameters: {'date': date},
       );
-
       return Map<String, dynamic>.from(response.data);
-
     } on DioException catch (e) {
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -117,52 +151,48 @@ class ApiService {
   Future<Map<String, dynamic>> getCommodityDetail(String commodityId) async {
     try {
       await _addAuthHeader();
-
       final response = await _dio.get('/commodities/$commodityId');
-
       return Map<String, dynamic>.from(response.data);
-
     } on DioException catch (e) {
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
 
   // PRICE HISTORY
-  Future<Map<String, dynamic>> getPriceHistory(String commodityId, String period) async {
+  Future<Map<String, dynamic>> getPriceHistory(
+      String commodityId, String period) async {
     try {
       await _addAuthHeader();
-
       final response = await _dio.get(
         '/price-history',
-        queryParameters: {
-          'commodity_id': commodityId,
-          'period': period,
-        },
+        queryParameters: {'commodity_id': commodityId, 'period': period},
       );
-
       return Map<String, dynamic>.from(response.data);
-
     } on DioException catch (e) {
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
 
   // PREDICT PRICE
-  Future<Map<String, dynamic>> predictPrice(String commodityId, double quantity) async {
+  Future<Map<String, dynamic>> predictPrice(
+      String commodityId, double quantity) async {
     try {
       await _addAuthHeader();
-
       final response = await _dio.post(
         '/predict-price',
-        data: {
-          'commodity_id': commodityId,
-          'quantity': quantity,
-        },
+        data: {'commodity_id': commodityId, 'quantity': quantity},
       );
-
       return Map<String, dynamic>.from(response.data);
-
     } on DioException catch (e) {
+      if (e.response != null) {
+        return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -173,9 +203,7 @@ class ApiService {
       await _addAuthHeader();
       await _dio.post('/logout');
     } on DioException catch (e) {
-      if (kDebugMode) {
-        print('Logout error: ${e.message}');
-      }
+      if (kDebugMode) print('Logout error: ${e.message}');
     }
   }
 

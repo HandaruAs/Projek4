@@ -31,7 +31,8 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
   }
 
   Future<void> _loadData() async {
-    final commodityProvider = Provider.of<CommodityProvider>(context, listen: false);
+    final commodityProvider =
+        Provider.of<CommodityProvider>(context, listen: false);
     await commodityProvider.loadCommodityDetail(widget.commodityId);
     await commodityProvider.loadPriceHistory(widget.commodityId);
   }
@@ -41,7 +42,7 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
     return Consumer<CommodityProvider>(
       builder: (context, commodityProvider, child) {
         final commodity = commodityProvider.selectedCommodity;
-        
+
         if (commodityProvider.isLoading || commodity == null) {
           return const Scaffold(
             body: Center(child: LoadingWidget()),
@@ -138,7 +139,8 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
                             _buildInfoItem(
                               'Rata-rata Mingguan',
                               currencyFormat.format(
-                                commodity.currentPrice * 0.95 + 500, // Example calculation
+                                commodity.currentPrice * 0.95 +
+                                    500, // Example calculation
                               ),
                             ),
                             _buildInfoItem(
@@ -168,19 +170,22 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Period Selector
                         Row(
                           children: [
-                            _buildPeriodChip('7 Hari', '7days', commodityProvider),
+                            _buildPeriodChip(
+                                '7 Hari', '7days', commodityProvider),
                             const SizedBox(width: 8),
-                            _buildPeriodChip('30 Hari', '30days', commodityProvider),
+                            _buildPeriodChip(
+                                '30 Hari', '30days', commodityProvider),
                             const SizedBox(width: 8),
-                            _buildPeriodChip('3 Bulan', '3months', commodityProvider),
+                            _buildPeriodChip(
+                                '3 Bulan', '3months', commodityProvider),
                           ],
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Chart
                         SizedBox(
                           height: 200,
@@ -188,7 +193,8 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
                               ? Center(
                                   child: Text(
                                     'Tidak ada data grafik',
-                                    style: TextStyle(color: Colors.grey.shade600),
+                                    style:
+                                        TextStyle(color: Colors.grey.shade600),
                                   ),
                                 )
                               : LineChart(
@@ -210,7 +216,9 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
                                           reservedSize: 40,
                                           getTitlesWidget: (value, meta) {
                                             return Text(
-                                              currencyFormat.format(value).replaceAll('Rp ', ''),
+                                              currencyFormat
+                                                  .format(value)
+                                                  .replaceAll('Rp ', ''),
                                               style: TextStyle(
                                                 color: Colors.grey.shade600,
                                                 fontSize: 10,
@@ -224,11 +232,16 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
                                           showTitles: true,
                                           reservedSize: 22,
                                           getTitlesWidget: (value, meta) {
-                                            if (value.toInt() >= 0 && 
-                                                value.toInt() < commodityProvider.priceHistory.length) {
-                                              final date = commodityProvider.priceHistory[value.toInt()].date;
+                                            if (value.toInt() >= 0 &&
+                                                value.toInt() <
+                                                    commodityProvider
+                                                        .priceHistory.length) {
+                                              final date = commodityProvider
+                                                  .priceHistory[value.toInt()]
+                                                  .date;
                                               return Text(
-                                                DateFormat('dd/MM').format(date),
+                                                DateFormat('dd/MM')
+                                                    .format(date),
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
                                                   fontSize: 10,
@@ -239,17 +252,22 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
                                           },
                                         ),
                                       ),
-                                      rightTitles: AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
+                                      rightTitles: const AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false),
                                       ),
-                                      topTitles: AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
+                                      topTitles: const AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false),
                                       ),
                                     ),
                                     borderData: FlBorderData(show: false),
                                     lineBarsData: [
                                       LineChartBarData(
-                                        spots: commodityProvider.priceHistory.asMap().entries.map((entry) {
+                                        spots: commodityProvider.priceHistory
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
                                           return FlSpot(
                                             entry.key.toDouble(),
                                             entry.value.price,
@@ -259,10 +277,11 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
                                         color: const Color(0xFF1976D2),
                                         barWidth: 3,
                                         isStrokeCapRound: true,
-                                        dotData: FlDotData(show: false),
+                                        dotData: const FlDotData(show: false),
                                         belowBarData: BarAreaData(
                                           show: true,
-                                          color: const Color(0xFF1976D2).withOpacity(0.1),
+                                          color: const Color(0xFF1976D2)
+                                              .withOpacity(0.1),
                                         ),
                                       ),
                                     ],
@@ -292,7 +311,8 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
                         const SizedBox(height: 12),
                         _buildInfoRow('Kategori', commodity.category),
                         _buildInfoRow('Tersedia di', '15 Pasar'),
-                        _buildInfoRow('Update Terakhir', DateFormat('dd MMM yyyy').format(DateTime.now())),
+                        _buildInfoRow('Update Terakhir',
+                            DateFormat('dd MMM yyyy').format(DateTime.now())),
                       ],
                     ),
                   ),
@@ -350,9 +370,10 @@ class _CommodityDetailScreenState extends State<CommodityDetailScreen> {
     );
   }
 
-  Widget _buildPeriodChip(String label, String value, CommodityProvider provider) {
+  Widget _buildPeriodChip(
+      String label, String value, CommodityProvider provider) {
     final isSelected = provider.selectedPeriod == value;
-    
+
     return InkWell(
       onTap: () {
         provider.setSelectedPeriod(value);

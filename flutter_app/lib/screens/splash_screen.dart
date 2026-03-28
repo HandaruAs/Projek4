@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
 import 'package:flutter_app/screens/Admin/main_screen.dart';
+import 'package:flutter_app/screens/User/main_screen.dart'; // ✅ tambah import ini
 import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -11,7 +12,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -19,45 +21,54 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
       ),
     );
-    
+
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: const Interval(0.0, 0.5, curve: Curves.easeOutBack),
       ),
     );
-    
+
     _animationController.forward();
-    
+
     _checkLoginStatus();
   }
 
   Future<void> _checkLoginStatus() async {
     await Future.delayed(const Duration(seconds: 3));
-    
+
     if (!mounted) return;
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.checkAuthStatus();
-    
+
     if (!mounted) return;
-    
+
     if (authProvider.isAuthenticated) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
+      final role = authProvider.currentUser?.role;
+
+      // ✅ Routing berdasarkan role
+      if (role == 'admin') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const UserMainScreen()),
+        );
+      }
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -83,17 +94,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo with gradient background
                 Container(
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF1976D2),
-                        const Color(0xFF64B5F6),
+                        Color(0xFF1976D2),
+                        Color(0xFF64B5F6),
                       ],
                     ),
                     shape: BoxShape.circle,
@@ -114,8 +124,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 32),
-                
-                // App Name
+
                 const Text(
                   'Monitoring Harga Pangan',
                   style: TextStyle(
@@ -125,8 +134,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 8),
-                
-                // Region
+
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -146,8 +154,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 48),
-                
-                // Custom Loading Animation
+
                 Column(
                   children: [
                     SizedBox(
