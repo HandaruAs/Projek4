@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login — SIMOPANG Admin</title>
+    <title>Login — SIMOPANG</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ asset('css/login.css') }}" rel="stylesheet">
 </head>
@@ -52,7 +52,7 @@
                 </div>
             </div>
 
-            <div class="left-title">Panel Administrasi</div>
+            <div class="left-title">Panel SIMOPANG</div>
             <div class="left-desc">
                 Kelola operasional dan data sistem dengan aman
                 melalui enkripsi MongoDB dan Laravel Auth.
@@ -65,10 +65,7 @@
 
         <div class="login-right">
 
-            <div class="form-tag">
-                <i class="fas fa-lock"></i>
-                Admin Access
-            </div>
+            {{-- [~] Badge "Admin Access" dihapus --}}
 
             <div class="form-heading">Selamat Datang 👋</div>
             <div class="form-subheading">
@@ -157,7 +154,7 @@
                 </div>
 
                 <button type="submit" class="btn-login">
-                    Login Ke Panel Admin
+                    Login
                     <i class="fas fa-arrow-right-to-bracket"></i>
                 </button>
 

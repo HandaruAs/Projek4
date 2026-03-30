@@ -101,8 +101,12 @@
                     </td>
                     <td>
                         <div class="action-group">
-                            <a href="/admin/komoditas/{{ $item->id }}/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                            <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                            <a href="/admin/komoditas/{{ $item->id }}/edit" class="btn-action-edit">
+                                <i class="fas fa-pen"></i> Edit
+                            </a>
+                            <button class="btn-action-delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -118,8 +122,12 @@
                 <td><span class="badge badge-green">Active</span></td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/komoditas/1/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/komoditas/1/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -133,8 +141,12 @@
                 <td><span class="badge badge-green">Active</span></td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/komoditas/2/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/komoditas/2/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -148,8 +160,12 @@
                 <td><span class="badge badge-green">Active</span></td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/komoditas/3/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/komoditas/3/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -163,8 +179,12 @@
                 <td><span class="badge badge-green">Active</span></td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/komoditas/4/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/komoditas/4/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -178,8 +198,12 @@
                 <td><span class="badge badge-orange">Inactive</span></td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/komoditas/5/edit" class="action-btn"><i class="fas fa-pen"></i></a>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                        <a href="/admin/komoditas/5/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <button class="btn-action-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
