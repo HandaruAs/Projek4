@@ -11,6 +11,8 @@
 </head>
 <body>
 
+@php $user = session('user'); @endphp
+
 {{-- ═══════════ SIDEBAR ═══════════ --}}
 <aside class="sidebar">
 
@@ -25,32 +27,38 @@
     </div>
 
     <nav class="nav-section">
-    <a href="/admin/dashboard" class="nav-item {{ Request::is('admin/dashboard') ? 'active' : '' }}">
-        <i class="fas fa-gauge-high"></i> Overview
-    </a>
-    <a href="/admin/komoditas" class="nav-item {{ Request::is('admin/komoditas*') ? 'active' : '' }}">
-        <i class="fas fa-boxes-stacked"></i> Kelola Komoditas
-    </a>
-    <a href="/admin/harga" class="nav-item {{ Request::is('admin/harga*') ? 'active' : '' }}">
-        <i class="fas fa-tags"></i> Data Harga
-    </a>
-    <a href="/admin/prediksi" class="nav-item {{ Request::is('admin/prediksi*') ? 'active' : '' }}">
-        <i class="fas fa-wand-magic-sparkles"></i> Generate Prediksi
-    </a>
-</nav>
+        <a href="/admin/dashboard" class="nav-item {{ Request::is('admin/dashboard') ? 'active' : '' }}">
+            <i class="fas fa-gauge-high"></i> Overview
+        </a>
+        <a href="/admin/komoditas" class="nav-item {{ Request::is('admin/komoditas*') ? 'active' : '' }}">
+            <i class="fas fa-boxes-stacked"></i> Kelola Komoditas
+        </a>
+        <a href="/admin/harga" class="nav-item {{ Request::is('admin/harga*') ? 'active' : '' }}">
+            <i class="fas fa-tags"></i> Data Harga
+        </a>
+        <a href="/admin/prediksi" class="nav-item {{ Request::is('admin/prediksi*') ? 'active' : '' }}">
+            <i class="fas fa-wand-magic-sparkles"></i> Generate Prediksi
+        </a>
+    </nav>
 
-<nav class="nav-section bordered">
-    <div class="nav-label">System</div>
-    <a href="/admin/settings" class="nav-item {{ Request::is('admin/settings*') ? 'active' : '' }}">
-        <i class="fas fa-gear"></i> Settings
-    </a>
-   <a href="#" class="nav-item" onclick="confirmLogout(); return false;">
-    <i class="fas fa-right-from-bracket"></i> Logout
-</a>
-</nav>
+    <nav class="nav-section bordered">
+        <div class="nav-label">System</div>
+        <a href="/admin/profile" class="nav-item {{ Request::is('admin/profile*') ? 'active' : '' }}">
+            <i class="fas fa-circle-user"></i> Profile
+        </a>
+        <a href="#" class="nav-item" onclick="confirmLogout(); return false;">
+            <i class="fas fa-right-from-bracket"></i> Logout
+        </a>
+    </nav>
 
+    {{-- Sidebar footer pakai data dari session --}}
     <div class="sidebar-footer">
-        <div class="avatar">{{ strtoupper(substr($user->name ?? 'A', 0, 1)) }}</div>
+        @if($user?->avatar)
+            <img src="{{ asset('storage/' . $user->avatar) }}"
+                 style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0">
+        @else
+            <div class="avatar">{{ strtoupper(substr($user->name ?? 'A', 0, 1)) }}</div>
+        @endif
         <div>
             <div class="footer-name">{{ $user->name ?? 'Admin User' }}</div>
             <div class="footer-email">{{ $user->email ?? 'admin@simopang.id' }}</div>
@@ -71,7 +79,6 @@
         </div>
         <div class="topbar-right">
             <span class="last-updated">
-                {{-- style="margin-right:4px" dipindah ke admin.css (.last-updated i) --}}
                 <i class="fas fa-clock"></i>
                 Last updated: Today, {{ now()->format('H:i') }} WIB
             </span>
@@ -79,19 +86,30 @@
                 <i class="fas fa-rotate-right"></i> Refresh
             </button>
 
-            {{-- ── TAMBAHAN: info user yang login ── --}}
             <div class="topbar-divider"></div>
-            <div class="topbar-user">
-                <div class="topbar-avatar">
-                    {{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}
+
+            {{-- Avatar + nama, klik → ke profile --}}
+            <a href="/admin/profile" style="text-decoration:none">
+                <div class="topbar-user">
+                    <div class="topbar-avatar" style="overflow:hidden; border-radius:50%; width:36px; height:36px; flex-shrink:0">
+                        @if($user?->avatar)
+                            <img src="{{ asset('storage/' . $user->avatar) }}"
+                                 style="width:100%; height:100%; object-fit:cover; display:block">
+                        @else
+                            <div style="width:100%; height:100%; background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+                                        display:flex; align-items:center; justify-content:center;
+                                        font-size:14px; font-weight:700; color:#fff">
+                                {{ strtoupper(substr($user->name ?? 'A', 0, 1)) }}
+                            </div>
+                        @endif
+                    </div>
+                    <div class="topbar-user-info">
+                        <div class="topbar-user-name">{{ $user->name ?? 'Admin User' }}</div>
+                        <div class="topbar-user-role">Administrator</div>
+                    </div>
+                    <i class="fas fa-chevron-down topbar-caret"></i>
                 </div>
-                <div class="topbar-user-info">
-                    <div class="topbar-user-name">{{ auth()->user()->name ?? 'Admin User' }}</div>
-                    <div class="topbar-user-role">Administrator</div>
-                </div>
-                <i class="fas fa-chevron-down topbar-caret"></i>
-            </div>
-            {{-- ── END TAMBAHAN ── --}}
+            </a>
 
         </div>
     </header>
@@ -102,19 +120,15 @@
 
 </div>
 
-
 {{-- LOGOUT CONFIRMATION MODAL --}}
 <div id="logoutModal" style="display:none; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center;">
-    {{-- Backdrop --}}
     <div onclick="closeLogout()"
          style="position:absolute; inset:0; background:rgba(15,23,42,0.45); backdrop-filter:blur(4px)"></div>
 
-    {{-- Dialog --}}
     <div style="position:relative; background:#fff; border-radius:16px; padding:32px 28px;
                 width:100%; max-width:380px; box-shadow:0 20px 60px rgba(15,23,42,0.2);
                 text-align:center; animation:fadeUp 0.25s ease both">
 
-        {{-- Icon --}}
         <div style="width:56px; height:56px; border-radius:50%; background:#fef2f2;
                     display:flex; align-items:center; justify-content:center;
                     margin:0 auto 18px; font-size:22px; color:#ef4444">
@@ -152,14 +166,11 @@
 
 <script>
     function confirmLogout() {
-        const modal = document.getElementById('logoutModal');
-        modal.style.display = 'flex';
+        document.getElementById('logoutModal').style.display = 'flex';
     }
     function closeLogout() {
-        const modal = document.getElementById('logoutModal');
-        modal.style.display = 'none';
+        document.getElementById('logoutModal').style.display = 'none';
     }
-    // Tutup dengan tombol Escape
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeLogout();
     });

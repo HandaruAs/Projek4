@@ -5,7 +5,7 @@ use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\KomoditasController;
 use App\Http\Controllers\Web\HargaController;
 use App\Http\Controllers\Web\PrediksiController;
-use App\Http\Controllers\Web\SettingsController;
+use App\Http\Controllers\Web\AdminController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -32,12 +32,11 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('reset.password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+
 // ── ADMIN ROUTES ─────────────────────────────────────────────
-// [+] Tambah middleware 'role:admin' — semua route admin wajib login & punya role admin
 Route::middleware(['role:admin'])->group(function () {
 
     Route::get('/admin/dashboard', [App\Http\Controllers\Web\AdminController::class, 'dashboard'])->name('dashboard');
-
     Route::prefix('admin')->group(function () {
 
         // Komoditas
@@ -50,11 +49,7 @@ Route::middleware(['role:admin'])->group(function () {
 
         // Data Harga
         Route::get('/harga',               [HargaController::class, 'index'])->name('harga.index');
-        Route::get('/harga/create',        [HargaController::class, 'create'])->name('harga.create');
-        Route::post('/harga',              [HargaController::class, 'store'])->name('harga.store');
-        Route::get('/harga/{id}/edit',     [HargaController::class, 'edit'])->name('harga.edit');
-        Route::put('/harga/{id}',          [HargaController::class, 'update'])->name('harga.update');
-        Route::delete('/harga/{id}',       [HargaController::class, 'destroy'])->name('harga.destroy');
+
 
         // Generate Prediksi
         Route::get('/prediksi',            [PrediksiController::class, 'index'])->name('prediksi.index');
@@ -62,20 +57,18 @@ Route::middleware(['role:admin'])->group(function () {
         Route::get('/prediksi/{id}',       [PrediksiController::class, 'show'])->name('prediksi.show');
         Route::delete('/prediksi/{id}',    [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
 
-        // Settings
-        Route::get('/settings',            [SettingsController::class, 'index'])->name('settings');
-        Route::put('/settings/profile',    [SettingsController::class, 'updateProfile'])->name('settings.profile');
-        Route::put('/settings/password',   [SettingsController::class, 'updatePassword'])->name('settings.password');
+        // Profile
+        Route::get('/profile',  [AdminController::class, 'profile'])->name('profile');
+        Route::put('/profile',  [AdminController::class, 'updateProfile'])->name('profile.update');
 
     });
 
-}); // [+] tutup middleware admin
+});
 
 
 // ── USER ROUTES ───────────────────────────────────────────────
-// [+] Tambah middleware 'role:user' — hanya user biasa yang boleh akses
 Route::middleware(['role:user'])->group(function () {
 
     Route::get('/dashboard', [App\Http\Controllers\Web\UserController::class, 'dashboard'])->name('user.dashboard');
 
-}); // [+] tutup middleware user
+});

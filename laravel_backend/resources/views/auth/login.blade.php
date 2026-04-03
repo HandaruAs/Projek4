@@ -65,7 +65,7 @@
 
         <div class="login-right">
 
-            {{-- [~] Badge "Admin Access" dihapus --}}
+           
 
             <div class="form-heading">Selamat Datang 👋</div>
             <div class="form-subheading">
