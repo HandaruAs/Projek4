@@ -37,7 +37,7 @@ class AuthController extends Controller
         return redirect('/admin/dashboard');
     }
 
-    return redirect('/user/home');
+    return redirect('/home');
     }
 
     // Handle Logout Request

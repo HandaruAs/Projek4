@@ -7,5 +7,8 @@ use Illuminate\Http\Request;
 
 class UserTentangController extends Controller
 {
-    //
+    public function tentang()
+{
+    return view('user.tentang');
+}
 }

@@ -24,34 +24,42 @@ class CommodityModel {
   });
 
   factory CommodityModel.fromJson(Map<String, dynamic> json) {
-    double current = (json['current_price'] ?? 0).toDouble();
+    double current  = (json['current_price']  ?? 0).toDouble();
     double previous = (json['previous_price'] ?? 0).toDouble();
-    double change = current - previous;
-    bool isIncreasing = change > 0;
+    double change   = current - previous;
+    bool isIncreasing = change >= 0;
+
+    // category bisa berupa String atau Map (jika with('category'))
+    String categoryName = '';
+    if (json['category'] is Map) {
+      categoryName = json['category']['name'] ?? '';
+    } else {
+      categoryName = json['category']?.toString() ?? '';
+    }
 
     return CommodityModel(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      category: json['category'] ?? '',
-      unit: json['unit'] ?? 'kg',
-      currentPrice: current,
-      previousPrice: previous,
-      priceChange: change.abs(),
+      id:               json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name:             json['name'] ?? '',
+      category:         categoryName,
+      unit:             json['unit'] ?? 'kg',
+      currentPrice:     current,
+      previousPrice:    previous,
+      priceChange:      change.abs(),
       changePercentage: previous != 0
           ? '${((change / previous) * 100).toStringAsFixed(1)}%'
           : '0%',
-      isIncreasing: isIncreasing,
-      imageUrl: json['image_url'],
+      isIncreasing:     isIncreasing,
+      imageUrl:         json['image_url'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
-      'category': category,
-      'unit': unit,
-      'current_price': currentPrice,
+      'id':             id,
+      'name':           name,
+      'category':       category,
+      'unit':           unit,
+      'current_price':  currentPrice,
       'previous_price': previousPrice,
     };
   }

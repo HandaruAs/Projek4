@@ -78,12 +78,66 @@
       </ul>
 
       {{-- Navbar Right --}}
-      <div class="u-navbar__right">
-        <div class="u-update-badge">
-          <span class="u-update-badge__dot"></span>
-          Terakhir diperbarui: {{ $lastUpdated ?? '10 menit lalu' }}
-        </div>
-      </div>
+<div class="u-navbar__right">
+  <div class="u-update-badge">
+    <span class="u-update-badge__dot"></span>
+    Terakhir diperbarui: {{ $lastUpdated ?? '10 menit lalu' }}
+  </div>
+
+  <a href="{{ route('user.profil') }}" class="u-btn-profil">
+    {{ session('user')['nama'] ?? 'User' }}
+    <div class="u-btn-profil__avatar">
+      {{ strtoupper(substr(session('user')['nama'] ?? 'U', 0, 1)) }}
+    </div>
+  </a>
+
+  {{-- Form logout — disembunyikan, di-trigger oleh modal --}}
+  <form method="POST" action="{{ route('logout') }}" id="form-logout">
+    @csrf
+  </form>
+
+  <button type="button" class="u-btn-logout" onclick="showModalLogout()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+         style="width:13px;height:13px">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+      <polyline points="16 17 21 12 16 7"/>
+      <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+    Keluar
+  </button>
+</div>
+
+{{-- ══ MODAL LOGOUT ══════════════════════════════════ --}}
+<div id="modal-logout-overlay" class="u-modal-overlay" onclick="hideModalLogout()">
+  <div class="u-modal" onclick="event.stopPropagation()">
+    <div class="u-modal__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </div>
+    <div class="u-modal__title">Keluar dari SIMOPANG?</div>
+    <div class="u-modal__desc">
+      Sesi Anda akan diakhiri dan Anda perlu masuk kembali untuk mengakses dashboard.
+    </div>
+    <div class="u-modal__actions">
+      <button class="u-modal__btn-batal" onclick="hideModalLogout()">Batal</button>
+      <button class="u-modal__btn-keluar"
+              onclick="document.getElementById('form-logout').submit()">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Ya, Keluar
+      </button>
+    </div>
+  </div>
+</div>
 
     </div>
   </nav>
@@ -107,6 +161,20 @@
 
   {{-- Extra scripts per halaman (opsional) --}}
   @stack('scripts')
+
+ <script>
+function showModalLogout() {
+  document.getElementById('modal-logout-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function hideModalLogout() {
+  document.getElementById('modal-logout-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') hideModalLogout();
+});
+</script>
 
 </body>
 </html>

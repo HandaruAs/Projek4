@@ -10,39 +10,49 @@ use Illuminate\Support\Facades\Validator;
 
 class CommodityController extends Controller
 {
-    /**
-     * Ambil semua komoditas.
-     * Bisa difilter by category_id via query param.
-     *
-     * GET /api/commodities
-     * GET /api/commodities?category_id=xxx
-     * Akses: semua role
-     */
     public function index(Request $request)
     {
-        $query = Commodity::with('category')->orderBy('name', 'asc');
+        $query = Commodity::orderBy('name', 'asc');
 
         if ($request->has('category_id')) {
-            $query->where('category_id', $request->category_id);
+            $query->where('category', $request->category_id);
         }
 
         $commodities = $query->get();
 
+        $result = $commodities->map(function ($commodity) {
+            $prices = $commodity->priceHistories()
+                ->orderBy('date', 'desc')
+                ->limit(2)
+                ->get();
+
+            $currentPrice  = $prices->first()?->harga_sekarang ?? 0;
+            $previousPrice = $prices->skip(1)->first()?->harga_sekarang ?? 0;
+
+            // getAttributes() ambil semua field dari MongoDB tanpa dibatasi $fillable
+            $raw = $commodity->getAttributes();
+
+            return [
+                '_id'            => (string) $commodity->_id,
+                'name'           => $raw['name']        ?? '',
+                'category'       => $raw['category']    ?? '',
+                'unit'           => $raw['unit']         ?? '',
+                'stok_unit'      => $raw['stok_unit']    ?? '',
+                'description'    => $raw['description']  ?? '',
+                'current_price'  => $currentPrice,
+                'previous_price' => $previousPrice,
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'data'    => $commodities,
+            'data'    => $result,
         ]);
     }
 
-    /**
-     * Ambil detail satu komoditas beserta histori harga terbaru (30 data).
-     *
-     * GET /api/commodities/{id}
-     * Akses: semua role
-     */
     public function show(string $id)
     {
-        $commodity = Commodity::with('category')->find($id);
+        $commodity = Commodity::find($id);
 
         if (!$commodity) {
             return response()->json([
@@ -51,31 +61,32 @@ class CommodityController extends Controller
             ], 404);
         }
 
-        // Ambil 30 data harga terakhir untuk preview di detail
         $recentPrices = $commodity->priceHistories()
             ->orderBy('date', 'desc')
             ->limit(30)
             ->get(['date', 'price', 'stok']);
 
+        $raw = $commodity->getAttributes();
+
         return response()->json([
             'success' => true,
-            'data'    => array_merge($commodity->toArray(), [
+            'data'    => [
+                '_id'           => (string) $commodity->_id,
+                'name'          => $raw['name']       ?? '',
+                'category'      => $raw['category']   ?? '',
+                'unit'          => $raw['unit']        ?? '',
+                'stok_unit'     => $raw['stok_unit']   ?? '',
+                'description'   => $raw['description'] ?? '',
                 'recent_prices' => $recentPrices,
-            ]),
+            ],
         ]);
     }
 
-    /**
-     * Tambah komoditas baru.
-     *
-     * POST /api/commodities
-     * Akses: admin
-     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name'        => 'required|string|max:255|unique:commodities,name',
-            'category_id' => 'required|string',
+            'category'    => 'required|string',
             'unit'        => 'required|string|max:50',
             'stok_unit'   => 'required|string|max:50',
             'description' => 'nullable|string',
@@ -89,24 +100,13 @@ class CommodityController extends Controller
             ], 422);
         }
 
-        // Pastikan category_id valid
-        $category = Category::find($request->category_id);
-        if (!$category) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kategori tidak ditemukan',
-            ], 404);
-        }
-
         $commodity = Commodity::create([
             'name'        => $request->name,
-            'category_id' => $request->category_id,
+            'category'    => $request->category,
             'unit'        => $request->unit,
             'stok_unit'   => $request->stok_unit,
             'description' => $request->description,
         ]);
-
-        $commodity->load('category');
 
         return response()->json([
             'success' => true,
@@ -115,13 +115,6 @@ class CommodityController extends Controller
         ], 201);
     }
 
-    /**
-     * Update komoditas.
-     * Menggunakan 'sometimes' agar bisa partial update (tidak wajib kirim semua field).
-     *
-     * PUT /api/commodities/{id}
-     * Akses: admin
-     */
     public function update(Request $request, string $id)
     {
         $commodity = Commodity::find($id);
@@ -135,7 +128,7 @@ class CommodityController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name'        => 'sometimes|string|max:255|unique:commodities,name,' . $id . ',_id',
-            'category_id' => 'sometimes|string',
+            'category'    => 'sometimes|string',
             'unit'        => 'sometimes|string|max:50',
             'stok_unit'   => 'sometimes|string|max:50',
             'description' => 'nullable|string',
@@ -149,26 +142,13 @@ class CommodityController extends Controller
             ], 422);
         }
 
-        // Validasi category_id jika diubah
-        if ($request->has('category_id')) {
-            $category = Category::find($request->category_id);
-            if (!$category) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Kategori tidak ditemukan',
-                ], 404);
-            }
-        }
-
         $commodity->update($request->only([
             'name',
-            'category_id',
+            'category',
             'unit',
             'stok_unit',
             'description',
         ]));
-
-        $commodity->load('category');
 
         return response()->json([
             'success' => true,
@@ -177,13 +157,6 @@ class CommodityController extends Controller
         ]);
     }
 
-    /**
-     * Hapus komoditas.
-     * Tidak bisa dihapus jika masih punya data harga atau prediksi.
-     *
-     * DELETE /api/commodities/{id}
-     * Akses: admin
-     */
     public function destroy(string $id)
     {
         $commodity = Commodity::find($id);
@@ -191,7 +164,7 @@ class CommodityController extends Controller
         if (!$commodity) {
             return response()->json([
                 'success' => false,
-                'message' => 'Komoditas tidak ditemukan',
+                'message' => 'Komoditas tidak bisa ditemukan',
             ], 404);
         }
 
