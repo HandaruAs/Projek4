@@ -13,9 +13,9 @@ class RoleMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $role): Response  // [+] tambah: string $role
+    public function handle(Request $request, Closure $next): Response
     {
-        $user = session('user');  // [~] Auth::user() → session('user'), sesuai AdminController & UserController
+        $user = Auth::user();
 
         if (!$user) {
             return response()->json([
@@ -23,7 +23,7 @@ class RoleMiddleware
             ], 401);
         }
 
-        if ($user['role'] !== $role) {  // [~] $user->role → $user['role'] (session simpan array, bukan object)
+        if ($user->role !== $role) {
             return response()->json([
                 'message' => 'Access denied'
             ], 403);
