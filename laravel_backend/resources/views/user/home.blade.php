@@ -5,7 +5,7 @@
   Desc : Halaman monitoring harga komoditas untuk user
   =====================================================
 --}}
-@extends('user.layouts')
+@extends('layouts.layout')
 
 @section('title', 'Monitoring Harga Komoditas')
 

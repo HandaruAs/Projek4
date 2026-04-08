@@ -5,7 +5,7 @@
   Desc : Halaman tabel rincian harga komoditas
   =====================================================
 --}}
-@extends('user.layouts')
+@extends('layouts.layout')
 
 @section('title', 'Data Harga Komoditas')
 

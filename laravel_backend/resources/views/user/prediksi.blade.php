@@ -5,7 +5,7 @@
   Desc : Halaman prediksi harga berbasis AI Prophet
   =====================================================
 --}}
-@extends('user.layouts')
+@extends('layouts.layout')
 
 @section('title', 'Prediksi Harga Komoditas')
 

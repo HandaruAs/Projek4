@@ -5,7 +5,7 @@
   Desc : Halaman simulasi pengeluaran berbasis prediksi AI
   =====================================================
 --}}
-@extends('user.layouts')
+@extends('layouts.layout')
 
 @section('title', 'Simulasi Pengeluaran AI')
 

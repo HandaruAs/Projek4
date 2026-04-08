@@ -10,7 +10,7 @@ use App\Http\Controllers\Web\UserController;
 use App\Http\Controllers\Web\UserHargaController;
 use App\Http\Controllers\Web\UserPrediksiController;
 use App\Http\Controllers\Web\UserSimulasiController;
-use App\Http\Controllers\Web\UserTentangController;
+use App\Http\Controllers\Web\UserChatAiController;
 use App\Http\Controllers\Web\UserProfilController;
 
 Route::get('/', function () {
@@ -79,7 +79,7 @@ Route::middleware(['role:user'])->group(function () {
     Route::get('/harga',     [App\Http\Controllers\Web\UserHargaController::class,   'harga'])->name('user.harga');
     Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class,'prediksi'])->name('user.prediksi');
     Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class,'simulasi'])->name('user.simulasi');
-    Route::get('/tentang', [App\Http\Controllers\Web\UserTentangController::class, 'tentang'])->name('user.tentang');
+    Route::get('/chatai', [App\Http\Controllers\Web\UserChatAiController::class, 'index'])->name('user.chatai');
     Route::get('/user/profil', [UserProfilController::class, 'index'])->name('user.profil');
     Route::put('/user/profil', [UserProfilController::class, 'update'])->name('user.profil.update');
     Route::put('/user/profil/password', [UserProfilController::class, 'password'])->name('user.profil.password');
