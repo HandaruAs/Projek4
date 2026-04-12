@@ -27,7 +27,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
   }
 
   Future<void> _loadCommodities() async {
-    final commodityProvider = Provider.of<CommodityProvider>(context, listen: false);
+    final commodityProvider =
+        Provider.of<CommodityProvider>(context, listen: false);
     await commodityProvider.loadCommodities();
   }
 
@@ -63,8 +64,10 @@ class _PredictionScreenState extends State<PredictionScreen> {
       return;
     }
 
-    final commodityProvider = Provider.of<CommodityProvider>(context, listen: false);
-    final success = await commodityProvider.predictPrice(_selectedCommodityId!, quantity);
+    final commodityProvider =
+        Provider.of<CommodityProvider>(context, listen: false);
+    final success =
+        await commodityProvider.predictPrice(_selectedCommodityId!, quantity);
 
     if (!mounted) return;
 
@@ -116,10 +119,10 @@ class _PredictionScreenState extends State<PredictionScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.info_outline,
                       size: 20,
-                      color: const Color(0xFF1976D2),
+                      color: Color(0xFF1976D2),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -190,12 +193,12 @@ class _PredictionScreenState extends State<PredictionScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            const Color(0xFF1976D2),
-                            const Color(0xFF64B5F6),
+                            Color(0xFF1976D2),
+                            Color(0xFF64B5F6),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),
@@ -249,7 +252,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
                             ),
                             const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey.shade300),
                                 borderRadius: BorderRadius.circular(12),
@@ -259,7 +263,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
                                   value: _selectedCommodityId,
                                   isExpanded: true,
                                   hint: const Text('Pilih komoditas'),
-                                  items: commodityProvider.commodities.map((commodity) {
+                                  items: commodityProvider.commodities
+                                      .map((commodity) {
                                     return DropdownMenuItem(
                                       value: commodity.id,
                                       child: Text(commodity.name),
@@ -286,7 +291,7 @@ class _PredictionScreenState extends State<PredictionScreen> {
                             TextField(
                               controller: _quantityController,
                               keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 hintText: 'Contoh: 5',
                                 suffixText: 'kg/minggu',
                               ),
@@ -298,19 +303,19 @@ class _PredictionScreenState extends State<PredictionScreen> {
                     const SizedBox(height: 20),
 
                     // Information Card
-                    Card(
+                    const Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         child: Column(
                           children: [
                             Row(
                               children: [
                                 Icon(
                                   Icons.lightbulb_outline,
-                                  color: const Color(0xFF1976D2),
+                                  color: Color(0xFF1976D2),
                                 ),
-                                const SizedBox(width: 8),
-                                const Text(
+                                SizedBox(width: 8),
+                                Text(
                                   'Informasi',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
@@ -318,8 +323,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            const Text(
+                            SizedBox(height: 12),
+                            Text(
                               'Prediksi menggunakan metode Time Series (ARIMA/SARIMA) berdasarkan data harga 3 bulan terakhir. Hasil prediksi akan menampilkan estimasi harga untuk minggu depan dan total biaya berdasarkan jumlah konsumsi yang dimasukkan.',
                               style: TextStyle(
                                 fontSize: 12,
@@ -334,7 +339,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
 
                     // Predict Button
                     ElevatedButton(
-                      onPressed: commodityProvider.isLoading ? null : _handlePredict,
+                      onPressed:
+                          commodityProvider.isLoading ? null : _handlePredict,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                       ),
@@ -358,7 +364,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
                       Card(
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: const Color(0xFF1976D2).withOpacity(0.1),
+                            backgroundColor:
+                                const Color(0xFF1976D2).withOpacity(0.1),
                             child: const Icon(
                               Icons.history,
                               color: Color(0xFF1976D2),
@@ -370,9 +377,11 @@ class _PredictionScreenState extends State<PredictionScreen> {
                           subtitle: Text(
                             '${commodityProvider.selectedCommodity?.name ?? 'Komoditas'} - ${currencyFormat.format(commodityProvider.predictionResult?['predicted_price'])}',
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                          trailing:
+                              const Icon(Icons.arrow_forward_ios, size: 16),
                           onTap: () {
-                            _showPredictionResult(commodityProvider.predictionResult);
+                            _showPredictionResult(
+                                commodityProvider.predictionResult);
                           },
                         ),
                       ),
@@ -382,8 +391,7 @@ class _PredictionScreenState extends State<PredictionScreen> {
               ),
 
               // Loading Overlay
-              if (commodityProvider.isLoading)
-                const LoadingWidget(),
+              if (commodityProvider.isLoading) const LoadingWidget(),
             ],
           ),
         );

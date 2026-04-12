@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/providers/commodity_provider.dart';
-import 'package:flutter_app/providers/market_provider.dart';
 import 'package:flutter_app/screens/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -18,8 +17,9 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        // CommodityProvider pakai singleton ApiService di dalamnya
+        // jadi cukup ChangeNotifierProvider biasa
         ChangeNotifierProvider(create: (_) => CommodityProvider()),
-        ChangeNotifierProvider(create: (_) => MarketProvider()),
       ],
       child: MaterialApp(
         title: 'Monitoring Harga Pangan',
@@ -33,7 +33,6 @@ class MyApp extends StatelessWidget {
           ),
           scaffoldBackgroundColor: Colors.white,
           textTheme: GoogleFonts.poppinsTextTheme(),
-
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.white,
             elevation: 0,
@@ -44,7 +43,6 @@ class MyApp extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1976D2),
@@ -55,7 +53,6 @@ class MyApp extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
-
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
             fillColor: Colors.grey.shade50,
@@ -69,29 +66,19 @@ class MyApp extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF1976D2),
-                width: 1,
-              ),
+              borderSide: const BorderSide(color: Color(0xFF1976D2), width: 1),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 1,
-              ),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
+                horizontal: 16, vertical: 14),
           ),
-
           cardTheme: CardThemeData(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
+                borderRadius: BorderRadius.circular(16)),
           ),
         ),
         home: const SplashScreen(),

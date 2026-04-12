@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Pengeluaran — PanganWatch Jember</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f0f2f5;--surface:#ffffff;--border:#e2e8f0;--text:#1a202c;--muted:#718096;--accent:#2563eb;--accent-light:#eff6ff;--green:#16a34a;--green-light:#f0fdf4;--red:#dc2626;--red-light:#fef2f2;--yellow:#d97706;--yellow-light:#fffbeb}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+/* NAV */
+nav{background:#fff;border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:fixed;top:0;left:0;right:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:.95rem;color:var(--text)}
+.nav-brand-icon{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700}
+.nav-right{display:flex;align-items:center;gap:1.25rem}
+.nav-right a{font-size:.83rem;color:var(--muted);text-decoration:none;cursor:pointer}.nav-right a:hover{color:var(--text)}
+.user-pill{font-size:.78rem;font-weight:600;color:var(--accent)}
+/* BREADCRUMB */
+.breadcrumb{font-size:.78rem;color:var(--muted);padding:.75rem 0;display:flex;align-items:center;gap:.4rem}
+.breadcrumb span{color:var(--muted)}.breadcrumb strong{color:var(--text)}
+/* LAYOUT */
+.page-wrap{max-width:1200px;margin:0 auto;padding:72px 1.5rem 3rem}
+.page-title{font-size:1.6rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+.page-sub{font-size:.88rem;color:var(--muted);margin-bottom:1.75rem;max-width:520px;line-height:1.6}
+.grid-main{display:grid;grid-template-columns:320px 1fr;gap:1.25rem;align-items:start}
+/* INPUT CARD */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.5rem}
+.card-title{display:flex;align-items:center;gap:.5rem;font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:1.25rem}
+.card-icon{width:28px;height:28px;background:var(--accent-light);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:.85rem}
+.field{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+.field label{font-size:.78rem;font-weight:600;color:var(--text)}
+.field select,.field input[type=number]{width:100%;background:#fff;border:1px solid var(--border);color:var(--text);padding:.65rem .85rem;border-radius:8px;font-size:.9rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;appearance:none}
+.field select:focus,.field input[type=number]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.input-wrap{position:relative}
+.input-unit{position:absolute;right:.85rem;top:50%;transform:translateY(-50%);font-size:.82rem;color:var(--muted);font-weight:500}
+.field-hint{font-size:.72rem;color:var(--muted);font-style:italic}
+.btn-hitung{width:100%;margin-top:.75rem;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:.85rem;font-family:'Inter',sans-serif;font-size:.92rem;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-hitung:hover{background:#1d4ed8;box-shadow:0 4px 12px rgba(37,99,235,.25)}
+.btn-hitung:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+/* WAWASAN AI CARD */
+.ai-card{background:var(--accent-light);border:1px solid rgba(37,99,235,.15);border-radius:12px;padding:1.1rem 1.25rem;margin-top:1.25rem}
+.ai-card-header{display:flex;align-items:center;gap:.5rem;font-size:.82rem;font-weight:600;color:var(--accent);margin-bottom:.5rem}
+.ai-card p{font-size:.82rem;color:#1e40af;line-height:1.6}
+/* RIGHT SIDE */
+.right-col{display:flex;flex-direction:column;gap:1.25rem}
+/* PRICE CARDS ROW */
+.price-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.price-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;position:relative}
+.price-card .pc-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.5rem}
+.price-card .pc-val{font-size:1.8rem;font-weight:700;color:var(--text);line-height:1}
+.price-card .pc-unit{font-size:.85rem;font-weight:400;color:var(--muted);margin-left:.15rem}
+.price-card .pc-sub-label{font-size:.75rem;color:var(--muted);margin-top:.75rem;margin-bottom:.2rem}
+.price-card .pc-sub-val{font-size:1rem;font-weight:600;color:var(--accent)}
+.ai-badge{position:absolute;top:.9rem;right:.9rem;background:var(--accent);color:#fff;font-size:.67rem;font-weight:700;letter-spacing:.06em;padding:.2rem .55rem;border-radius:4px}
+/* RINGKASAN */
+.ringkasan-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem}
+.ringkasan-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.ringkasan-title{font-size:1rem;font-weight:600;color:var(--text)}
+.ringkasan-sub{font-size:.78rem;color:var(--muted);margin-top:.15rem}
+.ringkasan-icon{width:32px;height:32px;background:var(--accent-light);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:.9rem;flex-shrink:0}
+.selisih-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.selisih-left .sl-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.35rem}
+.selisih-val{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:.35rem}
+.selisih-val.up{color:var(--red)}.selisih-val.down{color:var(--green)}.selisih-val.flat{color:var(--muted)}
+.selisih-pct{font-size:.82rem;color:var(--muted);margin-top:.25rem}
+.selisih-pct em{font-style:normal;font-weight:600}
+/* REKOMENDASI */
+.rek-right .rr-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.75rem}
+.rek-btns{display:flex;flex-direction:column;gap:.6rem}
+.rek-btn{display:flex;align-items:center;gap:.65rem;padding:.7rem 1rem;border-radius:8px;font-size:.83rem;font-weight:500;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;transition:all .2s;text-align:left;width:100%}
+.rek-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);transform:translateX(3px)}
+.rek-btn .rb-icon{width:28px;height:28px;border-radius:6px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.rek-btn:hover .rb-icon{background:rgba(37,99,235,.15)}
+/* ALASAN */
+.alasan-list{display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem}
+.alasan-item{display:flex;align-items:flex-start;gap:.65rem;font-size:.83rem;color:var(--muted);line-height:1.5}
+.alasan-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:.45rem}
+/* CHART */
+.chart-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem}
+.chart-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:center;margin-top:.75rem}
+.chart-wrap{position:relative;height:260px}
+/* RIWAYAT */
+.riwayat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;margin-top:1.25rem}
+.riwayat-item{display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--border);font-size:.83rem}
+.riwayat-item:last-child{border-bottom:none}
+.ri-kom{font-weight:500;color:var(--text)}
+.ri-time{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+.rek-pill{padding:.2rem .65rem;border-radius:999px;font-size:.7rem;font-weight:600}
+.rk-buy{background:#dcfce7;color:#15803d}
+.rk-buy_soon{background:#dbeafe;color:#1d4ed8}
+.rk-wait{background:#fef9c3;color:#a16207}
+.rk-hold{background:#fee2e2;color:#b91c1c}
+/* STATUS BANNER */
+.status-banner{border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;font-size:.88rem;font-weight:500}
+.status-banner.buy{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.status-banner.buy_soon{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+.status-banner.wait{background:#fef9c3;color:#92400e;border:1px solid #fde68a}
+.status-banner.hold{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.status-banner .sb-emoji{font-size:1.2rem}
+/* PLACEHOLDER */
+.placeholder-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;color:var(--muted);text-align:center;gap:.75rem}
+.placeholder-state .ph-icon{font-size:2.5rem;opacity:.4}
+.placeholder-state p{font-size:.88rem;max-width:280px;line-height:1.6}
+/* FOOTER */
+footer{border-top:1px solid var(--border);background:#fff;padding:1.1rem 2rem;display:flex;align-items:center;justify-content:space-between;margin-top:3rem}
+.footer-brand{display:flex;align-items:center;gap:.5rem;font-size:.8rem;font-weight:600;color:var(--text)}
+.footer-links{display:flex;gap:1.5rem}
+.footer-links a{font-size:.78rem;color:var(--muted);text-decoration:none}.footer-links a:hover{color:var(--text)}
+/* LOADING */
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:768px){
+  .grid-main{grid-template-columns:1fr}
+  .price-row{grid-template-columns:1fr}
+  .selisih-row{grid-template-columns:1fr}
+  .page-wrap{padding:66px 1rem 2rem}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-brand">
+    <div class="nav-brand-icon">PW</div>
+    PanganWatch
+  </div>
+  <div class="nav-right">
+    <span class="user-pill" id="user-pill">👤 User</span>
+    <a href="/">Beranda</a>
+    <a onclick="logout()">Keluar</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="breadcrumb">
+    <span>Beranda</span> / <strong>Simulasi Pengeluaran AI</strong>
+  </div>
+  <div class="page-title">Simulasi Pengeluaran AI</div>
+  <div class="page-sub">Estimasi pengeluaran Anda berdasarkan tren harga komoditas terkini dan prediksi cerdas untuk perencanaan finansial yang lebih baik.</div>
+
+  <div class="grid-main">
+    <!-- KIRI: INPUT -->
+    <div>
+      <div class="card">
+        <div class="card-title">
+          <div class="card-icon">☰</div>
+          Input Data Konsumsi
+        </div>
+        <div class="field">
+          <label>Pilih Komoditas</label>
+          <select id="sel-komoditas" onchange="onKomoditasChange()">
+            <option value="">— Pilih komoditas —</option>
+            {% for k in komoditas_list %}
+            <option value="{{ k }}">{{ k }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Konsumsi per Minggu (Kg/Liter)</label>
+          <div class="input-wrap">
+            <input type="number" id="inp-konsumsi" value="0.5" min="0.1" step="0.5">
+            <span class="input-unit" id="unit-label">kg</span>
+          </div>
+          <span class="field-hint">*Data ini akan digunakan untuk menghitung total bulanan.</span>
+        </div>
+        <button class="btn-hitung" id="btn-hitung" onclick="hitungEstimasi()" disabled>
+          ⊞ Hitung Estimasi
+        </button>
+      </div>
+
+      <div class="ai-card" id="ai-card" style="display:none">
+        <div class="ai-card-header">ℹ Wawasan AI</div>
+        <p id="ai-insight">—</p>
+      </div>
+
+      <!-- RIWAYAT -->
+      <div class="riwayat-card" id="riwayat-wrap" style="display:none">
+        <div class="card-title" style="margin-bottom:.75rem">
+          <div class="card-icon">🕐</div>
+          Riwayat Simulasi
+        </div>
+        <div id="riwayat-list"></div>
+      </div>
+    </div>
+
+    <!-- KANAN: HASIL -->
+    <div class="right-col">
+      <div id="result-area">
+        <div class="placeholder-state">
+          <div class="ph-icon">📊</div>
+          <p>Pilih komoditas dan masukkan konsumsi, lalu klik <strong>Hitung Estimasi</strong> untuk melihat analisis harga.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">
+    <div class="nav-brand-icon" style="width:22px;height:22px;font-size:.65rem">PW</div>
+    PANGANWATCH <span style="font-weight:400;color:var(--muted)">© 2025 AI Spending Simulation</span>
+  </div>
+  <div class="footer-links">
+    <a href="#">Syarat &amp; Ketentuan</a>
+    <a href="#">Kebijakan Privasi</a>
+    <a href="#">Bantuan</a>
+  </div>
+</footer>
+
+<script>
+let userChart = null;
+
+// Init
+fetch('/api/auth/me').then(r=>r.json()).then(d=>{
+  if(d.logged_in) {
+    document.getElementById('user-pill').textContent = '👤 '+d.username;
+    // simpan email untuk keperluan display
+    window._userEmail = d.email || '';
+  }
+});
+loadRiwayat();
+
+// Komoditas change
+async function onKomoditasChange() {
+  const k = document.getElementById('sel-komoditas').value;
+  document.getElementById('btn-hitung').disabled = !k;
+  if (!k) return;
+  const r = await fetch(`/api/historis/${encodeURIComponent(k)}?days=7`);
+  const d = await r.json();
+  document.getElementById('unit-label').textContent = d.satuan || 'kg';
+}
+
+// Hitung estimasi
+async function hitungEstimasi() {
+  const k = document.getElementById('sel-komoditas').value;
+  const konsumsi = parseFloat(document.getElementById('inp-konsumsi').value) || 0.5;
+  if (!k) return;
+
+  const btn = document.getElementById('btn-hitung');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Menghitung...';
+
+  const r = await fetch('/api/rekomendasi', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({komoditas: k, konsumsi})
+  });
+  if (r.status === 401) { window.location.href = '/login'; return; }
+  const d = await r.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '⊞ Hitung Estimasi';
+
+  renderResult(d, k, konsumsi);
+  loadRiwayat();
+}
+
+function renderResult(d, komoditas, konsumsi) {
+  // Hitung pengeluaran bulanan (4.3 minggu/bulan)
+  const bulanSkrg  = Math.round(d.budget_sekarang * 4.3);
+  const bulanDepan = Math.round(d.budget_7hari * 4.3);
+  const selisih    = bulanDepan - bulanSkrg;
+  const selisihPct = ((selisih / bulanSkrg) * 100).toFixed(2);
+  const selisihCls = selisih > 0 ? 'up' : selisih < 0 ? 'down' : 'flat';
+  const selisihArrow = selisih > 0 ? '↗' : selisih < 0 ? '↘' : '→';
+
+  // Rekomendasi tindakan
+  const rekActions = {
+    buy:      [
+      {icon:'🛒', label:'Beli Sekarang',   desc:'Sebelum harga naik lebih tinggi'},
+      {icon:'📦', label:'Stok Lebih Awal', desc:'Beli lebih banyak untuk persediaan'},
+    ],
+    buy_soon: [
+      {icon:'⚡', label:'Beli Segera',  desc:'Dalam 1–2 hari masih aman'},
+      {icon:'🏷️', label:'Cari Promo',   desc:'Cek diskon di pasar terdekat'},
+    ],
+    wait: [
+      {icon:'⏳', label:'Tunggu 3–5 Hari', desc:'Harga mungkin akan turun'},
+      {icon:'📊', label:'Pantau Harga',    desc:'Cek lagi besok sebelum beli'},
+    ],
+    hold: [
+      {icon:'📉', label:'Tunda Pembelian', desc:'Harga diprediksi turun'},
+      {icon:'🔄', label:'Cek Alternatif',  desc:'Pertimbangkan produk serupa'},
+    ],
+  };
+  const actions = rekActions[d.warna] || [{icon:'📌', label:'Pantau Harga', desc:''}];
+
+  // AI insight text
+  const insightMap = {
+    buy:      `AI memprediksi kenaikan harga ${komoditas} sekitar ${Math.abs(d.delta_pct_7)}% dalam 7 hari ke depan. Disarankan beli sekarang untuk menghemat.`,
+    buy_soon: `Harga ${komoditas} saat ini stabil (${d.delta_pct_7 >= 0 ? '+' : ''}${d.delta_pct_7}%). Beli dalam 1-2 hari masih aman.`,
+    wait:     `AI mendeteksi indikasi penurunan harga ${komoditas}. Menunggu 3-5 hari bisa menghemat anggaran Anda.`,
+    hold:     `Prediksi menunjukkan harga ${komoditas} akan turun sekitar ${Math.abs(d.delta_pct_7)}%. Tunda pembelian jika stok masih cukup.`,
+  };
+  document.getElementById('ai-insight').textContent = insightMap[d.warna] || '';
+  document.getElementById('ai-card').style.display = '';
+
+  // Banner status
+  const statusLabel = {buy:'🛒 BELI SEKARANG',buy_soon:'⚡ BELI SEGERA',wait:'⏳ TUNGGU DULU',hold:'📉 TUNDA PEMBELIAN'};
+
+  // Alasan items (2 poin, bullet style)
+  const alasanHtml = d.alasan.map(a => `
+    <div class="alasan-item">
+      <span class="alasan-dot"></span>
+      <span>${a}</span>
+    </div>`).join('');
+
+  // Chart — data sudah weekly dari backend
+
+  document.getElementById('result-area').innerHTML = `
+    <div class="status-banner ${d.warna}">
+      <span class="sb-emoji">${d.emoji}</span>
+      <div>
+        <strong>${statusLabel[d.warna]}</strong> — ${d.headline}
+      </div>
+    </div>
+
+    <div class="price-row">
+      <div class="price-card">
+        <div class="pc-label">Harga Saat Ini</div>
+        <div class="pc-val">Rp ${d.harga_kini.toLocaleString('id-ID')}<span class="pc-unit">/${d.satuan}</span></div>
+        <div class="pc-sub-label">Total Pengeluaran Sekarang</div>
+        <div class="pc-sub-val">Rp ${bulanSkrg.toLocaleString('id-ID')} <span style="font-size:.75rem;color:var(--muted);font-weight:400">/bulan</span></div>
+      </div>
+      <div class="price-card">
+        <span class="ai-badge">AI PREDICTION</span>
+        <div class="pc-label">Prediksi Harga Bulan Depan</div>
+        <div class="pc-val">Rp ${d.harga_7hari.toLocaleString('id-ID')}<span class="pc-unit">/${d.satuan}</span></div>
+        <div class="pc-sub-label">Estimasi Pengeluaran Bulan Depan</div>
+        <div class="pc-sub-val" style="color:${selisih>0?'var(--red)':selisih<0?'var(--green)':'var(--muted)'}">Rp ${bulanDepan.toLocaleString('id-ID')} <span style="font-size:.75rem;color:var(--muted);font-weight:400">/bulan</span></div>
+      </div>
+    </div>
+
+    <div class="ringkasan-card">
+      <div class="ringkasan-header">
+        <div>
+          <div class="ringkasan-title">Ringkasan Anggaran</div>
+          <div class="ringkasan-sub">Berdasarkan konsumsi ${konsumsi} ${d.satuan} per minggu</div>
+        </div>
+        <div class="ringkasan-icon">💰</div>
+      </div>
+      <div class="selisih-row">
+        <div class="selisih-left">
+          <div class="sl-label">Selisih Pengeluaran</div>
+          <div class="selisih-val ${selisihCls}">
+            ${selisihArrow} Rp ${Math.abs(selisih).toLocaleString('id-ID')}
+          </div>
+          <div class="selisih-pct">
+            ${selisih >= 0 ? 'Peningkatan' : 'Penghematan'} biaya estimasi sekitar
+            <em style="color:${selisih>0?'var(--red)':'var(--green)'}">${Math.abs(selisihPct)}%</em>
+          </div>
+          <div class="alasan-list">${alasanHtml}</div>
+        </div>
+        <div class="rek-right">
+          <div class="rr-label">Rekomendasi Tindakan:</div>
+          <div class="rek-btns">
+            ${actions.map(a=>`
+              <button class="rek-btn">
+                <span class="rb-icon">${a.icon}</span>
+                <span>
+                  <span style="display:block;font-weight:600;font-size:.83rem">${a.label}</span>
+                  <span style="display:block;font-size:.72rem;color:var(--muted);margin-top:.1rem">${a.desc}</span>
+                </span>
+              </button>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-wrap"><canvas id="userChart"></canvas></div>
+      <div class="chart-label">GRAFIK TREN HARGA 4 BULAN TERAKHIR &amp; PREDIKSI</div>
+    </div>
+  `;
+
+  buildChart(d.chart);
+}
+
+function buildChart(c) {
+  const ctx = document.getElementById('userChart').getContext('2d');
+  if (userChart) userChart.destroy();
+
+  const nHist = c.hist_harga.length;
+  const nPred = c.pred_harga.length;
+
+  // Label tanggal: historis dd/mm, prediksi "H+n"
+  const xLabels = [
+    ...c.hist_tanggal.map(t => {
+      const d = new Date(t);
+      return `${d.getDate()}/${d.getMonth()+1}`;
+    }),
+    ...c.pred_tanggal.map((t,i) => `H+${i+1}`)
+  ];
+
+  const histData = c.hist_harga.map(v => v);
+  const predData = Array(nHist).fill(null).concat(c.pred_harga);
+
+  // Garis rata-rata 90 hari
+  const avgVal  = c.hist_avg || Math.round(histData.reduce((a,b)=>a+b,0)/histData.length);
+  const avgData = Array(nHist + nPred).fill(avgVal);
+
+  const allVals = [...c.hist_harga, ...c.pred_harga,
+    ...(c.ci_lower||[]), ...(c.ci_upper||[])].filter(v=>v!=null);
+  const dMin = Math.min(...allVals);
+  const dMax = Math.max(...allVals);
+  const pad  = Math.max((dMax-dMin)*0.25, dMin*0.005, 200);
+  const yMin = Math.floor((dMin-pad)/100)*100;
+  const yMax = Math.ceil((dMax+pad)/100)*100;
+
+  const ciUpperData = c.ci_upper ? Array(nHist).fill(null).concat(c.ci_upper) : null;
+  const ciLowerData = c.ci_lower ? Array(nHist).fill(null).concat(c.ci_lower) : null;
+
+  const datasets = [
+    {label:'Historis', data:histData, borderColor:'#2563eb',
+     backgroundColor:'rgba(37,99,235,0.07)', borderWidth:2,
+     pointRadius:0, pointHoverRadius:4, tension:.3, fill:'origin', order:2},
+    {label:'Prediksi', data:predData, borderColor:'#f59e0b',
+     backgroundColor:'rgba(245,158,11,0.07)', borderWidth:2.5,
+     borderDash:[6,3], pointRadius:0, pointHoverRadius:4,
+     tension:.3, fill:'origin', order:1},
+    {label:'Rata-rata', data:avgData, borderColor:'rgba(107,114,128,0.45)',
+     borderWidth:1, borderDash:[3,3], pointRadius:0, fill:false, order:3},
+  ];
+
+  if (ciUpperData && ciLowerData) {
+    datasets.push({label:'CI+', data:ciUpperData, borderColor:'rgba(245,158,11,0.2)',
+      backgroundColor:'rgba(245,158,11,0.06)', borderWidth:.5, pointRadius:0, tension:.3, fill:'+1'});
+    datasets.push({label:'CI-', data:ciLowerData, borderColor:'rgba(245,158,11,0.2)',
+      backgroundColor:'rgba(245,158,11,0.06)', borderWidth:.5, pointRadius:0, tension:.3, fill:false});
+  }
+
+  userChart = new Chart(ctx, {
+    type:'line', data:{labels:xLabels, datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{
+          display:true, position:'top', align:'end',
+          labels:{color:'#718096', font:{size:11, family:'Inter'},
+            boxWidth:12, boxHeight:2, padding:14,
+            filter: i => !i.text.startsWith('CI') && i.text !== 'Rata-rata'}
+        },
+        tooltip:{
+          backgroundColor:'#fff', borderColor:'#e2e8f0', borderWidth:1,
+          titleColor:'#1a202c', bodyColor:'#718096', padding:10,
+          callbacks:{
+            title: items => {
+              const i = items[0].dataIndex;
+              const t = i < nHist ? c.hist_tanggal[i] : c.pred_tanggal[i-nHist];
+              if (!t) return '';
+              return new Date(t).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+            },
+            label: item => {
+              if (item.dataset.label.startsWith('CI') || item.dataset.label==='Rata-rata') return null;
+              if (item.parsed.y===null) return null;
+              const tag = item.dataset.label==='Prediksi' ? ' (prediksi)' : '';
+              return `  Rp ${Math.round(item.parsed.y).toLocaleString('id-ID')}${tag}`;
+            },
+            afterBody: items => {
+              const v = items.find(i=>i.parsed.y!==null && !i.dataset.label.startsWith('CI'));
+              if (!v) return;
+              const diff = v.parsed.y - avgVal;
+              const pct  = (diff/avgVal*100).toFixed(2);
+              const sign = diff>=0?'+':'';
+              return [`  vs rata-rata: ${sign}Rp ${Math.abs(diff).toLocaleString('id-ID')} (${sign}${pct}%)`];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{color:'#a0aec0', font:{size:10}, maxRotation:0, maxTicksLimit:10,
+            callback:(v,i)=>xLabels[i]||null},
+           grid:{color:'rgba(226,232,240,0.6)'}},
+        y:{min:yMin, max:yMax,
+           ticks:{color:'#a0aec0', font:{size:10}, maxTicksLimit:6,
+             callback:v=>'Rp '+Math.round(v).toLocaleString('id-ID')},
+           grid:{color:'rgba(226,232,240,0.6)'}}
+      }
+    }
+  });
+}
+
+async function loadRiwayat() {
+  const r = await fetch('/api/simulasi/riwayat?limit=5');
+  if (!r.ok) return;
+  const data = await r.json();
+  if (!data.length) return;
+
+  const rkMap = {'BELI SEKARANG':'rk-buy','BELI SEGERA':'rk-buy_soon','TUNGGU DULU':'rk-wait','TUNDA PEMBELIAN':'rk-hold'};
+  let html = '';
+  for (const s of data) {
+    const cls = rkMap[s.rekomendasi] || 'rk-wait';
+    html += `<div class="riwayat-item">
+      <div>
+        <div class="ri-kom">${s.komoditas} · ${s.konsumsi} ${s.satuan}</div>
+        <div class="ri-time">${s.created_at}</div>
+      </div>
+      <span class="rek-pill ${cls}">${s.rekomendasi}</span>
+    </div>`;
+  }
+  document.getElementById('riwayat-list').innerHTML = html;
+  document.getElementById('riwayat-wrap').style.display = '';
+}
+
+async function logout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+</script>
+</body>
+</html>
