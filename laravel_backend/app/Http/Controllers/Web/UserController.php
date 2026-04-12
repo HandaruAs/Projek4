@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 
 class UserController extends Controller
 {
-    public function dashboard()
+    public function home()
     {
         $user = session('user');
 
@@ -14,6 +14,6 @@ class UserController extends Controller
             return redirect('/login');
         }
 
-        return view('user.dashboard', compact('user'));
+        return view('user.home', compact('user'));
     }
 }
