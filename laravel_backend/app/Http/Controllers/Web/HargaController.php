@@ -60,4 +60,45 @@ class HargaController extends Controller
             'categoryList',
         ));
     }
+
+    // ── USER: /harga ─────────────────────────────────────────
+    public function userIndex()
+    {
+        $totalRecords   = PriceHistory::count();
+        $todayRecords   = PriceHistory::whereBetween('date', [
+            Carbon::today()->startOfDay(),
+            Carbon::today()->endOfDay(),
+        ])->count();
+        $totalKomoditas = Commodity::count();
+
+        $query = PriceHistory::query();
+
+        if (request('search')) {
+            $query->where('commodity_name', 'like', '%' . request('search') . '%');
+        }
+        if (request('category')) {
+            $query->where('category', request('category'));
+        }
+        if (request('date')) {
+            $date = Carbon::parse(request('date'));
+            $query->whereBetween('date', [
+                $date->copy()->startOfDay(),
+                $date->copy()->endOfDay(),
+            ]);
+        }
+
+        $hargaList = $query->orderBy('date', 'desc')->paginate(20)->withQueryString();
+
+        $categoryList = collect(
+            PriceHistory::raw(fn($col) => $col->distinct('category', []))
+        )->filter()->sort()->values();
+
+        return view('user.harga', compact(
+            'totalRecords',
+            'todayRecords',
+            'totalKomoditas',
+            'hargaList',
+            'categoryList',
+        ));
+    }
 }

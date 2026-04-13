@@ -1,4 +1,4 @@
-@extends('admin.layouts')
+@extends('layouts.layout')
 
 @section('title', 'Generate Prediksi')
 @section('page-title', 'Generate Prediksi')
