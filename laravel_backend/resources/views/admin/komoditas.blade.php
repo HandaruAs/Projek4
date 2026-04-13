@@ -1,4 +1,4 @@
-@extends('admin.layouts')
+@extends('layouts.layout')
 
 @section('title', 'Kelola Komoditas')
 @section('page-title', 'Kelola Komoditas')
