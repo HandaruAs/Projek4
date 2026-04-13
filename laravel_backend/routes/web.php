@@ -76,7 +76,7 @@ Route::middleware(['role:admin'])->group(function () {
 Route::middleware(['role:user'])->group(function () {
 
     Route::get('/home',      [App\Http\Controllers\Web\UserController::class,       'home'])->name('user.home');
-    Route::get('/harga',     [App\Http\Controllers\Web\UserHargaController::class,   'harga'])->name('user.harga');
+    Route::get('/harga', [HargaController::class, 'userIndex'])->name('user.harga');
     Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class,'prediksi'])->name('user.prediksi');
     Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class,'simulasi'])->name('user.simulasi');
     Route::get('/chatai', [App\Http\Controllers\Web\UserChatAiController::class, 'index'])->name('user.chatai');
