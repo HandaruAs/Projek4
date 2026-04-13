@@ -1,10 +1,3 @@
-{{--
-  =====================================================
-  SIMOPANG — User Dashboard
-  File : resources/views/user/home.blade.php
-  Desc : Halaman monitoring harga komoditas untuk user
-  =====================================================
---}}
 @extends('layouts.layout')
 
 @section('title', 'Monitoring Harga Komoditas')
