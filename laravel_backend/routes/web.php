@@ -20,21 +20,9 @@ Route::prefix('dashboard')->name('dashboard.')->group(function () {
     Route::get('/export-pdf', [DashboardController::class, 'exportPdf'])->name('export-pdf');
 });
 
-
-<<<<<<< HEAD
-
-Route::view('/data-harga', 'data-harga.index')->name('data-harga.index');
-Route::view('/prediksi',   'prediksi.index')->name('prediksi.index');
-Route::view('/simulasi',   'simulasi.index')->name('simulasi.index');
-Route::view('/tentang',    'tentang')->name('tentang');
-Route::view('/api/docs',   'api-docs')->name('api.docs');
-
-
-
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::view('/dashboard', 'admin.dashboard')->name('dashboard');
 });
-=======
 // ── AUTH ROUTES ──────────────────────────────────────────────
 Route::get('/register',        [AuthController::class, 'showRegisterUser'])->name('register');
 Route::post('/register',       [AuthController::class, 'registerUser']);
@@ -102,4 +90,3 @@ Route::middleware(['role:user'])->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Web\UserController::class, 'dashboard'])->name('user.dashboard');
 
 }); // [+] tutup middleware user
->>>>>>> cdacd4730c3db6ecfc7820297fb35cec1fd22d82
