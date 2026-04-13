@@ -13,10 +13,15 @@ use App\Http\Controllers\Web\UserSimulasiController;
 use App\Http\Controllers\Web\UserChatAiController;
 use App\Http\Controllers\Web\UserProfilController;
 
+// Landing Page
 Route::get('/', function () {
-    return view('welcome');
-});
+    return view('landing');
+})->name('landing');
 
+// Alternative route for home
+Route::get('/home', function () {
+    return redirect()->route('landing');
+});
 
 // ── AUTH ROUTES ──────────────────────────────────────────────
 Route::get('/register',        [AuthController::class, 'showRegisterUser'])->name('register');

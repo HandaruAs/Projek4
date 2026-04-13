@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Font */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 5rem;
+    }
+    
+    body {
+        @apply antialiased text-slate-900;
+    }
+}
+
+/* Custom Utilities */
+@layer utilities {
+    /* Glassmorphism Effect */
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .glass-effect-dark {
+        background: rgba(10, 25, 47, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+    }
+    
+    /* Gradient Text */
+    .text-gradient {
+        @apply bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent;
+    }
+    
+    .text-gradient-white {
+        @apply bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent;
+    }
+    
+    /* Card Hover Effects */
+    .card-hover {
+        @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+    }
+    
+    /* Custom Animations */
+    .animate-float-slow {
+        animation: float 8s ease-in-out infinite;
+    }
+    
+    .animate-float-medium {
+        animation: float 6s ease-in-out infinite;
+    }
+    
+    .animate-float-fast {
+        animation: float 4s ease-in-out infinite;
+    }
+    
+    .animate-glow {
+        animation: glow 3s ease-in-out infinite;
+    }
+    
+    /* Shimmer Effect */
+    .shimmer {
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent
+        );
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+    }
+}
+
+/* Keyframes */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-15px);
+    }
+}
+
+@keyframes glow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Custom Components */
+@layer components {
+    /* Button Styles */
+    .btn-primary {
+        @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300;
+    }
+    
+    .btn-secondary {
+        @apply glass-effect px-6 py-3 rounded-full font-semibold border border-slate-300 hover:bg-white/90 transition-all duration-300 hover:scale-105;
+    }
+    
+    .btn-outline {
+        @apply border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-full font-semibold hover:bg-blue-600 hover:text-white transition-all duration-300;
+    }
+    
+    /* Section Titles */
+    .section-title {
+        @apply text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4;
+    }
+    
+    .section-subtitle {
+        @apply text-lg md:text-xl text-slate-600 max-w-3xl mx-auto;
+    }
+    
+    /* Badge */
+    .badge {
+        @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+    }
+    
+    .badge-primary {
+        @apply bg-blue-100 text-blue-700;
+    }
+    
+    .badge-success {
+        @apply bg-green-100 text-green-700;
+    }
+    
+    /* Feature Card */
+    .feature-card {
+        @apply glass-effect rounded-2xl p-6 border border-slate-200 card-hover;
+    }
+    
+    /* Stat Card */
+    .stat-card {
+        @apply text-center p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-white border border-blue-100;
+    }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-slate-100;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-blue-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-blue-500;
+}
+
+/* Selection Styling */
+::selection {
+    @apply bg-blue-200 text-blue-900;
+}
+
+/* Mobile Menu Animation */
+.mobile-menu-enter {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.mobile-menu-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 300ms ease;
+}
+
+.mobile-menu-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.mobile-menu-exit-active {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 300ms ease;
+}
