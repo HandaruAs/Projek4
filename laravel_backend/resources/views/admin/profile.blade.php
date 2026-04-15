@@ -38,19 +38,19 @@
                  onmouseover="this.style.opacity='0.8'"
                  onmouseout="this.style.opacity='1'"
                  title="Click to view photo">
-                @if($user->avatar)
-                    <img id="avatarPreview" src="{{ asset('storage/' . $user->avatar) }}"
+                @if($user['avatar'])
+                    <img id="avatarPreview" src="{{ asset('storage/' . $user['avatar']) }}"
                          style="width:100%; height:100%; object-fit:cover">
                 @else
                     <span id="avatarInitial" style="font-size:22px; font-weight:700; color:#fff">
-                        {{ strtoupper(substr($user->name ?? 'A', 0, 1)) }}
+                        {{ strtoupper(substr($user['nama'] ?? 'A', 0, 1)) }}
                     </span>
                 @endif
             </div>
             <div>
-                <div style="font-weight:700; color:var(--text-primary); font-size:15px">{{ $user->name ?? 'Admin User' }}</div>
-                <div style="font-size:12.5px; color:var(--text-muted); margin-top:3px">{{ $user->email ?? '' }}</div>
-                <span class="badge badge-blue" style="margin-top:6px">{{ ucfirst($user->role ?? 'admin') }}</span>
+                <div style="font-weight:700; color:var(--text-primary); font-size:15px">{{ $user['nama'] ?? 'Admin User' }}</div>
+                <div style="font-size:12.5px; color:var(--text-muted); margin-top:3px">{{ $user['email'] ?? '' }}</div>
+                <span class="badge badge-blue" style="margin-top:6px">{{ ucfirst($user['role'] ?? 'admin') }}</span>
             </div>
         </div>
 
@@ -75,7 +75,7 @@
                 <div class="form-group-admin">
                     <label class="form-label-admin">Full Name</label>
                     <input type="text" class="form-input-admin" name="name"
-                           value="{{ old('name', $user->name ?? '') }}"
+                           value="{{ old('name', $user['nama'] ?? '') }}"
                            placeholder="Enter full name" required>
                 </div>
 
@@ -83,7 +83,7 @@
                 <div class="form-group-admin">
                     <label class="form-label-admin">Email Address</label>
                     <input type="email" class="form-input-admin" name="email"
-                           value="{{ old('email', $user->email ?? '') }}"
+                           value="{{ old('email', $user['email'] ?? '') }}"
                            placeholder="Enter email" required>
                 </div>
 
@@ -94,7 +94,7 @@
                         <span style="color:var(--text-muted); font-weight:400; font-size:11.5px">(optional)</span>
                     </label>
                     <input type="text" class="form-input-admin" name="phone"
-                           value="{{ old('phone', $user->phone ?? '') }}"
+                           value="{{ old('phone', $user['phone'] ?? '') }}"
                            placeholder="e.g. 08123456789">
                 </div>
 
@@ -105,14 +105,14 @@
                         <span style="color:var(--text-muted); font-weight:400; font-size:11.5px">(optional)</span>
                     </label>
                     <textarea name="address" class="form-input-admin" rows="3"
-                              placeholder="Enter your address...">{{ old('address', $user->address ?? '') }}</textarea>
+                              placeholder="Enter your address...">{{ old('address', $user['address'] ?? '') }}</textarea>
                 </div>
 
                 {{-- Role (disabled) --}}
                 <div class="form-group-admin">
                     <label class="form-label-admin">Role</label>
                     <input type="text" class="form-input-admin"
-                           value="{{ ucfirst($user->role ?? 'admin') }}" disabled
+                           value="{{ ucfirst($user['role'] ?? 'admin') }}" disabled
                            style="cursor:not-allowed; color:var(--text-muted)">
                 </div>
 

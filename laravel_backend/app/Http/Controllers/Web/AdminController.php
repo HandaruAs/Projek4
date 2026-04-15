@@ -16,7 +16,7 @@ class AdminController extends Controller
     {
         $user = session('user');
         if (!$user) return redirect('/login');
-        if ($user->role !== 'admin') return redirect('/dashboard');
+        if (($user['role'] ?? null) !== 'admin') return redirect('/dashboard');
         return $user;
     }
 
@@ -60,7 +60,7 @@ class AdminController extends Controller
         ]);
 
 
-        $userData = User::find($user->_id);
+        $userData = User::find($user['id']);
 
         $updateData = [
             'name'    => $request->name,
@@ -80,7 +80,20 @@ class AdminController extends Controller
         }
 
         $userData->update($updateData);
-        session(['user' => $userData->fresh()]);
+        $fresh = $userData->fresh();
+
+        // Perbarui session dengan format array yang konsisten
+        session([
+            'user' => [
+                'id'      => (string) $fresh->_id,
+                'nama'    => $fresh->name,
+                'email'   => $fresh->email,
+                'role'    => $fresh->role,
+                'phone'   => $fresh->phone   ?? null,
+                'address' => $fresh->address ?? null,
+                'avatar'  => $fresh->avatar  ?? null,
+            ]
+        ]);
 
         return redirect('/admin/profile')->with('success', 'Profil berhasil diperbarui.');
     }
