@@ -8,7 +8,7 @@ class ApiService {
   ApiService._internal();
 
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://192.168.1.104:8000/api',
+    baseUrl: 'http://10.10.186.77:8000/api',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -201,6 +201,48 @@ class ApiService {
       throw _handleError(e);
     }
   }
+
+  Future<Map<String, dynamic>> getProfile() async {
+  try {
+    await _addAuthHeader();
+    final response = await _dio.get('/profile');
+    return Map<String, dynamic>.from(response.data);
+  } on DioException catch (e) {
+    if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+    throw _handleError(e);
+  }
+}
+
+Future<Map<String, dynamic>> updateProfile({
+  String? name,
+  String? email,
+  String? phone,
+  String? address,
+}) async {
+  try {
+    await _addAuthHeader();
+    final response = await _dio.put('/profile', data: {
+      if (name    != null) 'name':    name,
+      if (email   != null) 'email':   email,
+      if (phone   != null) 'phone':   phone,
+      if (address != null) 'address': address,
+    });
+    return Map<String, dynamic>.from(response.data);
+  } on DioException catch (e) {
+    if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+    throw _handleError(e);
+  }
+}
+
+Future<Map<String, dynamic>> getStatistics() async {
+  try {
+    final response = await _dio.get('/statistics');
+    return Map<String, dynamic>.from(response.data);
+  } on DioException catch (e) {
+    if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+    throw _handleError(e);
+  }
+}
 
   // ── HELPER ───────────────────────────────────────────────
 

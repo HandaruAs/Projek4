@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/forgot_password_screen.dart';
 import 'package:flutter_app/screens/auth/register_screen.dart';
-import 'package:flutter_app/screens/Admin/main_screen.dart';
-import 'package:flutter_app/screens/User/main_screen.dart';
+import 'package:flutter_app/screens/User/main_screen.dart'; 
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -39,22 +38,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (success) {
-        final user = authProvider.currentUser;
-
-        // Hanya admin yang boleh masuk
-        if (user?.role == "admin") {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => const MainScreen(),
-            ),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => const UserMainScreen(),
-            ),
-          );
-        }
+        // ✅ Tidak perlu cek role — semua user langsung ke UserMainScreen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const UserMainScreen()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -81,7 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const SizedBox(height: 40),
 
-                      // Header
                       Center(
                         child: Container(
                           width: 80,
@@ -122,12 +108,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 40),
 
-                      // Form
                       Form(
                         key: _formKey,
                         child: Column(
                           children: [
-                            // Email Field
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -147,7 +131,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 16),
 
-                            // Password Field
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
@@ -182,7 +165,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Login Button
                       ElevatedButton(
                         onPressed: authProvider.isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
@@ -195,7 +177,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Forgot Password Link
                       Center(
                         child: TextButton(
                           onPressed: () {
@@ -216,7 +197,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Register Link
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -247,7 +227,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              // Loading Overlay
               if (authProvider.isLoading) const LoadingWidget(),
             ],
           );

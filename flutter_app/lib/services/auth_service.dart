@@ -6,8 +6,8 @@ class AuthService {
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
 
-  // LOGIN
-  Future<UserModel?> login(String email, String password) async {
+  // LOGIN 
+  Future<UserModel> login(String email, String password) async {
     final response = await _apiService.login(email, password);
 
     if (response['status'] == 'success') {
@@ -22,9 +22,9 @@ class AuthService {
       return user;
     }
 
-    return null;
+    
+    throw Exception(response['message'] ?? 'Login gagal');
   }
-
   // REGISTER
   Future<Map<String, dynamic>> register(
     String name,
@@ -45,10 +45,10 @@ class AuthService {
       final token = response['data']['token'];
 
        print('=== REGISTER DEBUG ===');
-  print('full response: $response');
-  print('userData: $userData');
-  print('role dari server: ${userData['role']}');
-  
+      print('full response: $response');
+      print('userData: $userData');
+      print('role dari server: ${userData['role']}');
+      
 
       final user = UserModel.fromJson({...userData, 'token': token});
       print('role di UserModel: ${user.role}');
