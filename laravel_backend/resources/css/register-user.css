@@ -1,0 +1,245 @@
+/* ═══════════════════════════════════════
+   register-user.css
+═══════════════════════════════════════ */
+
+/* Reuse all register-admin layout — the structural classes are the same.
+   Only differences: user-avatar, user-features */
+
+.register-wrapper {
+  position: relative;
+  z-index: 1;
+  min-height: calc(100vh - var(--nav-h) - 52px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 4vw, 48px) clamp(12px, 3vw, 24px);
+}
+
+.register-card {
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: 5fr 6fr;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  animation: cardIn .5s var(--ease-spring) both;
+}
+
+.register-left {
+  background: linear-gradient(155deg, #0c1a2e 0%, #0f2744 45%, #0c2a52 100%);
+  padding: clamp(28px, 4vw, 44px) clamp(20px, 3vw, 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-left::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: -60px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14,165,233,.15) 0%, transparent 70%);
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  z-index: 1;
+}
+
+.step-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.18);
+  flex-shrink: 0;
+  transition: all .3s;
+}
+
+.step-dot.active {
+  background: var(--primary);
+  box-shadow: 0 0 0 4px rgba(14,165,233,.25);
+  width: 24px;
+  border-radius: 5px;
+}
+
+.step-dot.done { background: var(--success); }
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: rgba(255,255,255,.12);
+  margin: 0 4px;
+}
+
+/* illustration card */
+.illustration-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--radius-lg);
+  padding: 18px 16px 14px;
+  z-index: 1;
+}
+
+.secure-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.40);
+  margin-bottom: 12px;
+}
+
+/* User avatar */
+.user-avatar-wrap {
+  position: relative;
+  width: 52px;
+  margin: 0 auto 12px;
+}
+
+.user-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(14,165,233,.3), rgba(6,182,212,.2));
+  border: 2px solid rgba(14,165,233,.4);
+  display: grid; place-items: center;
+  color: var(--primary-light);
+  font-size: 20px;
+}
+
+.user-avatar-badge {
+  position: absolute;
+  bottom: -2px; right: -4px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--success);
+  display: grid; place-items: center;
+  color: #fff;
+  font-size: 9px;
+  border: 2px solid rgba(15,39,68,1);
+}
+
+.icon-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.icon-item {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  display: grid; place-items: center;
+  color: rgba(255,255,255,.30);
+  font-size: 12px;
+}
+
+.icon-item.active {
+  background: linear-gradient(135deg, rgba(14,165,233,.25), rgba(6,182,212,.15));
+  border-color: rgba(14,165,233,.35);
+  color: var(--primary-light);
+}
+
+.fake-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: rgba(255,255,255,.04);
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.06);
+  margin-bottom: 6px;
+}
+
+.fake-field-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: .5;
+  flex-shrink: 0;
+}
+
+.fake-field-line {
+  height: 3px; flex: 1;
+  border-radius: 3px;
+  background: rgba(255,255,255,.12);
+}
+
+.fake-field-line.short { max-width: 50%; }
+
+.fake-btn-wrap { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+.fake-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 6px; opacity: .65;
+}
+
+.fake-btn-line { width: 26px; height: 3px; border-radius: 3px; background: rgba(255,255,255,.9); }
+.fake-btn-dot  { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.8); }
+
+.card-dots { display: flex; gap: 5px; margin-top: 8px; }
+.card-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.12); }
+.card-dots span:first-child { background: var(--primary); opacity: .6; }
+
+/* User features */
+.user-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1;
+}
+
+.user-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px;
+}
+
+.user-feature-icon {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, rgba(14,165,233,.25), rgba(6,182,212,.15));
+  display: grid; place-items: center;
+  font-size: 12px;
+  color: var(--primary-light);
+  flex-shrink: 0;
+}
+
+.user-feature-text {
+  font-size: 12px;
+  color: rgba(255,255,255,.60);
+  font-weight: 500;
+}
+
+.register-right {
+  padding: clamp(24px, 4vw, 44px) clamp(20px, 4vw, 44px);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .register-card {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+    border-radius: var(--radius-lg);
+  }
+
+  .register-left  { padding: 24px 20px; order: -1; }
+  .illustration-card { display: none; }
+  .step-indicator { display: none; }
+  .register-right { padding: 24px 20px; }
+  .user-features  { display: none; }
+}
