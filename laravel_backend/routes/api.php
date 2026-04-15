@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CommodityController;
 use App\Http\Controllers\Api\PriceHistoryController;
+use App\Http\Controllers\Api\StatisticsController;
 use App\Http\Controllers\Api\PredictionController;
 
 // ── Authentication (public) ─────────────────────────────
@@ -23,11 +24,14 @@ Route::get('/commodities/{id}',     [CommodityController::class, 'show']);
 Route::get('/categories',           [CategoryController::class, 'index']);
 Route::get('/price-histories',      [PriceHistoryController::class, 'index']);
 Route::get('/price-histories/{id}', [PriceHistoryController::class, 'show']);
+Route::get('/statistics', [StatisticsController::class, 'index']);
 Route::get('/predictions',          [PredictionController::class, 'index']);
 Route::get('/predictions/{id}',     [PredictionController::class, 'show']);
 
 // ── Protected: semua user yang login ────────────────────
 Route::middleware('auth:api')->group(function () {
+    Route::get('/profile',  [AuthController::class, 'getProfile']);
+    Route::put('/profile',  [AuthController::class, 'updateProfile']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
