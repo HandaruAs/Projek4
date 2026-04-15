@@ -36,7 +36,6 @@ class AdminController extends Controller
         ));
     }
 
-
     public function profile()
     {
         $user = $this->checkAdmin();
@@ -45,7 +44,6 @@ class AdminController extends Controller
         return view('admin.profile', compact('user'));
     }
 
-    
     public function updateProfile(Request $request)
     {
         $user = $this->checkAdmin();
