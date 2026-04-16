@@ -14,29 +14,35 @@
             <div class="stat-value">{{ number_format($totalRecords) }}</div>
             <div class="stat-change up">
                 <i class="fas fa-database"></i>
-                <span class="stat-change-sub">all time</span>
+                <span class="stat-change-sub">
+                   {{ request('searchInput') || request('categoryFilter') || request('dateFilter') ? 'hasil filter' : 'all time' }}
+                </span>
             </div>
         </div>
         <div class="stat-icon icon-blue"><i class="fas fa-database"></i></div>
     </div>
+
     <div class="stat-card">
         <div>
             <div class="stat-label">Data Hari Ini</div>
             <div class="stat-value">{{ number_format($todayRecords) }}</div>
             <div class="stat-change up">
                 <i class="fas fa-calendar-day"></i>
-                <span class="stat-change-sub">today</span>
+                <span class="stat-change-sub">{{ now()->translatedFormat('d F Y') }}</span>
             </div>
         </div>
         <div class="stat-icon icon-green"><i class="fas fa-calendar-day"></i></div>
     </div>
+
     <div class="stat-card">
         <div>
             <div class="stat-label">Total Komoditas</div>
             <div class="stat-value">{{ number_format($totalKomoditas) }}</div>
             <div class="stat-change neutral">
                 <i class="fas fa-minus"></i>
-                <span class="stat-change-sub">terdaftar</span>
+                <span class="stat-change-sub">
+                    {{ request('searchInput') || request('categoryFilter') || request('dateFilter') ? 'hasil filter' : 'terdaftar' }}
+                </span>
             </div>
         </div>
         <div class="stat-icon icon-orange"><i class="fas fa-boxes-stacked"></i></div>
@@ -48,10 +54,19 @@
     <x-filter-bar
         placeholder="Cari nama komoditas..."
         :categories="$categoryList"
-        :with-date="true"
-        search-id="searchInput"
-        category-id="categoryFilter"
-        date-id="dateFilter">
+        :withDate="true"
+        searchId="searchInput"
+        categoryId="categoryFilter"
+        dateId="dateFilter">
+
+        <button type="submit" class="u-btn-filter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Terapkan Filter
+        </button>
     </x-filter-bar>
 </form>
 
@@ -134,10 +149,12 @@
 
     <div class="table-footer">
         <span class="table-footer-text">
-            Showing {{ $hargaList->firstItem() }}–{{ $hargaList->lastItem() }}
-            of {{ number_format($hargaList->total()) }} records
+            Menampilkan {{ $hargaList->firstItem() ?? 0 }} - {{ $hargaList->lastItem() ?? 0 }}
+            dari {{ $hargaList->total() ?? 0 }} data
         </span>
-        <x-pagination :paginator="$hargaList" />
+        <div class="table-actions" style="gap:8px;">
+            {{ $hargaList->links('components.pagination') }}
+        </div>
     </div>
 </div>
 
