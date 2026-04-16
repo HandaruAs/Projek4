@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
-import 'package:flutter_app/screens/Admin/main_screen.dart';
-import 'package:flutter_app/screens/User/main_screen.dart'; // ✅ tambah import ini
+import 'package:flutter_app/screens/User/main_screen.dart'; // ✅ hanya import UserMainScreen
 import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -56,19 +55,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
+    // ✅ Tidak perlu cek role — semua user langsung ke UserMainScreen
     if (authProvider.isAuthenticated) {
-      final role = authProvider.currentUser?.role;
-
-      // ✅ Routing berdasarkan role
-      if (role == 'admin') {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const UserMainScreen()),
-        );
-      }
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const UserMainScreen()),
+      );
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
