@@ -4,16 +4,14 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Prediction;
 
 class PrediksiController extends Controller
 {
     private function checkAdmin()
     {
-        $user = session('user', ['']);
-        if (!$user || ($user['role'] ?? '') !== 'admin') {
-            return redirect($user ? '/dashboard' : '/login');
-        }
+        $user = session('user');
+        if (!$user) return redirect('/login');
+        if ($user->role !== 'admin') return redirect('/dashboard');
         return $user;
     }
 
@@ -23,13 +21,10 @@ class PrediksiController extends Controller
         $user = $this->checkAdmin();
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
 
-        $predictions = Prediction::with('commodity')
-                         ->orderBy('created_at', 'desc')
-                         ->paginate(10);
-        
-        $commodities = \App\Models\Commodity::all();
+        // $predictions = Prediction::with('commodity')
+        //                  ->orderBy('created_at','desc')->paginate(10);
 
-        return view('admin.prediksi', compact('user', 'predictions', 'commodities'));
+        return view('admin.prediksi', compact('user'));
     }
 
     /** POST /admin/prediksi/generate */
@@ -45,7 +40,6 @@ class PrediksiController extends Controller
             'model'        => 'required|string',
         ]);
 
-        // TODO: Integrate with Flask ML API / PredictionService
         // $result = PredictionService::generate($request->all());
         // Prediction::create($result);
 
@@ -58,9 +52,9 @@ class PrediksiController extends Controller
         $user = $this->checkAdmin();
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
 
-        $prediction = Prediction::with('commodity')->findOrFail($id);
+        // $prediction = Prediction::with('commodity')->findOrFail($id);
 
-        return view('admin.prediksi-detail', compact('user', 'prediction'));
+        return view('admin.prediksi-detail', compact('user'));
     }
 
     /** DELETE /admin/prediksi/{id} */
@@ -69,9 +63,8 @@ class PrediksiController extends Controller
         $user = $this->checkAdmin();
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
 
-        Prediction::findOrFail($id)->delete();
+        // Prediction::findOrFail($id)->delete();
 
         return redirect('/admin/prediksi')->with('success', 'Prediksi berhasil dihapus.');
     }
 }
-

@@ -1,297 +1,356 @@
+{{--
+  =====================================================
+  SIMOPANG — User Prediksi Harga Komoditas
+  File : resources/views/user/prediksi.blade.php
+  Desc : Halaman prediksi harga berbasis AI Prophet
+  =====================================================
+--}}
 @extends('layouts.layout')
 
-@section('title', 'Generate Prediksi')
-@section('page-title', 'Generate Prediksi')
-@section('page-sub', 'Prediksi harga komoditas menggunakan model Holt-Winters Exponential Smoothing.')
+@section('title', 'Prediksi Harga Komoditas')
 
 @section('content')
 
-{{-- Flash messages --}}
-@if(session('success'))
-<div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-    <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
+  {{-- ── BREADCRUMB ─────────────────────────────────── --}}
+  <nav class="u-breadcrumb">
+    <a href="{{ route('user.home') }}">Beranda</a>
+    <span class="u-breadcrumb__sep">/</span>
+    <span class="u-breadcrumb__current">Prediksi Harga AI</span>
+  </nav>
 
-{{-- TWO PANEL ROW --}}
-<div class="prediksi-panels">
+  {{-- ── PAGE HEADER ───────────────────────────────── --}}
+  <div class="u-page-header">
+    <div>
+      <h1>Prediksi Harga Komoditas</h1>
+      <p>Pantau pergerakan harga historis dan perkiraan harga masa depan menggunakan model<br>
+         AI Prophet untuk perencanaan stok dan belanja yang lebih akurat.</p>
+    </div>
+  </div>
 
-    {{-- PANEL 1: Import Data (tidak berubah dari sebelumnya) --}}
-    <div class="panel-card">
-        <div class="panel-step-badge">1</div>
-        <div class="panel-header">
-            <div class="panel-title">Import Historical Data</div>
-            <div class="panel-sub">Upload data harga historis komoditas</div>
-        </div>
-        <form method="POST" action="/admin/harga/upload" enctype="multipart/form-data">
-            @csrf
-            <div class="upload-zone" id="uploadZone">
-                <i class="fas fa-file-arrow-up upload-zone-icon"></i>
-                <p class="upload-zone-text" id="uploadZoneText">Drop file Excel atau CSV di sini</p>
-                <input type="file" id="fileInput" name="file" accept=".xlsx,.csv" hidden>
-                <button type="button" class="btn-secondary"
-                    onclick="document.getElementById('fileInput').click()">
-                    Browse Files
-                </button>
-            </div>
-            <div class="panel-footer-row">
-                <a href="#" class="template-link"><i class="fas fa-download"></i> Template</a>
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-check-circle"></i> Validate & Upload
-                </button>
-            </div>
-        </form>
+  {{-- ── FILTER BAR ────────────────────────────────── --}}
+  <div class="u-filter-bar">
+
+    {{-- Komoditas --}}
+    <div class="u-filter-group">
+      <label class="u-filter-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+        </svg>
+        Pilih Komoditas
+      </label>
+      <select class="u-filter-select" name="komoditas">
+        @isset($komoditas)
+          @foreach($komoditas as $item)
+            <option value="{{ $item->id }}"
+              {{ ($selectedKomoditas ?? '') == $item->id ? 'selected' : '' }}>
+              {{ $item->nama }}
+            </option>
+          @endforeach
+        @else
+          <option value="1">Beras Premium</option>
+          <option value="2">Cabai Rawit</option>
+          <option value="3">Bawang Merah</option>
+          <option value="4">Telur Ayam</option>
+        @endisset
+      </select>
     </div>
 
-    {{-- PANEL 2: Model Parameters Holt-Winters --}}
-    <div class="panel-card">
-        <div class="panel-step-badge">2</div>
-        <div class="panel-header">
-            <div class="panel-title">Model Parameters</div>
-            <div class="panel-sub">Konfigurasi Holt-Winters Exponential Smoothing</div>
-        </div>
-
-        <form method="POST" action="{{ route('prediksi.generate') }}">
-            @csrf
-            <div class="param-grid">
-
-                {{-- Commodity --}}
-                <div class="form-group-admin">
-                    <label class="form-label-admin">COMMODITY FOCUS</label>
-                    <select class="form-select" name="commodity_id" required>
-                        <option value="">— Pilih Komoditas —</option>
-                        @foreach($commodities as $c)
-                            <option value="{{ $c->_id }}" {{ old('commodity_id') == $c->_id ? 'selected' : '' }}>
-                                {{ $c->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('commodity_id')
-                        <p class="text-danger small mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Horizon --}}
-                <div class="form-group-admin">
-                    <label class="form-label-admin">PREDICTION HORIZON</label>
-                    <select class="form-select" name="period" required>
-                        <option value="7"  {{ old('period','30') == '7'  ? 'selected' : '' }}>7 Hari</option>
-                        <option value="14" {{ old('period','30') == '14' ? 'selected' : '' }}>14 Hari</option>
-                        <option value="30" {{ old('period','30') == '30' ? 'selected' : '' }} selected>30 Hari</option>
-                        <option value="60" {{ old('period','30') == '60' ? 'selected' : '' }}>60 Hari</option>
-                        <option value="90" {{ old('period','30') == '90' ? 'selected' : '' }}>90 Hari</option>
-                    </select>
-                </div>
-
-                {{-- Trend Type --}}
-                <div class="form-group-admin">
-                    <label class="form-label-admin">TREND TYPE</label>
-                    <select class="form-select" name="trend">
-                        <option value="add" selected>Additive</option>
-                        <option value="mul">Multiplicative</option>
-                        <option value="none">None</option>
-                    </select>
-                </div>
-
-                {{-- Seasonal Type --}}
-                <div class="form-group-admin">
-                    <label class="form-label-admin">SEASONAL TYPE</label>
-                    <select class="form-select" name="seasonal">
-                        <option value="add" selected>Additive</option>
-                        <option value="mul">Multiplicative</option>
-                        <option value="none">None</option>
-                    </select>
-                </div>
-
-                {{-- Seasonal Periods --}}
-                <div class="form-group-admin">
-                    <label class="form-label-admin">SEASONAL PERIODS</label>
-                    <select class="form-select" name="seasonal_periods">
-                        <option value="7" selected>7 (Weekly)</option>
-                        <option value="12">12 (Monthly)</option>
-                        <option value="30">30 (Monthly Days)</option>
-                        <option value="365">365 (Yearly)</option>
-                    </select>
-                </div>
-
-                {{-- Damped --}}
-                <div class="form-group-admin">
-                    <label class="form-label-admin">DAMPED TREND</label>
-                    <select class="form-select" name="damped">
-                        <option value="0" selected>Tidak (Default)</option>
-                        <option value="1">Ya (Damped)</option>
-                    </select>
-                </div>
-
-            </div>
-
-            {{-- Info box --}}
-            <div class="hw-info-box">
-                <i class="fas fa-circle-info"></i>
-                <span>
-                    <strong>Holt-Winters</strong> cocok untuk data dengan trend + musiman.
-                    Gunakan <em>Additive</em> jika variasi musiman konstan,
-                    <em>Multiplicative</em> jika variasi membesar seiring trend naik.
-                </span>
-            </div>
-
-            <button type="submit" class="btn-run-model">
-                <i class="fas fa-wand-magic-sparkles"></i> Run Holt-Winters Model
-            </button>
-        </form>
+    {{-- Wilayah --}}
+    <div class="u-filter-group">
+      <label class="u-filter-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        Pilih Wilayah
+      </label>
+      <select class="u-filter-select" name="wilayah">
+        <option value="">Semua Wilayah</option>
+        @isset($wilayah)
+          @foreach($wilayah as $w)
+            <option value="{{ $w->id }}"
+              {{ ($selectedWilayah ?? '') == $w->id ? 'selected' : '' }}>
+              {{ $w->nama }}
+            </option>
+          @endforeach
+        @else
+          <option value="1" selected>Jawa Timur</option>
+          <option value="2">Jawa Tengah</option>
+          <option value="3">Jawa Barat</option>
+          <option value="4">DKI Jakarta</option>
+        @endisset
+      </select>
     </div>
 
-</div>
+    <button class="u-btn-filter" onclick="perbaruiGrafik(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/>
+        <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+      </svg>
+      Perbarui Grafik
+    </button>
 
-{{-- PREDICTION HISTORY TABLE --}}
-<div class="table-card">
-    <div class="table-header">
-        <div>
-            <div class="table-title">Prediction History</div>
-            <div class="table-sub">Riwayat prediksi Holt-Winters</div>
+  </div>
+
+  {{-- ── CHART CARD ─────────────────────────────────── --}}
+  <div class="u-chart-card">
+
+    <div class="u-chart-card__header">
+      <div>
+        <div class="u-chart-card__title">Analisis Tren &amp; Prediksi Harga</div>
+        <div class="u-chart-card__sub">Estimasi 90 hari kedepan menggunakan AI Prophet Modeling</div>
+      </div>
+      <div class="u-pred-legend">
+        <div class="u-pred-legend__item">
+          <span class="u-pred-legend__line u-pred-legend__line--solid"></span>
+          Historis
         </div>
-        <span class="view-all">{{ $predictions->total() }} total prediksi</span>
+        <div class="u-pred-legend__item">
+          <span class="u-pred-legend__line u-pred-legend__line--dashed"></span>
+          Prediksi AI
+        </div>
+        <div class="u-pred-legend__item">
+          <span class="u-pred-legend__area"></span>
+          Confidence Interval
+        </div>
+      </div>
     </div>
 
-    <table>
+    {{-- SVG Chart --}}
+    <div class="u-chart-wrap">
+      <svg class="u-pred-chart-svg" viewBox="0 0 700 200"
+           xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="pred-conf-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2563eb" stop-opacity=".12"/>
+            <stop offset="100%" stop-color="#2563eb" stop-opacity=".02"/>
+          </linearGradient>
+        </defs>
+
+        {{-- Y-axis grid lines --}}
+        <line x1="50" y1="20"  x2="680" y2="20"  stroke="#e5eaf3" stroke-width="1"/>
+        <line x1="50" y1="60"  x2="680" y2="60"  stroke="#e5eaf3" stroke-width="1"/>
+        <line x1="50" y1="100" x2="680" y2="100" stroke="#e5eaf3" stroke-width="1"/>
+        <line x1="50" y1="140" x2="680" y2="140" stroke="#e5eaf3" stroke-width="1"/>
+        <line x1="50" y1="175" x2="680" y2="175" stroke="#e5eaf3" stroke-width="1"/>
+
+        {{-- Y-axis labels --}}
+        <text x="42" y="24"  class="u-chart-y-lbl" text-anchor="end">16.000</text>
+        <text x="42" y="64"  class="u-chart-y-lbl" text-anchor="end">15.500</text>
+        <text x="42" y="104" class="u-chart-y-lbl" text-anchor="end">15.000</text>
+        <text x="42" y="144" class="u-chart-y-lbl" text-anchor="end">14.500</text>
+        <text x="42" y="179" class="u-chart-y-lbl" text-anchor="end">14.000</text>
+
+        {{-- X-axis labels --}}
+        <text x="90"  y="195" class="u-chart-x-lbl">Jan</text>
+        <text x="160" y="195" class="u-chart-x-lbl">Feb</text>
+        <text x="230" y="195" class="u-chart-x-lbl">Mar</text>
+        <text x="300" y="195" class="u-chart-x-lbl">Apr</text>
+        <text x="370" y="195" class="u-chart-x-lbl">Mei</text>
+        <text x="440" y="195" class="u-chart-x-lbl">Jun</text>
+        <text x="510" y="195" class="u-chart-x-lbl">Jul →</text>
+        <text x="580" y="195" class="u-chart-x-lbl">Agu →</text>
+        <text x="645" y="195" class="u-chart-x-lbl">Sep →</text>
+
+        {{-- Divider: historis vs prediksi --}}
+        <line x1="440" y1="12" x2="440" y2="178"
+              stroke="#bfdbfe" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+        {{-- Confidence interval area (prediksi) --}}
+        <path d="M440,105 C470,98 500,85 530,72 C560,59 600,44 650,28
+                 L650,60 C600,74 560,88 530,100 C500,112 470,122 440,128 Z"
+              fill="url(#pred-conf-grad)"/>
+
+        {{-- Historical line --}}
+        <path d="M60,150 C90,145 120,155 160,160 C200,165 230,158 270,148
+                 C310,138 340,128 370,122 C400,116 420,110 440,105"
+              stroke="#2563eb" stroke-width="2.5" fill="none"
+              stroke-linecap="round" stroke-linejoin="round"/>
+
+        {{-- Prediction line (dashed) --}}
+        <path d="M440,105 C470,98 500,85 530,72 C560,59 600,44 650,28"
+              stroke="#2563eb" stroke-width="2" fill="none"
+              stroke-dasharray="6,4" stroke-linecap="round"/>
+
+        {{-- Transition dot --}}
+        <circle cx="440" cy="105" r="5" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+
+        {{-- Historical dots --}}
+        <circle cx="60"  cy="150" r="3" fill="#2563eb"/>
+        <circle cx="160" cy="160" r="3" fill="#2563eb"/>
+        <circle cx="270" cy="148" r="3" fill="#2563eb"/>
+        <circle cx="370" cy="122" r="3" fill="#2563eb"/>
+
+        {{-- Predicted dots --}}
+        <circle cx="510" cy="80"  r="3" fill="white" stroke="#2563eb" stroke-width="2"/>
+        <circle cx="580" cy="52"  r="3" fill="white" stroke="#2563eb" stroke-width="2"/>
+        <circle cx="650" cy="28"  r="3" fill="white" stroke="#2563eb" stroke-width="2"/>
+      </svg>
+    </div>
+
+  </div>
+
+  {{-- ── PREDIKSI STAT CARDS ────────────────────────── --}}
+  <div class="u-pred-stat-row">
+
+    {{-- Estimasi Harga --}}
+    <div class="u-pred-stat-card u-pred-stat-card--blue">
+      <div class="u-pred-stat-card__label">Estimasi Harga (Jul 2024)</div>
+      <div class="u-pred-stat-card__value">
+        Rp {{ number_format($estimasiHarga ?? 15240, 0, ',', '.') }}
+        <span class="u-pred-stat-card__unit">/kg</span>
+      </div>
+      <div class="u-pred-stat-card__note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Berdasarkan tren rata-rata telapan
+      </div>
+    </div>
+
+    {{-- Tren Prediksi --}}
+    <div class="u-pred-stat-card u-pred-stat-card--rose">
+      <div class="u-pred-stat-card__label">Tren Prediksi (30 Hari)</div>
+      <div class="u-pred-stat-card__value u-pred-stat-card__value--up">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+          <polyline points="16 7 22 7 22 13"/>
+        </svg>
+        +{{ $trenPersen ?? '4.2' }}%
+      </div>
+      <div class="u-pred-stat-card__sub">
+        Kenaikan diperkirakan berlanjut hingga akhir kuartal.
+      </div>
+    </div>
+
+    {{-- Tingkat Kepercayaan AI --}}
+    <div class="u-pred-stat-card u-pred-stat-card--blue">
+      <div class="u-pred-stat-card__label">Tingkat Kepercayaan AI</div>
+      <div class="u-pred-stat-card__value u-pred-stat-card__value--conf">
+        {{ $kepercayaan ?? '95.4' }}%
+      </div>
+      <div class="u-conf-bar-wrap">
+        <div class="u-conf-bar">
+          <div class="u-conf-bar__fill"
+               style="width: {{ $kepercayaan ?? '95.4' }}%"></div>
+        </div>
+      </div>
+      <div class="u-pred-stat-card__sub">
+        Model validasi ulang dengan akurasi tinggi.
+      </div>
+    </div>
+
+  </div>
+
+  {{-- ── WEEKLY TABLE ───────────────────────────────── --}}
+  <div class="u-table-card">
+
+    <div class="u-table-card__header">
+      <div class="u-table-card__title">Detail Angka Prediksi (Mingguan)</div>
+      <div class="u-table-actions">
+        <button class="u-btn-csv" onclick="downloadCSV()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Unduh CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="u-table-wrap">
+      <table class="u-table">
         <thead>
-            <tr>
-                <th>Date/Time</th>
-                <th>Commodity</th>
-                <th>Horizon</th>
-                <th>Trend / Seasonal</th>
-                <th>MAE</th>
-                <th>RMSE</th>
-                <th>MAPE (%)</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
+          <tr>
+            <th>Minggu Ke-</th>
+            <th>Periode</th>
+            <th>Estimasi Harga</th>
+            <th>Variasi Harga</th>
+          </tr>
         </thead>
         <tbody>
-            @forelse($predictions as $item)
-            @php
-                $metrics = $item->metrics ?? [];
-                $status  = $metrics['status'] ?? 'completed';
-                $badgeMap = [
-                    'completed'     => 'badge-status-completed',
-                    'review_needed' => 'badge-status-review',
-                    'failed'        => 'badge-status-failed',
-                ];
-                $labelMap = [
-                    'completed'     => 'COMPLETED',
-                    'review_needed' => 'REVIEW NEEDED',
-                    'failed'        => 'FAILED',
-                ];
-            @endphp
+          @isset($prediksiMingguan)
+            @forelse($prediksiMingguan as $row)
             <tr>
-                <td class="date-text" style="white-space:nowrap">
-                    {{ \Carbon\Carbon::parse($item->predicted_at)->format('d M Y') }}<br>
-                    <span style="color:var(--muted)">
-                        {{ \Carbon\Carbon::parse($item->predicted_at)->format('H:i') }}
-                    </span>
-                </td>
-                <td class="commodity-name">{{ $item->commodity_name ?? '—' }}</td>
-                <td class="date-text">{{ $item->horizon_days }} Hari</td>
-                <td class="date-text" style="font-size:.72rem;white-space:nowrap">
-                    T: <strong>{{ ucfirst($metrics['trend'] ?? 'add') }}</strong><br>
-                    S: <strong>{{ ucfirst($metrics['seasonal'] ?? 'add') }}</strong>
-                </td>
-                <td class="date-text">
-                    {{ isset($metrics['mae'])  ? number_format($metrics['mae'],  2) : '—' }}
-                </td>
-                <td class="date-text">
-                    {{ isset($metrics['rmse']) ? number_format($metrics['rmse'], 2) : '—' }}
-                </td>
-                <td class="date-text">
-                    {{ isset($metrics['mape']) ? number_format($metrics['mape'], 2).'%' : '—' }}
-                </td>
-                <td>
-                    <span class="badge {{ $badgeMap[$status] ?? 'badge-status-completed' }}">
-                        {{ $labelMap[$status] ?? strtoupper($status) }}
-                    </span>
-                </td>
-                <td>
-                    <div style="display:flex;flex-direction:column;gap:4px">
-                        <a href="{{ route('prediksi.show', $item->_id) }}" class="pred-action-link">
-                            <i class="fas fa-chart-line"></i> View
-                        </a>
-                        <form method="POST"
-                            action="{{ route('prediksi.destroy', $item->_id) }}"
-                            onsubmit="return confirm('Hapus prediksi ini?')"
-                            style="margin:0">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="pred-action-link retry"
-                                style="background:none;border:none;padding:0;cursor:pointer">
-                                <i class="fas fa-trash"></i> Hapus
-                            </button>
-                        </form>
-                    </div>
-                </td>
+              <td class="u-pred-week">{{ $row->minggu }}</td>
+              <td class="u-table__date">{{ $row->periode }}</td>
+              <td class="u-table__harga">Rp {{ number_format($row->estimasi, 0, ',', '.') }}</td>
+              <td>
+                <span class="u-variasi">± Rp {{ number_format($row->variasi, 0, ',', '.') }}</span>
+              </td>
             </tr>
             @empty
             <tr>
-                <td colspan="9">
-                    <div class="empty-state" style="text-align:center;padding:2rem;color:var(--muted)">
-                        <i class="fas fa-clock-rotate-left" style="font-size:2rem;margin-bottom:.5rem;display:block"></i>
-                        Belum ada riwayat prediksi
-                    </div>
-                </td>
+              <td colspan="4" style="text-align:center;padding:40px;color:var(--text-3);font-size:13px">
+                Tidak ada data prediksi untuk filter yang dipilih.
+              </td>
             </tr>
             @endforelse
+          @else
+            <tr>
+              <td class="u-pred-week">W1 - Jun</td>
+              <td class="u-table__date">01 Jun – 07 Jun</td>
+              <td class="u-table__harga">Rp 14.650</td>
+              <td><span class="u-variasi">± Rp 120</span></td>
+            </tr>
+            <tr>
+              <td class="u-pred-week">W2 - Jun</td>
+              <td class="u-table__date">08 Jun – 14 Jun</td>
+              <td class="u-table__harga">Rp 14.780</td>
+              <td><span class="u-variasi">± Rp 140</span></td>
+            </tr>
+            <tr>
+              <td class="u-pred-week">W3 - Jun</td>
+              <td class="u-table__date">15 Jun – 21 Jun</td>
+              <td class="u-table__harga">Rp 14.920</td>
+              <td><span class="u-variasi">± Rp 165</span></td>
+            </tr>
+            <tr>
+              <td class="u-pred-week">W4 - Jun</td>
+              <td class="u-table__date">22 Jun – 30 Jun</td>
+              <td class="u-table__harga">Rp 15.100</td>
+              <td><span class="u-variasi">± Rp 180</span></td>
+            </tr>
+            <tr>
+              <td class="u-pred-week">W1 - Jul</td>
+              <td class="u-table__date">01 Jul – 07 Jul</td>
+              <td class="u-table__harga">Rp 15.240</td>
+              <td><span class="u-variasi">± Rp 200</span></td>
+            </tr>
+          @endisset
         </tbody>
-    </table>
-
-    <div class="table-footer">
-        <span class="table-footer-text">
-            Showing {{ $predictions->firstItem() }}–{{ $predictions->lastItem() }}
-            of {{ $predictions->total() }} results
-        </span>
-        <div>
-            {{ $predictions->links() }}
-        </div>
+      </table>
     </div>
-</div>
+
+  </div>
 
 @endsection
 
 @push('scripts')
 <script>
-const fileInput      = document.getElementById('fileInput');
-const uploadZoneText = document.getElementById('uploadZoneText');
-const uploadZone     = document.getElementById('uploadZone');
+function perbaruiGrafik(btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round"
+         style="animation:spin .7s linear infinite;width:14px;height:14px">
+      <path d="M21 12a9 9 0 11-6.22-8.56"/>
+    </svg> Memuat...`;
+  btn.disabled = true;
+  setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 1800);
+}
 
-fileInput?.addEventListener('change', function () {
-    if (this.files.length > 0) {
-        uploadZoneText.textContent = this.files[0].name;
-        uploadZone.classList.add('has-file');
-    }
-});
-
-['dragover','dragenter'].forEach(evt => {
-    uploadZone?.addEventListener(evt, e => {
-        e.preventDefault();
-        uploadZone.classList.add('drag-over');
-    });
-});
-uploadZone?.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-uploadZone?.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadZone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) {
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        fileInput.files = dt.files;
-        uploadZoneText.textContent = file.name;
-        uploadZone.classList.add('has-file');
-    }
-});
+function downloadCSV() {
+  alert('Mengunduh data CSV prediksi...');
+}
 </script>
 @endpush
