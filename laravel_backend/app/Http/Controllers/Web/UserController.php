@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Models\PriceHistory;
 use App\Models\Commodity;
 use Illuminate\Http\Request;
@@ -10,17 +11,10 @@ use Carbon\Carbon;
 
 class UserController extends Controller
 {
-    private function checkUser()
-    {
-        $user = session('user');
-        if (!$user) return redirect('/login');
-        return $user;
-    }
 
     public function home(Request $request)
     {
-        $user = $this->checkUser();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $user = Auth::user();
 
         // Filter parameters
         $search = $request->get('search');
