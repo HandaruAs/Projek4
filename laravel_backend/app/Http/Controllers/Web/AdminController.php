@@ -7,20 +7,11 @@ use App\Models\PriceHistory;
 use App\Models\Commodity;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-    private function checkAdmin()
-    {
-        $user = session('user');
-        if (!$user) return redirect('/login');
-        if ($user->role !== 'admin') return redirect('/dashboard');
-        return $user;
-    }
-
-    /** GET /admin/dashboard */
     public function dashboard()
     {
         $totalKomoditas = Commodity::count();
@@ -36,20 +27,16 @@ class AdminController extends Controller
         ));
     }
 
-
     public function profile()
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $user = Auth::user();
 
         return view('admin.profile', compact('user'));
     }
 
-    
     public function updateProfile(Request $request)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $user = Auth::user();
 
         $request->validate([
             'name'    => 'required|string|max:255',
@@ -59,9 +46,6 @@ class AdminController extends Controller
             'avatar'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-
-        $userData = User::find($user->_id);
-
         $updateData = [
             'name'    => $request->name,
             'email'   => $request->email,
@@ -69,19 +53,16 @@ class AdminController extends Controller
             'address' => $request->address,
         ];
 
-        // Handle avatar upload
         if ($request->hasFile('avatar')) {
-            // Hapus avatar lama jika ada
-            if ($userData->avatar) {
-                Storage::disk('public')->delete($userData->avatar);
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
             }
             $path = $request->file('avatar')->store('avatars', 'public');
             $updateData['avatar'] = $path;
         }
 
-        $userData->update($updateData);
-        session(['user' => $userData->fresh()]);
+        $user->update($updateData);
 
-        return redirect('/admin/profile')->with('success', 'Profil berhasil diperbarui.');
+        return redirect()->route('profile')->with('success', 'Profil berhasil diperbarui.');
     }
 }
