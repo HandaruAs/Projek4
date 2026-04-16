@@ -150,24 +150,36 @@
     @endif
 
     <div class="table-footer">
-        <span class="table-footer-text">
-            @if(isset($recentPrices) && $recentPrices->total() > 0)
-                Menampilkan {{ $recentPrices->firstItem() }} - {{ $recentPrices->lastItem() }} 
-                dari {{ $recentPrices->total() }} data
-            @else
-                Belum ada data
+    <span class="table-footer-text">
+        @if(isset($recentPrices) && $recentPrices->total() > 0)
+            Menampilkan {{ $recentPrices->firstItem() }} - {{ $recentPrices->lastItem() }} 
+            dari {{ $recentPrices->total() }} data
+        @else
+            Belum ada data
+        @endif
+    </span>
+    <div class="table-actions" style="gap:8px;">
+        <!-- Update this form -->
+        <form action="{{ route('user.downloadPdf') }}" method="GET" style="display: inline;">
+            @if(request()->has('search'))
+                <input type="hidden" name="search" value="{{ request()->get('search') }}">
             @endif
-        </span>
-        <div class="table-actions" style="gap:8px;">
-            <button class="u-btn-pdf" id="pdfBtn" onclick="downloadPDF()">
+            @if(request()->has('category'))
+                <input type="hidden" name="category" value="{{ request()->get('category') }}">
+            @endif
+            @if(request()->has('date'))
+                <input type="hidden" name="date" value="{{ request()->get('date') }}">
+            @endif
+            <button type="submit" class="u-btn-pdf" id="pdfBtn">
                 <i class="fas fa-download"></i> Unduh Laporan PDF
             </button>
-            
-            @if(isset($recentPrices) && $recentPrices->total() > 0)
-                {{ $recentPrices->links('components.pagination') }}
-            @endif
-        </div>
+        </form>
+        
+        @if(isset($recentPrices) && $recentPrices->total() > 0)
+            {{ $recentPrices->links('components.pagination') }}
+        @endif
     </div>
+</div>
 
 </div>
 
@@ -282,10 +294,16 @@ function downloadPDF() {
     const btn  = document.getElementById('pdfBtn');
     const orig = btn.innerHTML;
     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Membuat PDF...`;
-    btn.disabled = true;
-
+    btn.disabled  = true;
+ 
+    // Ambil query string saat ini (filter aktif)
+    const params = new URLSearchParams(window.location.search);
+    const url    = '/laporan/pdf' + (params.toString() ? '?' + params.toString() : '');
+ 
+    // Buka di tab baru — browser akan auto-download
+    window.open(url, '_blank');
+ 
     setTimeout(() => {
-        window.print();
         btn.innerHTML = `<i class="fas fa-check"></i> Selesai!`;
         btn.style.background = '#10b981';
         setTimeout(() => {
@@ -293,7 +311,7 @@ function downloadPDF() {
             btn.disabled         = false;
             btn.style.background = '';
         }, 2000);
-    }, 500);
+    }, 800);
 }
 </script>
 @endpush
