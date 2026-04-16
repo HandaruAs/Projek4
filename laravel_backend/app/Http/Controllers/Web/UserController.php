@@ -51,7 +51,7 @@ class UserController extends Controller
                 ->where('date', '>=', Carbon::parse($item->date)->subDay()->startOfDay())
                 ->where('date', '<=', Carbon::parse($item->date)->subDay()->endOfDay())
                 ->first();
-            
+
             $hargaLama = $hargaKemarin ? $hargaKemarin->harga_sekarang : $item->harga_sekarang;
             $item->selisih = $item->harga_sekarang - $hargaLama;
             $item->persen = $hargaLama > 0 ? ($item->selisih / $hargaLama) * 100 : 0;
