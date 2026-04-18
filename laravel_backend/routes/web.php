@@ -75,12 +75,13 @@ Route::middleware(['auth','role:admin'])->group(function () {
 // ── USER ROUTES ───────────────────────────────────────────────
 Route::middleware(['auth','role:user'])->group(function () {
 
-    Route::get('/home',      [App\Http\Controllers\Web\UserController::class,       'home'])->name('user.home');
-    Route::get('/harga', [HargaController::class, 'userIndex'])->name('user.harga');
+    Route::get('/home',      [App\Http\Controllers\Web\UserController::class,'home'])->name('user.home');
+    Route::get('/harga', [UserHargaController::class, 'harga'])->name('user.harga');
     Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class,'prediksi'])->name('user.prediksi');
     Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class,'simulasi'])->name('user.simulasi');
     Route::get('/chatai', [App\Http\Controllers\Web\UserChatAiController::class, 'index'])->name('user.chatai');
     Route::get('/user/profil', [UserProfilController::class, 'index'])->name('user.profil');
     Route::put('/user/profil', [UserProfilController::class, 'update'])->name('user.profil.update');
     Route::put('/user/profil/password', [UserProfilController::class, 'password'])->name('user.profil.password');
+    Route::get('/download-pdf', [UserController::class, 'downloadPdf'])->name('user.downloadPdf');
 });
