@@ -8,24 +8,10 @@
 @extends('layouts.layout')
 
 @section('title', 'Prediksi Harga Komoditas')
+@section('page-title', 'Prediksi Harga Komoditas')
+@section('page-sub', 'Pantau pergerakan harga historis dan perkiraan harga masa depan menggunakan model AI Prophet untuk perencanaan stok dan belanja yang lebih akurat')
 
 @section('content')
-
-  {{-- ── BREADCRUMB ─────────────────────────────────── --}}
-  <nav class="u-breadcrumb">
-    <a href="{{ route('user.home') }}">Beranda</a>
-    <span class="u-breadcrumb__sep">/</span>
-    <span class="u-breadcrumb__current">Prediksi Harga AI</span>
-  </nav>
-
-  {{-- ── PAGE HEADER ───────────────────────────────── --}}
-  <div class="u-page-header">
-    <div>
-      <h1>Prediksi Harga Komoditas</h1>
-      <p>Pantau pergerakan harga historis dan perkiraan harga masa depan menggunakan model<br>
-         AI Prophet untuk perencanaan stok dan belanja yang lebih akurat.</p>
-    </div>
-  </div>
 
   {{-- ── FILTER BAR ────────────────────────────────── --}}
   <div class="u-filter-bar">

@@ -8,15 +8,10 @@
 @extends('layouts.layout')
 
 @section('title', 'Rekomendasi Belanja AI')
+@section('page-title', 'Rekomendasi Belanja AI')
+@section('page-sub', 'Wizard belanja cerdas berbasis AI untuk rekomendasi personal')
 
 @section('content')
-
-  {{-- ── BREADCRUMB ─────────────────────────────────── --}}
-  <nav class="u-breadcrumb">
-    <a href="{{ route('user.home') }}">Beranda</a>
-    <span class="u-breadcrumb__sep">/</span>
-    <span class="u-breadcrumb__current">Rekomendasi Belanja AI</span>
-  </nav>
 
   {{-- ── LAYOUT UTAMA ────────────────────────────────── --}}
   <div class="ai-chat-layout">
@@ -446,7 +441,6 @@ function confirmMulti(key) {
 // ── SINGLE CHOICE ────────────────────────────────────
 function handleChoice(choice, key) {
   wizard.answers[key] = choice.value;
-  // Tampilkan label tanpa emoji ke bubble user
   const cleanLabel = choice.label.replace(/^[^\w]+/, '').replace(/^\S+\s/, '');
   appendUserBubble(cleanLabel);
   clearQuickReplies();
@@ -481,7 +475,6 @@ function nextStep(freeVal = null) {
   const stepDef = steps[wizard.step];
   if (!stepDef) return;
   
-  // Gunakan fillTemplate untuk mengganti placeholder @{{variabel}}
   const question = fillTemplate(stepDef.question);
 
   setTimeout(() => {
@@ -571,17 +564,15 @@ function formatReply(text) {
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>');
   
-  // Handle tables
   formatted = formatted.replace(/\|(.+)\|/g, match => {
     const cells = match.split('|').filter(c => c.trim() && !c.match(/^[-\s:]+$/));
     if (!cells.length) return '';
-    return `<tr>${cells.map(c => `<td>${c.trim()}</table>`).join('')}</tr>`;
+    return `<tr>${cells.map(c => `<td>${c.trim()}</td>`).join('')}</tr>`;
   });
   
   formatted = formatted.replace(/(<td>[\s\S]*?<\/tr>\n?)+/g, rows =>
-    `<table class="ai-rekom-table"><tbody>${rows}</tbody></td>`);
+    `<table class="ai-rekom-table"><tbody>${rows}</tbody></table>`);
   
-  // Handle lists
   formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
   formatted = formatted.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, lis => `<ul>${lis}</ul>`);
   
