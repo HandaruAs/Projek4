@@ -189,6 +189,6 @@ function confirmLogout() {
   document.getElementById('logout-form').submit();
 }
 </script>
-
+@stack('scripts')  
 </body>
 </html>

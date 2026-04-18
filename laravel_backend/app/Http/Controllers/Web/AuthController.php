@@ -29,10 +29,10 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if ($user->role === 'admin') {
-            return redirect()->route('dashboard');  // ← pakai named route
+            return redirect()->route('dashboard');
         }
 
-        return redirect()->route('user.home');  // ← pakai named route
+        return redirect()->route('user.home');
     }
 
     public function logout(Request $request)
