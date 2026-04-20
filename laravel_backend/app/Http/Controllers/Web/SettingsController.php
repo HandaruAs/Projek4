@@ -11,7 +11,7 @@ class SettingsController extends Controller
     {
         $user = session('user');
         if (!$user) return redirect('/login');
-        if (($user['role'] ?? null) !== 'admin') return redirect('/dashboard');
+        if ($user->role !== 'admin') return redirect('/dashboard');
         return $user;
     }
 
