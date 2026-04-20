@@ -18,11 +18,6 @@ Route::get('/', function () {
     return view('landing');
 })->name('landing');
 
-// Alternative route for home
-Route::get('/home', function () {
-    return redirect()->route('landing');
-});
-
 // ── AUTH ROUTES ──────────────────────────────────────────────
 Route::get('/register',        [AuthController::class, 'showRegisterUser'])->name('register');
 Route::post('/register',       [AuthController::class, 'registerUser']);
@@ -34,21 +29,20 @@ Route::get('/login',           [AuthController::class, 'showLogin'])->name('logi
 Route::post('/login',          [AuthController::class, 'login']);
 Route::post('/logout',         [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot.password');
+Route::get('/forgot-password',  [AuthController::class, 'showForgotPassword'])->name('forgot.password');
 Route::post('/forgot-password', [AuthController::class, 'sendOtp']);
 
-Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
+Route::get('/verify-otp',  [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
-Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('reset.password');
+Route::get('/reset-password',  [AuthController::class, 'showResetPassword'])->name('reset.password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
 // ── ADMIN ROUTES ─────────────────────────────────────────────
-Route::middleware(['role:admin'])->group(function () {
+Route::middleware(['role:admin'])->prefix('admin')->group(function () {
 
-    Route::get('/admin/dashboard', [App\Http\Controllers\Web\AdminController::class, 'dashboard'])->name('dashboard');
-    Route::prefix('admin')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
     // Komoditas
     Route::get('/komoditas',           [KomoditasController::class, 'index'])->name('komoditas.index');
@@ -58,34 +52,34 @@ Route::middleware(['role:admin'])->group(function () {
     Route::put('/komoditas/{id}',      [KomoditasController::class, 'update'])->name('komoditas.update');
     Route::delete('/komoditas/{id}',   [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
 
-        // Data Harga
-        Route::get('/harga',               [HargaController::class, 'index'])->name('harga.index');
+    // Data Harga
+    Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
 
+    // Prediksi
+    Route::get('/prediksi',                  [PrediksiController::class, 'index'])->name('prediksi.index');
+    Route::get('/prediksi/create',           [PrediksiController::class, 'create'])->name('prediksi.create');
+    Route::post('/prediksi/generate',        [PrediksiController::class, 'generate'])->name('prediksi.generate');
+    Route::post('/prediksi/upload',          [PrediksiController::class, 'upload'])->name('prediksi.upload');
+    Route::get('/prediksi/{id}',             [PrediksiController::class, 'show'])->name('prediksi.show');
+    Route::get('/prediksi/{id}/export',      [PrediksiController::class, 'export'])->name('prediksi.export');
+    Route::delete('/prediksi/{id}',          [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
 
-    // Generate Prediksi
-    Route::get('/prediksi',            [PrediksiController::class, 'index'])->name('prediksi.index');
-    Route::post('/prediksi/generate',  [PrediksiController::class, 'generate'])->name('prediksi.generate');
-    Route::get('/prediksi/{id}',       [PrediksiController::class, 'show'])->name('prediksi.show');
-    Route::delete('/prediksi/{id}',    [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
-
-        // Profile
-        Route::get('/profile',  [AdminController::class, 'profile'])->name('profile');
-        Route::put('/profile',  [AdminController::class, 'updateProfile'])->name('profile.update');
-
-});
-
+    // Profile
+    Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
+    Route::put('/profile', [AdminController::class, 'updateProfile'])->name('profile.update');
 });
 
 
 // ── USER ROUTES ───────────────────────────────────────────────
 Route::middleware(['role:user'])->group(function () {
 
-    Route::get('/home',      [App\Http\Controllers\Web\UserController::class,       'home'])->name('user.home');
-    Route::get('/harga', [HargaController::class, 'userIndex'])->name('user.harga');
-    Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class,'prediksi'])->name('user.prediksi');
-    Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class,'simulasi'])->name('user.simulasi');
-    Route::get('/chatai', [App\Http\Controllers\Web\UserChatAiController::class, 'index'])->name('user.chatai');
-    Route::get('/user/profil', [UserProfilController::class, 'index'])->name('user.profil');
-    Route::put('/user/profil', [UserProfilController::class, 'update'])->name('user.profil.update');
+    Route::get('/home',          [UserController::class,       'home'])->name('user.home');
+    Route::get('/harga',         [HargaController::class,      'userIndex'])->name('user.harga');
+    Route::get('/prediksi',           [UserPrediksiController::class,'prediksi'])->name('user.prediksi');
+    Route::get('/prediksi/{id}',      [UserPrediksiController::class,'show'])->name('user.prediksi.show');
+    Route::get('/simulasi',      [UserSimulasiController::class,'simulasi'])->name('user.simulasi');
+    Route::get('/chatai',        [UserChatAiController::class,  'index'])->name('user.chatai');
+    Route::get('/user/profil',   [UserProfilController::class,  'index'])->name('user.profil');
+    Route::put('/user/profil',   [UserProfilController::class,  'update'])->name('user.profil.update');
     Route::put('/user/profil/password', [UserProfilController::class, 'password'])->name('user.profil.password');
 });

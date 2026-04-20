@@ -1,234 +1,271 @@
-@extends('layouts.layout')
+<?php
 
-@section('title', 'Detail Prediksi')
-@section('page-title', 'Detail Prediksi')
-@section('page-sub', 'Hasil lengkap Holt-Winters Exponential Smoothing')
+namespace App\Http\Controllers\Web;
 
-@section('content')
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Services\PrediksiService;
+use App\Models\Prediction;
+use App\Models\PriceHistory;
+use App\Models\Commodity;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
-@php
-    $metrics = $prediction->metrics ?? [];
-    $results = $prediction->results ?? [];
-    $status  = $metrics['status'] ?? 'completed';
-    $badgeClass = match($status) {
-        'completed'     => 'badge-status-completed',
-        'review_needed' => 'badge-status-review',
-        'failed'        => 'badge-status-failed',
-        default         => 'badge-status-completed',
-    };
-    $badgeLabel = match($status) {
-        'completed'     => 'COMPLETED',
-        'review_needed' => 'REVIEW NEEDED',
-        'failed'        => 'FAILED',
-        default         => strtoupper($status),
-    };
-@endphp
+class PrediksiController extends Controller
+{
+    private PrediksiService $prediksiService;
 
-{{-- Back Button --}}
-<div style="margin-bottom:1.5rem">
-    <a href="{{ route('prediksi.index') }}"
-       style="display:inline-flex;align-items:center;gap:8px;color:var(--accent);
-              font-size:13.5px;font-weight:600;text-decoration:none">
-        <i class="fas fa-arrow-left"></i> Kembali ke Generate Prediksi
-    </a>
-</div>
+    public function __construct(PrediksiService $prediksiService)
+    {
+        $this->prediksiService = $prediksiService;
+    }
 
-{{-- ── INFO HEADER ── --}}
-<div class="card" style="margin-bottom:1.5rem">
-    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div class="card-title">
-            <i class="fas fa-chart-line" style="color:var(--accent);margin-right:8px"></i>
-            {{ $prediction->commodity_name ?? '—' }}
-        </div>
-        <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
-    </div>
-    <div class="card-body">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem">
+    /**
+     * GET /admin/prediksi
+     * Sinkron Flask: GET /api/admin/prediction_logs
+     */
+    public function index(Request $request)
+    {
+        $user        = session('user');
+        $predictions = $this->prediksiService->getLatestPredictions(10, $request->get('page', 1));
+        $commodities = PrediksiService::getCommodities();
 
-            <div class="stat-mini">
-                <div class="stat-mini-label">Tanggal Generate</div>
-                <div class="stat-mini-value">
-                    {{ \Carbon\Carbon::parse($prediction->predicted_at)->format('d M Y, H:i') }}
-                </div>
-            </div>
+        return view('admin.prediksi', compact('user', 'predictions', 'commodities'));
+    }
 
-            <div class="stat-mini">
-                <div class="stat-mini-label">Horizon</div>
-                <div class="stat-mini-value">{{ $prediction->horizon_days }} Hari</div>
-            </div>
+    /**
+     * POST /admin/prediksi/generate
+     * Sinkron Flask: POST /api/admin/run_prediksi
+     *
+     * - Hapus prediksi lama untuk commodity+steps yang sama
+     * - Generate via Holt-Winters
+     * - Simpan fields: tanggal_pred, forecast, ci_lower, ci_upper, satuan, kategori, metrics
+     */
+    public function generate(Request $request)
+    {
+        $request->validate([
+            'commodity_id' => 'required|string',
+            'steps'        => 'required|integer|min:1|max:90',
+        ]);
 
-            <div class="stat-mini">
-                <div class="stat-mini-label">Trend Type</div>
-                <div class="stat-mini-value">{{ ucfirst($metrics['trend'] ?? '-') }}</div>
-            </div>
+        try {
+            $predictionData = $this->prediksiService->generate(
+                $request->commodity_id,
+                (int) $request->steps
+            );
 
-            <div class="stat-mini">
-                <div class="stat-mini-label">Seasonal Type</div>
-                <div class="stat-mini-value">{{ ucfirst($metrics['seasonal'] ?? '-') }}</div>
-            </div>
+            // Simpan ke MongoDB (PrediksiService sudah delete cache lama)
+            Prediction::create($predictionData);
 
-            <div class="stat-mini">
-                <div class="stat-mini-label">Seasonal Periods</div>
-                <div class="stat-mini-value">{{ $metrics['seasonal_periods'] ?? '-' }}</div>
-            </div>
+            return redirect()->route('prediksi.index')
+                ->with('success', "Prediksi untuk {$predictionData['commodity_name']} berhasil digenerate!");
 
-            <div class="stat-mini">
-                <div class="stat-mini-label">Damped Trend</div>
-                <div class="stat-mini-value">{{ ($metrics['damped'] ?? false) ? 'Ya' : 'Tidak' }}</div>
-            </div>
+        } catch (\Exception $e) {
+            Log::error('Prediction generate failed: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
+        }
+    }
 
-        </div>
-    </div>
-</div>
+    /**
+     * POST /admin/prediksi/upload
+     * Import data harga dari CSV/XLSX ke price_histories.
+     * Sinkron Flask: langsung insert ke col_price (price_histories).
+     */
+    public function upload(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240',
+        ]);
 
-{{-- ── METRICS CARDS ── --}}
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
+        try {
+            $file = $request->file('file');
+            $ext  = strtolower($file->getClientOriginalExtension());
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">MAE</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['mae']) ? number_format($metrics['mae'], 2) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Mean Absolute Error</div>
-    </div>
+            $rows = $ext === 'csv'
+                ? $this->parseCsv($file->getRealPath())
+                : $this->parseXlsx($file->getRealPath());
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">RMSE</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['rmse']) ? number_format($metrics['rmse'], 2) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Root Mean Squared Error</div>
-    </div>
+            $inserted = 0;
+            $skipped  = 0;
+            $errors   = [];
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">MAPE</div>
-        <div style="font-size:1.5rem;font-weight:800;
-             color:{{ isset($metrics['mape']) && $metrics['mape'] > 20 ? '#ef4444' : '#10b981' }}">
-            {{ isset($metrics['mape']) ? number_format($metrics['mape'], 2).'%' : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">
-            Mean Absolute Percentage Error
-            @if(isset($metrics['mape']))
-                — {{ $metrics['mape'] <= 10 ? 'Sangat Baik' : ($metrics['mape'] <= 20 ? 'Baik' : 'Perlu Review') }}
-            @endif
-        </div>
-    </div>
+            foreach ($rows as $i => $row) {
+                $lineNum = $i + 2;
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">ALPHA (α)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['alpha']) ? number_format($metrics['alpha'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Level</div>
-    </div>
+                // Kolom wajib — sinkron Flask: commodity_name, harga_sekarang, date
+                if (empty($row['commodity_name']) || empty($row['harga_sekarang']) || empty($row['date'])) {
+                    $errors[] = "Baris {$lineNum}: kolom wajib (commodity_name, harga_sekarang, date) tidak lengkap.";
+                    $skipped++;
+                    continue;
+                }
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">BETA (β)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['beta']) ? number_format($metrics['beta'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Trend</div>
-    </div>
+                $commodity = Commodity::where('name', trim($row['commodity_name']))->first();
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">GAMMA (γ)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['gamma']) ? number_format($metrics['gamma'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Seasonal</div>
-    </div>
+                try {
+                    $date = Carbon::parse($row['date']);
+                } catch (\Exception $e) {
+                    $errors[] = "Baris {$lineNum}: format tanggal tidak valid ({$row['date']}).";
+                    $skipped++;
+                    continue;
+                }
 
-</div>
+                $hargaSekarang = (float) str_replace([','], ['.'], preg_replace('/[^0-9,]/', '', $row['harga_sekarang']));
+                $hargaLama     = isset($row['harga_lama'])
+                    ? (float) str_replace([','], ['.'], preg_replace('/[^0-9,]/', '', $row['harga_lama']))
+                    : 0;
+                $selisih = $hargaSekarang - $hargaLama;
+                $persen  = $hargaLama > 0 ? round(($selisih / $hargaLama) * 100, 2) : 0;
 
-{{-- ── FORECAST TABLE ── --}}
-<div class="table-card">
-    <div class="table-header">
-        <div class="table-title">
-            <i class="fas fa-calendar-days" style="margin-right:6px;color:var(--accent)"></i>
-            Hasil Forecast ({{ count($results) }} hari)
-        </div>
-        {{-- Export CSV --}}
-        <a href="{{ route('prediksi.export', $prediction->_id) }}"
-           style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
-                  color:var(--accent);text-decoration:none;padding:6px 14px;border:1.5px solid var(--accent);
-                  border-radius:8px;transition:.2s"
-           onmouseover="this.style.background='var(--accent)';this.style.color='#fff'"
-           onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">
-            <i class="fas fa-download"></i> Export CSV
-        </a>
-    </div>
+                PriceHistory::create([
+                    'commodity_id'   => $commodity?->_id,
+                    'commodity_name' => trim($row['commodity_name']),
+                    'category'       => $commodity?->category ?? ($row['category'] ?? null),
+                    'date'           => $date,
+                    'satuan'         => $row['satuan'] ?? 'kg',
+                    'harga_lama'     => $hargaLama,
+                    'harga_sekarang' => $hargaSekarang,
+                    'selisih'        => $selisih,
+                    'persen'         => $persen,
+                    'source'         => 'import_csv',
+                ]);
 
-    @if(count($results) > 0)
-    <div style="overflow-x:auto">
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Tanggal</th>
-                    <th>Harga Prediksi (Rp)</th>
-                    <th>Batas Bawah (Rp)</th>
-                    <th>Batas Atas (Rp)</th>
-                    <th>Selisih dari Sebelumnya</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($results as $i => $row)
-                @php
-                    $price    = $row['predicted_price'] ?? 0;
-                    $lower    = $row['lower'] ?? null;
-                    $upper    = $row['upper'] ?? null;
-                    $prevPrice = $i > 0 ? ($results[$i-1]['predicted_price'] ?? 0) : null;
-                    $diff      = $prevPrice !== null ? $price - $prevPrice : null;
-                @endphp
-                <tr>
-                    <td class="date-text">{{ $i + 1 }}</td>
-                    <td class="date-text">{{ \Carbon\Carbon::parse($row['date'])->format('d M Y') }}</td>
-                    <td style="font-weight:700;color:var(--text-primary)">
-                        Rp {{ number_format($price, 0, ',', '.') }}
-                    </td>
-                    <td class="date-text">
-                        {{ $lower !== null ? 'Rp '.number_format($lower, 0, ',', '.') : '—' }}
-                    </td>
-                    <td class="date-text">
-                        {{ $upper !== null ? 'Rp '.number_format($upper, 0, ',', '.') : '—' }}
-                    </td>
-                    <td class="date-text">
-                        @if($diff !== null)
-                            <span style="color:{{ $diff >= 0 ? '#ef4444' : '#10b981' }};font-weight:600">
-                                {{ $diff >= 0 ? '+' : '' }}Rp {{ number_format($diff, 0, ',', '.') }}
-                            </span>
-                        @else
-                            <span style="color:var(--muted)">—</span>
-                        @endif
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @else
-        <div style="text-align:center;padding:3rem;color:var(--muted)">
-            <i class="fas fa-inbox" style="font-size:2rem;margin-bottom:1rem;display:block"></i>
-            Tidak ada data forecast tersedia.
-        </div>
-    @endif
-</div>
+                $inserted++;
+            }
 
-{{-- ── DELETE BUTTON ── --}}
-<div style="margin-top:1.5rem;display:flex;justify-content:flex-end">
-    <form method="POST" action="{{ route('prediksi.destroy', $prediction->_id) }}"
-          onsubmit="return confirm('Yakin ingin menghapus data prediksi ini?')">
-        @csrf
-        @method('DELETE')
-        <button type="submit"
-                style="display:inline-flex;align-items:center;gap:8px;padding:9px 20px;
-                       background:#ef4444;color:#fff;border:none;border-radius:10px;
-                       font-size:13.5px;font-weight:600;cursor:pointer;transition:.2s"
-                onmouseover="this.style.background='#dc2626'"
-                onmouseout="this.style.background='#ef4444'">
-            <i class="fas fa-trash-can"></i> Hapus Prediksi Ini
-        </button>
-    </form>
-</div>
+            $message = "Import selesai: {$inserted} data berhasil dimasukkan.";
+            if ($skipped > 0) {
+                $message .= " {$skipped} baris dilewati.";
+            }
 
-@endsection
+            return redirect()->route('prediksi.index')
+                ->with('success', $message)
+                ->with('import_errors', $errors);
+
+        } catch (\Exception $e) {
+            Log::error('CSV Upload failed: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gagal mengimpor file: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * GET /admin/prediksi/{id}
+     * Tampilkan detail prediksi dengan payload lengkap.
+     */
+    public function show(string $id)
+    {
+        $user       = session('user');
+        $prediction = Prediction::findOrFail($id);
+
+        return view('admin.prediksi-detail', compact('user', 'prediction'));
+    }
+
+    /**
+     * DELETE /admin/prediksi/{id}
+     */
+    public function destroy(string $id)
+    {
+        Prediction::findOrFail($id)->delete();
+
+        return redirect()->route('prediksi.index')
+            ->with('success', 'Prediksi berhasil dihapus.');
+    }
+
+    /**
+     * GET /admin/prediksi/{id}/export
+     * Export hasil prediksi ke CSV.
+     * Sinkron Flask: format kolom tanggal, predicted_price, lower, upper.
+     */
+    public function export(string $id)
+    {
+        $prediction = Prediction::findOrFail($id);
+
+        // Gunakan results[] jika ada, fallback ke tanggal_pred + forecast
+        $results = $prediction->results ?? [];
+        if (empty($results) && !empty($prediction->tanggal_pred)) {
+            $tanggal = $prediction->tanggal_pred;
+            $forecast = $prediction->forecast;
+            $lower    = $prediction->ci_lower;
+            $upper    = $prediction->ci_upper;
+            foreach ($tanggal as $i => $tgl) {
+                $results[] = [
+                    'date'            => $tgl,
+                    'predicted_price' => $forecast[$i] ?? null,
+                    'lower'           => $lower[$i]    ?? null,
+                    'upper'           => $upper[$i]    ?? null,
+                ];
+            }
+        }
+
+        $filename = 'prediksi_' . str_replace(' ', '_', $prediction->commodity_name)
+                  . '_' . now()->format('Ymd') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($results, $prediction) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));  // BOM UTF-8
+            fputcsv($handle, ['Tanggal', 'Harga Prediksi (Rp)', 'Batas Bawah (Rp)', 'Batas Atas (Rp)']);
+
+            foreach ($results as $row) {
+                fputcsv($handle, [
+                    $row['date'],
+                    $row['predicted_price'],
+                    $row['lower'] ?? '',
+                    $row['upper'] ?? '',
+                ]);
+            }
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // ── HELPERS ───────────────────────────────────────────────────────────────
+
+    private function parseCsv(string $path): array
+    {
+        $rows    = [];
+        $handle  = fopen($path, 'r');
+        $headers = null;
+
+        while (($line = fgetcsv($handle, 0, ',')) !== false) {
+            if ($headers === null) {
+                $headers = array_map(fn($h) => trim(str_replace("\xEF\xBB\xBF", '', $h)), $line);
+                continue;
+            }
+            if (count($line) !== count($headers)) continue;
+            $rows[] = array_combine($headers, $line);
+        }
+
+        fclose($handle);
+        return $rows;
+    }
+
+    private function parseXlsx(string $path): array
+    {
+        if (!class_exists(\PhpOffice\PhpSpreadsheet\IOFactory::class)) {
+            throw new \Exception('PhpSpreadsheet tidak tersedia. Jalankan: composer require phpoffice/phpspreadsheet');
+        }
+
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+        $sheet       = $spreadsheet->getActiveSheet();
+        $rows        = $sheet->toArray(null, true, true, false);
+
+        if (empty($rows)) return [];
+
+        $headers = array_map('trim', array_shift($rows));
+        $result  = [];
+
+        foreach ($rows as $row) {
+            if (count($row) < count($headers)) continue;
+            $result[] = array_combine($headers, array_slice($row, 0, count($headers)));
+        }
+
+        return $result;
+    }
+}
