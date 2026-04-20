@@ -14,16 +14,15 @@ class PriceChartScreen extends StatefulWidget {
 
 class _PriceChartScreenState extends State<PriceChartScreen> {
   String? _selectedCommodityId;
-  String _selectedPeriod = '7days';
+  String  _selectedPeriod = '7days';
+
   final NumberFormat currencyFormat = NumberFormat.currency(
-    locale: 'id',
-    symbol: 'Rp ',
-    decimalDigits: 0,
+    locale: 'id', symbol: 'Rp ', decimalDigits: 0,
   );
 
   final List<Map<String, String>> _periodOptions = const [
-    {'value': '7days', 'label': '7 Hari'},
-    {'value': '30days', 'label': '30 Hari'},
+    {'value': '7days',   'label': '7 Hari'},
+    {'value': '30days',  'label': '30 Hari'},
     {'value': '3months', 'label': '3 Bulan'},
   ];
 
@@ -34,37 +33,29 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
   }
 
   Future<void> _loadCommodities() async {
-    final commodityProvider =
-        Provider.of<CommodityProvider>(context, listen: false);
-    await commodityProvider.loadCommodities();
+    final provider = Provider.of<CommodityProvider>(context, listen: false);
+    await provider.loadCommodities();
 
-    if (commodityProvider.commodities.isNotEmpty &&
-        _selectedCommodityId == null) {
-      setState(() {
-        _selectedCommodityId = commodityProvider.commodities.first.id;
-      });
-      _loadPriceHistory(commodityProvider.commodities.first.id);
+    if (provider.commodities.isNotEmpty && _selectedCommodityId == null) {
+      setState(() => _selectedCommodityId = provider.commodities.first.id);
+      _loadPriceHistory(provider.commodities.first.id);
     }
   }
 
   Future<void> _loadPriceHistory(String commodityId) async {
     if (!mounted) return;
-    final commodityProvider =
-        Provider.of<CommodityProvider>(context, listen: false);
-    await commodityProvider.loadPriceHistory(
-      commodityId,
-      period: _selectedPeriod,
-    );
+    final provider = Provider.of<CommodityProvider>(context, listen: false);
+    await provider.loadPriceHistory(commodityId, period: _selectedPeriod);
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<CommodityProvider>(
-      builder: (context, commodityProvider, child) {
+      builder: (context, provider, child) {
         return Scaffold(
           body: Column(
             children: [
-              // Filter Section
+              // ── Filter Section ───────────────────────────
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -80,13 +71,8 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Commodity Selection
-                    const Text(
-                      'Pilih Komoditas',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    const Text('Pilih Komoditas',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -99,37 +85,23 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                           value: _selectedCommodityId,
                           isExpanded: true,
                           hint: const Text('Pilih komoditas'),
-                          items: commodityProvider.commodities.map((commodity) {
+                          items: provider.commodities.map((commodity) {
                             return DropdownMenuItem(
                               value: commodity.id,
-                              child: Text(
-                                commodity.name,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                ),
-                              ),
+                              child: Text(commodity.name,
+                                  style: const TextStyle(fontSize: 14)),
                             );
                           }).toList(),
                           onChanged: (value) {
-                            setState(() {
-                              _selectedCommodityId = value;
-                            });
-                            if (value != null) {
-                              _loadPriceHistory(value);
-                            }
+                            setState(() => _selectedCommodityId = value);
+                            if (value != null) _loadPriceHistory(value);
                           },
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Period Selection
-                    const Text(
-                      'Rentang Waktu',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    const Text('Rentang Waktu',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                     const SizedBox(height: 8),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -140,18 +112,14 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                             padding: const EdgeInsets.only(right: 8),
                             child: InkWell(
                               onTap: () {
-                                setState(() {
-                                  _selectedPeriod = period['value']!;
-                                });
+                                setState(() => _selectedPeriod = period['value']!);
                                 if (_selectedCommodityId != null) {
                                   _loadPriceHistory(_selectedCommodityId!);
                                 }
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
+                                    horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? const Color(0xFF1976D2)
@@ -180,266 +148,19 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
                 ),
               ),
 
-              // Chart Section
+              // ── Chart Section ────────────────────────────
               Expanded(
-                child: commodityProvider.isLoading
+                child: provider.isLoading
                     ? const Center(child: LoadingWidget())
-                    : commodityProvider.priceHistory.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 120,
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.show_chart,
-                                    size: 48,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Tidak ada data grafik',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Pilih komoditas dan rentang waktu',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
+                    : provider.priceHistory.isEmpty
+                        ? _buildEmptyState()
                         : Padding(
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               children: [
-                                // Summary Card
-                                Card(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceAround,
-                                      children: [
-                                        _buildSummaryItem(
-                                          'Tertinggi',
-                                          currencyFormat.format(
-                                            commodityProvider.priceHistory
-                                                .map((e) => e.price)
-                                                .reduce(
-                                                    (a, b) => a > b ? a : b),
-                                          ),
-                                          Icons.trending_up,
-                                          Colors.green,
-                                        ),
-                                        Container(
-                                          height: 30,
-                                          width: 1,
-                                          color: Colors.grey.shade300,
-                                        ),
-                                        _buildSummaryItem(
-                                          'Terendah',
-                                          currencyFormat.format(
-                                            commodityProvider.priceHistory
-                                                .map((e) => e.price)
-                                                .reduce(
-                                                    (a, b) => a < b ? a : b),
-                                          ),
-                                          Icons.trending_down,
-                                          Colors.red,
-                                        ),
-                                        Container(
-                                          height: 30,
-                                          width: 1,
-                                          color: Colors.grey.shade300,
-                                        ),
-                                        _buildSummaryItem(
-                                          'Rata-rata',
-                                          currencyFormat.format(
-                                            commodityProvider.priceHistory
-                                                    .map((e) => e.price)
-                                                    .reduce((a, b) => a + b) /
-                                                commodityProvider
-                                                    .priceHistory.length,
-                                          ),
-                                          Icons.calculate,
-                                          const Color(0xFF1976D2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                _buildSummaryCard(provider),
                                 const SizedBox(height: 20),
-
-                                // Line Chart
-                                Expanded(
-                                  child: LineChart(
-                                    LineChartData(
-                                      gridData: FlGridData(
-                                        show: true,
-                                        drawVerticalLine: false,
-                                        getDrawingHorizontalLine: (value) {
-                                          return FlLine(
-                                            color: Colors.grey.shade200,
-                                            strokeWidth: 1,
-                                          );
-                                        },
-                                      ),
-                                      titlesData: FlTitlesData(
-                                        leftTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 50,
-                                            getTitlesWidget: (value, meta) {
-                                              return Text(
-                                                currencyFormat
-                                                    .format(value)
-                                                    .replaceAll('Rp ', ''),
-                                                style: TextStyle(
-                                                  color: Colors.grey.shade600,
-                                                  fontSize: 10,
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        bottomTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 30,
-                                            interval: _getIntervalForPeriod(
-                                                _selectedPeriod),
-                                            getTitlesWidget: (value, meta) {
-                                              if (value.toInt() >= 0 &&
-                                                  value.toInt() <
-                                                      commodityProvider
-                                                          .priceHistory
-                                                          .length) {
-                                                final date = commodityProvider
-                                                    .priceHistory[value.toInt()]
-                                                    .date;
-                                                return Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          top: 8),
-                                                  child: Text(
-                                                    _formatDateForPeriod(
-                                                        date, _selectedPeriod),
-                                                    style: TextStyle(
-                                                      color:
-                                                          Colors.grey.shade600,
-                                                      fontSize: 10,
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                              return const Text('');
-                                            },
-                                          ),
-                                        ),
-                                        rightTitles: const AxisTitles(
-                                          sideTitles:
-                                              SideTitles(showTitles: false),
-                                        ),
-                                        topTitles: const AxisTitles(
-                                          sideTitles:
-                                              SideTitles(showTitles: false),
-                                        ),
-                                      ),
-                                      borderData: FlBorderData(
-                                        show: true,
-                                        border: Border.all(
-                                          color: Colors.grey.shade300,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      minY: _getMinY(
-                                          commodityProvider.priceHistory),
-                                      maxY: _getMaxY(
-                                          commodityProvider.priceHistory),
-                                      lineBarsData: [
-                                        LineChartBarData(
-                                          spots: commodityProvider.priceHistory
-                                              .asMap()
-                                              .entries
-                                              .map((entry) {
-                                            return FlSpot(
-                                              entry.key.toDouble(),
-                                              entry.value.price,
-                                            );
-                                          }).toList(),
-                                          isCurved: true,
-                                          color: const Color(0xFF1976D2),
-                                          barWidth: 3,
-                                          isStrokeCapRound: true,
-                                          dotData: FlDotData(
-                                            show: true,
-                                            getDotPainter: (spot, percent,
-                                                barData, index) {
-                                              return FlDotCirclePainter(
-                                                radius: 4,
-                                                color: Colors.white,
-                                                strokeWidth: 2,
-                                                strokeColor:
-                                                    const Color(0xFF1976D2),
-                                              );
-                                            },
-                                          ),
-                                          belowBarData: BarAreaData(
-                                            show: true,
-                                            color: const Color(0xFF1976D2)
-                                                .withValues(alpha: 0.1),
-                                          ),
-                                        ),
-                                      ],
-                                      lineTouchData: LineTouchData(
-                                        touchTooltipData: LineTouchTooltipData(
-                                          getTooltipItems:
-                                              (List<LineBarSpot> touchedSpots) {
-                                            return touchedSpots.map((spot) {
-                                              final date = commodityProvider
-                                                  .priceHistory[spot.x.toInt()]
-                                                  .date;
-                                              return LineTooltipItem(
-                                                '${DateFormat('dd MMM yyyy').format(date)}\n',
-                                                const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
-                                                ),
-                                                children: [
-                                                  TextSpan(
-                                                    text: currencyFormat
-                                                        .format(spot.y),
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.normal,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ],
-                                              );
-                                            }).toList();
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                                Expanded(child: _buildLineChart(provider)),
                               ],
                             ),
                           ),
@@ -451,67 +172,248 @@ class _PriceChartScreenState extends State<PriceChartScreen> {
     );
   }
 
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120, height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100, shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.show_chart, size: 48, color: Colors.grey.shade400),
+          ),
+          const SizedBox(height: 16),
+          Text('Tidak ada data grafik',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade600)),
+          const SizedBox(height: 8),
+          Text('Pilih komoditas dan rentang waktu',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(CommodityProvider provider) {
+    final prices  = provider.priceHistory.map((e) => e.price).toList();
+    final highest = prices.reduce((a, b) => a > b ? a : b);
+    final lowest  = prices.reduce((a, b) => a < b ? a : b);
+    final average = prices.reduce((a, b) => a + b) / prices.length;
+
+    // Hitung perubahan keseluruhan (first vs last)
+    final first  = provider.priceHistory.first;
+    final last   = provider.priceHistory.last;
+    final change = last.persen;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildSummaryItem('Tertinggi', currencyFormat.format(highest),
+                    Icons.trending_up, Colors.green),
+                Container(height: 30, width: 1, color: Colors.grey.shade300),
+                _buildSummaryItem('Terendah', currencyFormat.format(lowest),
+                    Icons.trending_down, Colors.red),
+                Container(height: 30, width: 1, color: Colors.grey.shade300),
+                _buildSummaryItem('Rata-rata', currencyFormat.format(average),
+                    Icons.calculate, const Color(0xFF1976D2)),
+              ],
+            ),
+            if (provider.priceHistory.length > 1) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Perubahan terakhir: ',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  Icon(
+                    change > 0 ? Icons.arrow_upward
+                        : change < 0 ? Icons.arrow_downward : Icons.remove,
+                    size: 14,
+                    color: change > 0 ? Colors.green
+                        : change < 0 ? Colors.red : Colors.grey,
+                  ),
+                  Text(
+                    '${change.abs().toStringAsFixed(2)}%',
+                    style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.bold,
+                      color: change > 0 ? Colors.green
+                          : change < 0 ? Colors.red : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLineChart(CommodityProvider provider) {
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+        ),
+        titlesData: FlTitlesData(
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 60,
+              getTitlesWidget: (value, meta) => Text(
+                NumberFormat.compact(locale: 'id').format(value),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 10),
+              ),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              interval: _getIntervalForPeriod(_selectedPeriod),
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx >= 0 && idx < provider.priceHistory.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _formatDateForPeriod(
+                          provider.priceHistory[idx].date, _selectedPeriod),
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 10),
+                    ),
+                  );
+                }
+                return const Text('');
+              },
+            ),
+          ),
+          rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+        ),
+        minY: _getMinY(provider.priceHistory),
+        maxY: _getMaxY(provider.priceHistory),
+        lineBarsData: [
+          LineChartBarData(
+            spots: provider.priceHistory.asMap().entries.map((entry) =>
+                FlSpot(entry.key.toDouble(), entry.value.price)).toList(),
+            isCurved: true,
+            color: const Color(0xFF1976D2),
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                    radius: 4,
+                    color: Colors.white,
+                    strokeWidth: 2,
+                    strokeColor: const Color(0xFF1976D2),
+                  ),
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              color: const Color(0xFF1976D2).withValues(alpha: 0.1),
+            ),
+          ),
+        ],
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipItems: (List<LineBarSpot> touchedSpots) {
+              return touchedSpots.map((spot) {
+                final item    = provider.priceHistory[spot.x.toInt()];
+                final persen  = item.persen;
+                final persenStr = persen > 0
+                    ? '▲ ${persen.toStringAsFixed(2)}%'
+                    : persen < 0
+                        ? '▼ ${persen.abs().toStringAsFixed(2)}%'
+                        : '— 0%';
+
+                return LineTooltipItem(
+                  '${DateFormat('dd MMM yyyy').format(item.date)}\n',
+                  const TextStyle(color: Colors.white,
+                      fontWeight: FontWeight.bold, fontSize: 12),
+                  children: [
+                    TextSpan(
+                      text: '${currencyFormat.format(spot.y)}\n',
+                      style: const TextStyle(color: Colors.white,
+                          fontWeight: FontWeight.normal, fontSize: 12),
+                    ),
+                    TextSpan(
+                      text: persenStr,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: persen > 0 ? Colors.greenAccent
+                            : persen < 0 ? Colors.redAccent : Colors.white70,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSummaryItem(
       String label, String value, IconData icon, Color color) {
     return Column(
       children: [
         Icon(icon, color: color, size: 20),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-          ),
-        ),
+        Text(label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
         const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text(value,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
-  double _getMinY(List<dynamic> priceHistory) {
+  double _getMinY(List priceHistory) {
     if (priceHistory.isEmpty) return 0;
-    final minPrice =
-        priceHistory.map((e) => e.price).reduce((a, b) => a < b ? a : b);
-    return minPrice * 0.95;
+    return priceHistory.map((e) => e.price).reduce((a, b) => a < b ? a : b) * 0.95;
   }
 
-  double _getMaxY(List<dynamic> priceHistory) {
+  double _getMaxY(List priceHistory) {
     if (priceHistory.isEmpty) return 10000;
-    final maxPrice =
-        priceHistory.map((e) => e.price).reduce((a, b) => a > b ? a : b);
-    return maxPrice * 1.05;
+    return priceHistory.map((e) => e.price).reduce((a, b) => a > b ? a : b) * 1.05;
   }
 
   double _getIntervalForPeriod(String period) {
     switch (period) {
-      case '7days':
-        return 1;
-      case '30days':
-        return 3;
-      case '3months':
-        return 7;
-      default:
-        return 1;
+      case '7days':   return 1;
+      case '30days':  return 5;
+      case '3months': return 10;
+      default:        return 1;
     }
   }
 
   String _formatDateForPeriod(DateTime date, String period) {
     switch (period) {
       case '7days':
-      case '30days':
-        return DateFormat('dd/MM').format(date);
-      case '3months':
-        return DateFormat('dd MMM').format(date);
-      default:
-        return DateFormat('dd/MM').format(date);
+      case '30days':  return DateFormat('dd/MM').format(date);
+      case '3months': return DateFormat('dd MMM').format(date);
+      default:        return DateFormat('dd/MM').format(date);
     }
   }
 }

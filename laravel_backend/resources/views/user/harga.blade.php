@@ -1,8 +1,8 @@
 @extends('layouts.layout')
 
-@section('title', 'Data Harga')
-@section('page-title', 'Data Harga')
-@section('page-sub', 'Monitor and manage commodity price data from all registered regions.')
+@section('title', 'Data Harga Komoditas')
+@section('page-title', 'Data Harga Komoditas')
+@section('page-sub', 'Informasi transparan harga pasar harian untuk berbagai komoditas pangan utama.')
 
 @section('content')
 
@@ -10,7 +10,7 @@
 <div class="stats-grid">
     <div class="stat-card">
         <div>
-            <div class="stat-label">Total Price Records</div>
+            <div class="stat-label">Total Data Harga</div>
             <div class="stat-value">{{ number_format($totalRecords) }}</div>
             <div class="stat-change up">
                 <i class="fas fa-database"></i>
@@ -21,7 +21,7 @@
     </div>
     <div class="stat-card">
         <div>
-            <div class="stat-label">Records Today</div>
+            <div class="stat-label">Data Hari Ini</div>
             <div class="stat-value">{{ number_format($todayRecords) }}</div>
             <div class="stat-change up">
                 <i class="fas fa-calendar-day"></i>
@@ -32,11 +32,11 @@
     </div>
     <div class="stat-card">
         <div>
-            <div class="stat-label">Total Commodities</div>
+            <div class="stat-label">Total Komoditas</div>
             <div class="stat-value">{{ number_format($totalKomoditas) }}</div>
             <div class="stat-change neutral">
                 <i class="fas fa-minus"></i>
-                <span class="stat-change-sub">registered</span>
+                <span class="stat-change-sub">terdaftar</span>
             </div>
         </div>
         <div class="stat-icon icon-orange"><i class="fas fa-boxes-stacked"></i></div>
@@ -44,9 +44,9 @@
 </div>
 
 {{-- FILTER BAR --}}
-<form method="GET" action="{{ url('/admin/harga') }}">
+<form method="GET" action="{{ url('/harga') }}">
     <x-filter-bar
-        placeholder="Search commodity name..."
+        placeholder="Cari nama komoditas..."
         :categories="$categoryList"
         :with-date="true"
         search-id="searchInput"
@@ -59,8 +59,8 @@
 <div class="table-card">
     <div class="table-header">
         <div>
-            <div class="table-title">Price History</div>
-            <div class="table-subtitle">Complete commodity price records from all monitored regions.</div>
+            <div class="table-title">Riwayat Harga</div>
+            <div class="table-subtitle">Data lengkap harga komoditas dari semua kategori.</div>
         </div>
     </div>
 
@@ -68,11 +68,12 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>Commodity</th>
-                <th>Category</th>
-                <th>Price (IDR)</th>
+                <th>Komoditas</th>
+                <th>Kategori</th>
+                <th>Harga (Rp)</th>
                 <th>Satuan</th>
-                <th>Date</th>
+                <th>Tren</th>
+                <th>Tanggal</th>
             </tr>
         </thead>
         <tbody>
@@ -102,13 +103,28 @@
                     @endif
                 </td>
 
+                <td>
+                    @php $selisih = $item->selisih ?? 0; @endphp
+                    @if($selisih > 0)
+                        <span style="color:#16a34a;font-weight:600;font-size:13px">
+                            ↑ +Rp {{ number_format($selisih, 0, ',', '.') }}
+                        </span>
+                    @elseif($selisih < 0)
+                        <span style="color:#dc2626;font-weight:600;font-size:13px">
+                            ↓ Rp {{ number_format($selisih, 0, ',', '.') }}
+                        </span>
+                    @else
+                        <span style="color:var(--text-muted);font-size:13px">→ 0</span>
+                    @endif
+                </td>
+
                 <td class="date-text">
                     {{ \Carbon\Carbon::parse($item->date)->format('M d, Y') }}
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted)">
+                <td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted)">
                     Belum ada data harga.
                 </td>
             </tr>

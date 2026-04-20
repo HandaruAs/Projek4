@@ -7,7 +7,7 @@
                 <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white">
                     <span class="material-symbols-outlined text-xl">analytics</span>
                 </div>
-                <a href="{{ route('dashboard') }}">
+                <a href="{{ route('user.home') }}">
                     <h2 class="text-text-primary-light dark:text-text-primary-dark text-xl font-bold tracking-tight">SIMOPANG</h2>
                 </a>
             </div>
@@ -16,19 +16,26 @@
             <nav class="hidden md:flex items-center gap-8">
                 @php
                     $navLinks = [
-                        ['route' => 'dashboard',       'label' => 'Dashboard'],
-                        ['route' => 'data-harga.index','label' => 'Data Harga'],
-                        ['route' => 'prediksi.index',  'label' => 'Prediksi'],
-                        ['route' => 'simulasi.index',  'label' => 'Simulasi'],
-                        ['route' => 'tentang',         'label' => 'Tentang'],
+                        ['route' => 'user.home',     'label' => 'Dashboard'],
+                        ['route' => 'user.harga',    'label' => 'Data Harga'],
+                        ['route' => 'user.prediksi', 'label' => 'Prediksi'],
+                        ['route' => 'user.simulasi', 'label' => 'Simulasi'],
+                        ['route' => 'user.chatai',   'label' => 'Chat AI'],
+                        ['route' => 'user.profil',   'label' => 'Profil Saya'],
+                        ['route' => 'tentang',       'label' => 'Tentang'],
                     ];
                 @endphp
 
                 @foreach($navLinks as $link)
-                    <a href="{{ route($link['route']) }}"
-                       class="{{ request()->routeIs(explode('.', $link['route'])[0] . '*') ? 'text-primary font-semibold' : 'text-text-secondary-light dark:text-text-secondary-dark font-medium' }} text-sm hover:text-primary dark:hover:text-blue-400 transition-colors">
-                        {{ $link['label'] }}
-                    </a>
+                    @if(\Route::has($link['route']))
+                        <a href="{{ route($link['route']) }}"
+                           class="{{ request()->routeIs(explode('.', $link['route'])[0] . '*') 
+                                    ? 'text-primary font-semibold' 
+                                    : 'text-text-secondary-light dark:text-text-secondary-dark font-medium' }} 
+                                    text-sm hover:text-primary dark:hover:text-blue-400 transition-colors">
+                            {{ $link['label'] }}
+                        </a>
+                    @endif
                 @endforeach
             </nav>
 
@@ -57,11 +64,16 @@
     <div id="mobile-menu" class="hidden md:hidden border-t border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
         <nav class="max-w-[1200px] mx-auto px-4 py-3 flex flex-col gap-1">
             @foreach($navLinks as $link)
-                <a href="{{ route($link['route']) }}"
-                   class="{{ request()->routeIs(explode('.', $link['route'])[0] . '*') ? 'bg-primary-light text-primary' : 'text-text-secondary-light dark:text-text-secondary-dark' }} px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-light hover:text-primary transition-colors">
-                    {{ $link['label'] }}
-                </a>
-            @endforeach
+                @if(\Route::has($link['route']))
+                    <a href="{{ route($link['route']) }}"
+                       class="{{ request()->routeIs(explode('.', $link['route'])[0] . '*') 
+                                ? 'bg-primary-light text-primary' 
+                                : 'text-text-secondary-light dark:text-text-secondary-dark' }} 
+                                px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-light hover:text-primary transition-colors">
+                        {{ $link['label'] }}
+                    </a>
+                @endif
+            @endforeach>
 
             <a href="{{ url('/admin/dashboard') }}"
                class="text-text-secondary-light dark:text-text-secondary-dark px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-light hover:text-primary transition-colors flex items-center gap-2">
