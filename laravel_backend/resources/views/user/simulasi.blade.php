@@ -8,24 +8,10 @@
 @extends('layouts.layout')
 
 @section('title', 'Simulasi Pengeluaran AI')
+@section('page-title', 'Simulasi Pengeluaran AI')
+@section('page-sub', 'Estimasi pengeluaran Anda berdasarkan tren harga komoditas terkini dan prediksi cerdas untuk perencanaan finansial yang lebih baik')
 
 @section('content')
-
-  {{-- ── BREADCRUMB ─────────────────────────────────── --}}
-  <nav class="u-breadcrumb">
-    <a href="{{ route('user.home') }}">Beranda</a>
-    <span class="u-breadcrumb__sep">/</span>
-    <span class="u-breadcrumb__current">Simulasi Pengeluaran AI</span>
-  </nav>
-
-  {{-- ── PAGE HEADER ───────────────────────────────── --}}
-  <div class="u-page-header">
-    <div>
-      <h1>Simulasi Pengeluaran AI</h1>
-      <p>Estimasi pengeluaran Anda berdasarkan tren harga komoditas terkini dan prediksi<br>
-         cerdas untuk perencanaan finansial yang lebih baik.</p>
-    </div>
-  </div>
 
   {{-- ── SIMULASI GRID ─────────────────────────────── --}}
   <div class="u-sim-grid">

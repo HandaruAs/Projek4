@@ -14,21 +14,11 @@ use App\Http\Controllers\Web\UserSimulasiController;
 use App\Http\Controllers\Web\UserChatAiController;
 use App\Http\Controllers\Web\UserProfilController;
 
+// Landing Page
+Route::get('/', function () {
+    return view('landing');
+})->name('landing');
 
-Route::get('/', fn () => view('tentang'))->name('home');
-
-
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-Route::prefix('dashboard')->name('dashboard.')->group(function () {
-    Route::post('/filter',    [DashboardController::class, 'filter'])->name('filter');
-    Route::get('/chart-data', [DashboardController::class, 'chartData'])->name('chart-data');
-    Route::get('/export-pdf', [DashboardController::class, 'exportPdf'])->name('export-pdf');
-});
-
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::view('/dashboard', 'admin.dashboard')->name('dashboard');
-});
 // ── AUTH ROUTES ──────────────────────────────────────────────
 Route::get('/register',        [AuthController::class, 'showRegisterUser'])->name('register');
 Route::post('/register',       [AuthController::class, 'registerUser']);
@@ -51,7 +41,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
 // ── ADMIN ROUTES ─────────────────────────────────────────────
-Route::middleware(['role:admin'])->group(function () {
+Route::middleware(['auth','role:admin'])->group(function () {
 
     Route::get('/admin/dashboard', [App\Http\Controllers\Web\AdminController::class, 'dashboard'])->name('dashboard');
     Route::prefix('admin')->group(function () {
@@ -84,16 +74,15 @@ Route::middleware(['role:admin'])->group(function () {
 
 
 // ── USER ROUTES ───────────────────────────────────────────────
-Route::middleware(['role:user'])->group(function () {
+Route::middleware(['auth','role:user'])->group(function () {
 
-   
-
-    Route::get('/home',      [App\Http\Controllers\Web\UserController::class,       'home'])->name('user.home');
-    Route::get('/harga', [HargaController::class, 'userIndex'])->name('user.harga');
+    Route::get('/home',      [App\Http\Controllers\Web\UserController::class,'home'])->name('user.home');
+    Route::get('/harga', [UserHargaController::class, 'harga'])->name('user.harga');
     Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class,'prediksi'])->name('user.prediksi');
     Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class,'simulasi'])->name('user.simulasi');
     Route::get('/chatai', [App\Http\Controllers\Web\UserChatAiController::class, 'index'])->name('user.chatai');
     Route::get('/user/profil', [UserProfilController::class, 'index'])->name('user.profil');
     Route::put('/user/profil', [UserProfilController::class, 'update'])->name('user.profil.update');
     Route::put('/user/profil/password', [UserProfilController::class, 'password'])->name('user.profil.password');
+    Route::get('/download-pdf', [UserController::class, 'downloadPdf'])->name('user.downloadPdf');
 });
