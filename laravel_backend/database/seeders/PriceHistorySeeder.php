@@ -17,18 +17,30 @@ class PriceHistorySeeder extends Seeder
             return;
         }
 
-        $csv = array_map('str_getcsv', file($csvPath));
-        $header = array_shift($csv);
+        $handle = fopen($csvPath, 'r');
+        $header = fgetcsv($handle);
+        if (!$header) {
+            $this->command->error('Empty or invalid CSV');
+            return;
+        }
 
-        foreach ($csv as $row) {
-            $tanggal = $row[0];
-            $komoditas = $row[1];
-            $satuan = $row[2];
-            $harga_sekarang = (float) str_replace(',', '', $row[4]);
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count($row) < 5) continue; // Skip invalid rows
+
+            $tanggal = trim($row[0]);
+            $komoditas = trim($row[1]);
+            $satuan = trim($row[2]);
+            $harga_lama_str = isset($row[3]) ? trim($row[3]) : '0';
+            $harga_sekarang_str = isset($row[4]) ? trim($row[4]) : '0';
+
+            if (empty($tanggal) || empty($komoditas)) continue;
+
+            $harga_sekarang = (float) str_replace(',', '', $harga_sekarang_str);
+            $harga_lama = (float) str_replace(',', '', $harga_lama_str);
             
             $commodity = Commodity::firstOrCreate(
                 ['name' => $komoditas],
-                ['unit' => $satuan, 'stok_unit' => $satuan]
+                ['unit' => $satuan ?: 'kg', 'stok_unit' => $satuan ?: 'kg']
             );
 
             PriceHistory::updateOrCreate(
@@ -38,13 +50,15 @@ class PriceHistorySeeder extends Seeder
                 ],
                 [
                     'harga_sekarang' => $harga_sekarang,
-                    'harga_lama' => (float) str_replace(',', '', $row[3]),
-                    'satuan' => $satuan,
+                    'harga_lama' => $harga_lama,
+                    'satuan' => $satuan ?: 'kg',
                     'commodity_name' => $komoditas,
                     'category' => 'Pangan',
                 ]
             );
         }
+        fclose($handle);
+        $this->command->info('✅ PriceHistory seeded successfully!');
 
         $this->command->info('Data harga dari sample CSV berhasil di-import!');
     }

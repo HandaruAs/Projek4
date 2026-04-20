@@ -7,6 +7,7 @@ use App\Models\Commodity;
 use App\Models\Prediction;
 use App\Models\PriceHistory;
 use App\Services\PrediksiService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -23,8 +24,7 @@ class UserPrediksiController extends Controller
     public function prediksi(Request $request)
     {
         // 1. Ambil semua komoditas (untuk dropdown)
-        $komoditasList = Commodity::orderBy('name', 'asc')
-            ->get(['_id', 'name', 'unit'])
+$komoditasList = PrediksiService::getCommodities()
             ->map(fn($c) => [
                 'id'   => (string) $c->_id,
                 'nama' => $c->name,

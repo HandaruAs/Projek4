@@ -1,274 +1,137 @@
 @extends('layouts.layout')
 
 @section('title', 'Detail Prediksi')
-@section('page-title', 'Detail Prediksi')
+@section('page-title', $prediction->commodity_name ?? 'Prediksi')
 @section('page-sub', 'Hasil lengkap Holt-Winters Exponential Smoothing')
 
 @section('content')
 
-<<<<<<< HEAD
-@if($prediction)
-=======
->>>>>>> fd823bc0833f5e144f68f61a74f5531fc4687a14
-@php
-    $metrics = $prediction->metrics ?? [];
-    $results = $prediction->results ?? [];
-    $status  = $metrics['status'] ?? 'completed';
-    $badgeClass = match($status) {
-        'completed'     => 'badge-status-completed',
-        'review_needed' => 'badge-status-review',
-        'failed'        => 'badge-status-failed',
-        default         => 'badge-status-completed',
-    };
-    $badgeLabel = match($status) {
-        'completed'     => 'COMPLETED',
-        'review_needed' => 'REVIEW NEEDED',
-        'failed'        => 'FAILED',
-        default         => strtoupper($status),
-    };
-@endphp
-
 {{-- Back Button --}}
-<div style="margin-bottom:1.5rem">
-    <a href="{{ route('prediksi.index') }}"
-       style="display:inline-flex;align-items:center;gap:8px;color:var(--accent);
-              font-size:13.5px;font-weight:600;text-decoration:none">
-        <i class="fas fa-arrow-left"></i> Kembali ke Generate Prediksi
+<div class="mb-4">
+    <a href="{{ route('prediksi.index') }}" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-left me-2"></i>Kembali
     </a>
 </div>
 
-{{-- ── INFO HEADER ── --}}
-<div class="card" style="margin-bottom:1.5rem">
-    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div class="card-title">
-            <i class="fas fa-chart-line" style="color:var(--accent);margin-right:8px"></i>
-            {{ $prediction->commodity_name ?? '—' }}
+{{-- Info Cards --}}
+<div class="row mb-4 g-3">
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5>{{ $prediction->horizon_days ?? 'N/A' }} Hari</h5>
+                <small class="text-muted">Horizon</small>
+            </div>
         </div>
-        <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5>{{ number_format(($prediction->metrics['mape'] ?? 0), 2) }}%</h5>
+                <small class="text-muted">MAPE</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5>{{ number_format(($prediction->metrics['mae'] ?? 0), 0) }}</h5>
+                <small class="text-muted">MAE</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5>{{ number_format(($prediction->metrics['rmse'] ?? 0), 0) }}</h5>
+                <small class="text-muted">RMSE</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5>{{ $prediction->predicted_at ? $prediction->predicted_at->format('d M Y H:i') : 'N/A' }}</h5>
+                <small class="text-muted">Generated</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5>Rp {{ number_format($prediction->current_price ?? 0, 0) }}</h5>
+                <small class="text-muted">Current Price</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Export & Delete --}}
+<div class="mb-4">
+    <div class="btn-group" role="group">
+        <a href="{{ route('prediksi.export', $prediction->id) }}" class="btn btn-success">
+            <i class="fas fa-download me-2"></i>Export CSV
+        </a>
+        <form method="POST" action="{{ route('prediksi.destroy', $prediction->id) }}" class="d-inline" 
+              onsubmit="return confirm('Hapus prediksi ini?')">
+            @csrf @method('DELETE')
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash me-2"></i>Hapus
+            </button>
+        </form>
+    </div>
+</div>
+
+{{-- Forecast Table --}}
+<div class="card">
+    <div class="card-header">
+        <h5>Forecast Results</h5>
     </div>
     <div class="card-body">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem">
-
-            <div class="stat-mini">
-                <div class="stat-mini-label">Tanggal Generate</div>
-                <div class="stat-mini-value">
-<<<<<<< HEAD
-                    {{ $prediction->predicted_at ? \Carbon\Carbon::parse($prediction->predicted_at)->format('d M Y, H:i') : '-' }}
-=======
-                    {{ \Carbon\Carbon::parse($prediction->predicted_at)->format('d M Y, H:i') }}
->>>>>>> fd823bc0833f5e144f68f61a74f5531fc4687a14
-                </div>
-            </div>
-
-            <div class="stat-mini">
-                <div class="stat-mini-label">Horizon</div>
-<<<<<<< HEAD
-                <div class="stat-mini-value">{{ $prediction->horizon_days ?? '-' }} Hari</div>
-=======
-                <div class="stat-mini-value">{{ $prediction->horizon_days }} Hari</div>
->>>>>>> fd823bc0833f5e144f68f61a74f5531fc4687a14
-            </div>
-
-            <div class="stat-mini">
-                <div class="stat-mini-label">Trend Type</div>
-                <div class="stat-mini-value">{{ ucfirst($metrics['trend'] ?? '-') }}</div>
-            </div>
-
-            <div class="stat-mini">
-                <div class="stat-mini-label">Seasonal Type</div>
-                <div class="stat-mini-value">{{ ucfirst($metrics['seasonal'] ?? '-') }}</div>
-            </div>
-
-            <div class="stat-mini">
-                <div class="stat-mini-label">Seasonal Periods</div>
-                <div class="stat-mini-value">{{ $metrics['seasonal_periods'] ?? '-' }}</div>
-            </div>
-
-            <div class="stat-mini">
-                <div class="stat-mini-label">Damped Trend</div>
-                <div class="stat-mini-value">{{ ($metrics['damped'] ?? false) ? 'Ya' : 'Tidak' }}</div>
-            </div>
-
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Predicted Price</th>
+                        <th>Lower CI</th>
+                        <th>Upper CI</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if(isset($prediction->results) && count($prediction->results) > 0)
+                        @foreach($prediction->results as $i => $row)
+                            <tr>
+                                <td>{{ $i + 1 }}</td>
+                                <td>{{ \Carbon\Carbon::parse($row['date'])->format('d M Y') }}</td>
+                                <td><strong>Rp {{ number_format($row['predicted_price'], 0) }}</strong></td>
+                                <td>Rp {{ number_format($row['lower'] ?? 0, 0) }}</td>
+                                <td>Rp {{ number_format($row['upper'] ?? 0, 0) }}</td>
+                                <td>
+                                    @if($i > 0)
+                                        @php $diff = $row['predicted_price'] - $prediction->results[$i-1]['predicted_price']; @endphp
+                                        <span class="{{ $diff > 0 ? 'text-success' : 'text-danger' }}">
+                                            {{ $diff > 0 ? '+' : '' }}{{ number_format($diff, 0) }}
+                                        </span>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No forecast data available.
+                            </td>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
-
-{{-- ── METRICS CARDS ── --}}
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
-<<<<<<< HEAD
-    [... metrics cards unchanged ...]
-=======
-
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">MAE</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['mae']) ? number_format($metrics['mae'], 2) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Mean Absolute Error</div>
-    </div>
-
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">RMSE</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['rmse']) ? number_format($metrics['rmse'], 2) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Root Mean Squared Error</div>
-    </div>
-
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">MAPE</div>
-        <div style="font-size:1.5rem;font-weight:800;
-             color:{{ isset($metrics['mape']) && $metrics['mape'] > 20 ? '#ef4444' : '#10b981' }}">
-            {{ isset($metrics['mape']) ? number_format($metrics['mape'], 2).'%' : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">
-            Mean Absolute Percentage Error
-            @if(isset($metrics['mape']))
-                — {{ $metrics['mape'] <= 10 ? 'Sangat Baik' : ($metrics['mape'] <= 20 ? 'Baik' : 'Perlu Review') }}
-            @endif
-        </div>
-    </div>
-
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">ALPHA (α)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['alpha']) ? number_format($metrics['alpha'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Level</div>
-    </div>
-
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">BETA (β)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['beta']) ? number_format($metrics['beta'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Trend</div>
-    </div>
-
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">GAMMA (γ)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['gamma']) ? number_format($metrics['gamma'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Seasonal</div>
-    </div>
-
->>>>>>> fd823bc0833f5e144f68f61a74f5531fc4687a14
-</div>
-
-{{-- ── FORECAST TABLE ── --}}
-<div class="table-card">
-    <div class="table-header">
-        <div class="table-title">
-            <i class="fas fa-calendar-days" style="margin-right:6px;color:var(--accent)"></i>
-            Hasil Forecast ({{ count($results) }} hari)
-        </div>
-<<<<<<< HEAD
-        <a href="{{ route('prediksi.export', $prediction->_id) }}" class="export-btn">
-            <i class="fas fa-download"></i> Export CSV
-        </a>
-    </div>
-    [... table unchanged ...]
-=======
-        {{-- Export CSV --}}
-        <a href="{{ route('prediksi.export', $prediction->_id) }}"
-           style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
-                  color:var(--accent);text-decoration:none;padding:6px 14px;border:1.5px solid var(--accent);
-                  border-radius:8px;transition:.2s"
-           onmouseover="this.style.background='var(--accent)';this.style.color='#fff'"
-           onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">
-            <i class="fas fa-download"></i> Export CSV
-        </a>
-    </div>
-
-    @if(count($results) > 0)
-    <div style="overflow-x:auto">
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Tanggal</th>
-                    <th>Harga Prediksi (Rp)</th>
-                    <th>Batas Bawah (Rp)</th>
-                    <th>Batas Atas (Rp)</th>
-                    <th>Selisih dari Sebelumnya</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($results as $i => $row)
-                @php
-                    $price    = $row['predicted_price'] ?? 0;
-                    $lower    = $row['lower'] ?? null;
-                    $upper    = $row['upper'] ?? null;
-                    $prevPrice = $i > 0 ? ($results[$i-1]['predicted_price'] ?? 0) : null;
-                    $diff      = $prevPrice !== null ? $price - $prevPrice : null;
-                @endphp
-                <tr>
-                    <td class="date-text">{{ $i + 1 }}</td>
-                    <td class="date-text">{{ \Carbon\Carbon::parse($row['date'])->format('d M Y') }}</td>
-                    <td style="font-weight:700;color:var(--text-primary)">
-                        Rp {{ number_format($price, 0, ',', '.') }}
-                    </td>
-                    <td class="date-text">
-                        {{ $lower !== null ? 'Rp '.number_format($lower, 0, ',', '.') : '—' }}
-                    </td>
-                    <td class="date-text">
-                        {{ $upper !== null ? 'Rp '.number_format($upper, 0, ',', '.') : '—' }}
-                    </td>
-                    <td class="date-text">
-                        @if($diff !== null)
-                            <span style="color:{{ $diff >= 0 ? '#ef4444' : '#10b981' }};font-weight:600">
-                                {{ $diff >= 0 ? '+' : '' }}Rp {{ number_format($diff, 0, ',', '.') }}
-                            </span>
-                        @else
-                            <span style="color:var(--muted)">—</span>
-                        @endif
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @else
-        <div style="text-align:center;padding:3rem;color:var(--muted)">
-            <i class="fas fa-inbox" style="font-size:2rem;margin-bottom:1rem;display:block"></i>
-            Tidak ada data forecast tersedia.
-        </div>
-    @endif
->>>>>>> fd823bc0833f5e144f68f61a74f5531fc4687a14
-</div>
-
-{{-- ── DELETE BUTTON ── --}}
-<div style="margin-top:1.5rem;display:flex;justify-content:flex-end">
-<<<<<<< HEAD
-    <form method="POST" action="{{ route('prediksi.destroy', $prediction->_id) }}" onsubmit="return confirm('Yakin?')">
-        @csrf @method('DELETE')
-        <button type="submit" class="btn-danger">
-            <i class="fas fa-trash"></i> Hapus
-        </button>
-    </form>
-</div>
-@else
-<p>Belum ada hasil prediksi</p>
-@endif
 
 @endsection
 
-=======
-    <form method="POST" action="{{ route('prediksi.destroy', $prediction->_id) }}"
-          onsubmit="return confirm('Yakin ingin menghapus data prediksi ini?')">
-        @csrf
-        @method('DELETE')
-        <button type="submit"
-                style="display:inline-flex;align-items:center;gap:8px;padding:9px 20px;
-                       background:#ef4444;color:#fff;border:none;border-radius:10px;
-                       font-size:13.5px;font-weight:600;cursor:pointer;transition:.2s"
-                onmouseover="this.style.background='#dc2626'"
-                onmouseout="this.style.background='#ef4444'">
-            <i class="fas fa-trash-can"></i> Hapus Prediksi Ini
-        </button>
-    </form>
-</div>
-
-@endsection
->>>>>>> fd823bc0833f5e144f68f61a74f5531fc4687a14
