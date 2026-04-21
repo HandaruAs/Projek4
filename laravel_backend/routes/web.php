@@ -40,7 +40,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
 // ── ADMIN ROUTES ─────────────────────────────────────────────
-Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth','role:admin'])->group(function () {
 
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
@@ -71,7 +71,7 @@ Route::middleware(['role:admin'])->prefix('admin')->group(function () {
 
 
 // ── USER ROUTES ───────────────────────────────────────────────
-Route::middleware(['role:user'])->group(function () {
+Route::middleware(['auth','role:user'])->group(function () {
 
     Route::get('/home',          [UserController::class,       'home'])->name('user.home');
     Route::get('/harga',         [HargaController::class,      'userIndex'])->name('user.harga');
@@ -82,4 +82,5 @@ Route::middleware(['role:user'])->group(function () {
     Route::get('/user/profil',   [UserProfilController::class,  'index'])->name('user.profil');
     Route::put('/user/profil',   [UserProfilController::class,  'update'])->name('user.profil.update');
     Route::put('/user/profil/password', [UserProfilController::class, 'password'])->name('user.profil.password');
+    Route::get('/download-pdf', [UserController::class, 'downloadPdf'])->name('user.downloadPdf');
 });

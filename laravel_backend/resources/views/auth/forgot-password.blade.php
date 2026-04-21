@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lupa Password — SIMOPANG</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ asset('css/auth-base.css') }}" rel="stylesheet">
     <link href="{{ asset('css/forgot-password.css') }}" rel="stylesheet">
 </head>
 <body>
@@ -15,14 +16,16 @@
         <span class="brand-name">SIMOPANG</span>
     </a>
     <div class="navbar-links">
-        <a href="{{ route('login') }}"><i class="fas fa-arrow-left"></i>Kembali Login</a>
+        <a href="/" class="btn-back">
+            <i class="fas fa-house"></i>
+            <span class="back-text">Beranda</span>
+        </a>
     </div>
 </nav>
 
 <div class="page-wrapper">
     <div class="auth-card">
 
-        {{-- LEFT --}}
         <div class="card-left">
             <div class="left-illustration">
                 <div class="orbit-ring ring-1"></div>
@@ -35,11 +38,13 @@
                 <div class="orbit-dot dot-2"><i class="fas fa-key"></i></div>
                 <div class="orbit-dot dot-3"><i class="fas fa-shield-halved"></i></div>
             </div>
+
             <div class="left-title">Lupa Password?</div>
             <div class="left-desc">
                 Tenang, kami akan kirimkan kode OTP<br>
                 ke email kamu untuk verifikasi identitas.
             </div>
+
             <div class="left-steps">
                 <div class="step active">
                     <div class="step-num">1</div>
@@ -58,9 +63,7 @@
             </div>
         </div>
 
-        {{-- RIGHT --}}
         <div class="card-right">
-
             <div class="page-icon">
                 <i class="fas fa-envelope-open-text"></i>
             </div>
@@ -75,22 +78,19 @@
 
             @if(session('error'))
             <div class="alert-error">
-                <i class="fas fa-circle-exclamation"></i>
-                {{ session('error') }}
+                <i class="fas fa-circle-exclamation"></i> {{ session('error') }}
             </div>
             @endif
 
             @if(session('success'))
             <div class="alert-success">
-                <i class="fas fa-circle-check"></i>
-                {{ session('success') }}
+                <i class="fas fa-circle-check"></i> {{ session('success') }}
             </div>
             @endif
 
             @if ($errors->any())
             <div class="alert-error">
-                <i class="fas fa-circle-exclamation"></i>
-                {{ $errors->first() }}
+                <i class="fas fa-circle-exclamation"></i> {{ $errors->first() }}
             </div>
             @endif
 
@@ -102,14 +102,11 @@
                     <div class="input-wrapper">
                         <i class="fas fa-envelope input-icon"></i>
                         <input
-                            type="email"
-                            id="email"
-                            name="email"
+                            type="email" id="email" name="email"
                             class="form-input {{ $errors->has('email') ? 'is-error' : '' }}"
                             placeholder="nama@email.com"
                             value="{{ old('email') }}"
-                            required
-                            autofocus
+                            required autofocus
                             oninput="validateEmail(this)"
                         >
                     </div>
@@ -127,24 +124,18 @@
                     <span id="btn-text">Kirim Kode OTP</span>
                     <i class="fas fa-paper-plane" id="btn-icon"></i>
                 </button>
-
             </form>
 
             <div class="back-link">
                 Ingat password? <a href="{{ route('login') }}">Login di sini</a>
             </div>
-
-            <div class="powered-by">
-                Powered by <span>SIMOPANG</span> Core
-            </div>
-
+            <div class="powered-by">Powered by <span>SIMOPANG</span> Core</div>
         </div>
+
     </div>
 </div>
 
-<footer class="footer">
-    © 2024 SIMOPANG. Hak Cipta Dilindungi Undang-Undang.
-</footer>
+<footer class="footer">© 2024 SIMOPANG. Hak Cipta Dilindungi Undang-Undang.</footer>
 
 <script>
     function validateEmail(input) {
@@ -166,13 +157,12 @@
             e.preventDefault();
             return;
         }
-        // Loading state
         const btn  = document.getElementById('btn-submit');
         const text = document.getElementById('btn-text');
         const icon = document.getElementById('btn-icon');
-        btn.disabled       = true;
-        text.textContent   = 'Mengirim...';
-        icon.className     = 'fas fa-spinner fa-spin';
+        btn.disabled     = true;
+        text.textContent = 'Mengirim...';
+        icon.className   = 'fas fa-spinner fa-spin';
     });
 </script>
 

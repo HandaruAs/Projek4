@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
-import 'package:flutter_app/screens/Admin/main_screen.dart';
-import 'package:flutter_app/screens/User/main_screen.dart'; // ✅ tambah import ini
+import 'package:flutter_app/screens/User/main_screen.dart'; // ✅ hanya import UserMainScreen
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -44,18 +43,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
 
       if (success) {
-        final role = authProvider.currentUser?.role;
-
-        // ✅ Routing berdasarkan role, sama seperti login & splash
-        if (role == 'admin') {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MainScreen()),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const UserMainScreen()),
-          );
-        }
+        // ✅ Tidak perlu cek role — semua langsung ke UserMainScreen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const UserMainScreen()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

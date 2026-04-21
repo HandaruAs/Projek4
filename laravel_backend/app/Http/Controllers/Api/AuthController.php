@@ -22,7 +22,24 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+
+        if (!$user) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Akun tidak ditemukan'
+            ], 404);
+        }
+
+
+        if ($user->role === 'admin') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Akun tidak ditemukan'
+            ], 404);
+        }
+
+        // ❌ kalau password salah
+        if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Email atau password salah'
@@ -38,7 +55,9 @@ class AuthController extends Controller
                     'id'    => (string) $user->_id,
                     'name'  => $user->name,
                     'email' => $user->email,
-                    'role'  => $user->role
+                    'role'  => $user->role,
+                    'phone' => $user->phone ?? '',
+                    'address' => $user->address ?? '',
                 ],
                 'token' => $token
             ]
@@ -271,6 +290,100 @@ class AuthController extends Controller
         return response()->json([
             'status'  => 'success',
             'message' => 'Password berhasil diperbarui. Silakan login.'
+        ]);
+    }
+
+    // ─────────────────────────────────────────────
+    // GET PROFILE
+    // ─────────────────────────────────────────────
+    public function getProfile()
+    {
+        $user = auth()->user();
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'id'      => (string) $user->_id,
+                'name'    => $user->name,
+                'email'   => $user->email,
+                'phone'   => $user->phone   ?? '',
+                'address' => $user->address ?? '',
+                'role'    => $user->role,
+            ]
+        ]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $validator = Validator::make($request->all(), [
+            'name'    => 'sometimes|string|max:255',
+            'email'   => 'sometimes|email|unique:users,email,' . $user->_id . ',_id',
+            'phone'   => 'sometimes|nullable|string|max:20',
+            'address' => 'sometimes|nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        if ($request->filled('name'))    $user->name    = $request->name;
+        if ($request->filled('email'))   $user->email   = $request->email;
+        if ($request->has('phone'))      $user->phone   = $request->phone;
+        if ($request->has('address'))    $user->address = $request->address;
+
+        $user->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Profil berhasil diperbarui',
+            'data'    => [
+                'id'      => (string) $user->_id,
+                'name'    => $user->name,
+                'email'   => $user->email,
+                'phone'   => $user->phone   ?? '',
+                'address' => $user->address ?? '',
+                'role'    => $user->role,
+            ]
+        ]);
+    }
+
+    // ─────────────────────────────────────────────
+    // CHANGE PASSWORD (user harus login)
+    // ─────────────────────────────────────────────
+    public function changePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'old_password' => 'required|string',
+            'password'     => 'required|string|min:6',
+            'password_confirmation' => 'required|same:password',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $user = auth()->user();
+
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Password lama tidak sesuai',
+            ], 400);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Password berhasil diubah',
         ]);
     }
 }
