@@ -28,6 +28,16 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
+    session([
+    'user' => [
+        '_id'    => (string) $user->_id,
+        'nama'   => $user->name,
+        'email'  => $user->email,
+        'role'   => $user->role,
+        'avatar' => $user->avatar ?? null,  
+    ]
+]);
+
         if ($user->role === 'admin') {
             return redirect()->route('dashboard');
         }
