@@ -13,7 +13,7 @@ class PrediksiService
 {
     /**
      * Generate prediction for commodity using Holt-Winter script.
-     * 
+     *
      * @param string $commodityId MongoDB _id
      * @param int $steps Forecast horizon (default 30)
      * @return array Data ready for Prediction::create()
@@ -22,7 +22,7 @@ class PrediksiService
     {
         // Validate commodity exists & has data
         $commodity = Commodity::findOrFail($commodityId);
-        
+
         $latestPrice = PriceHistory::where('commodity_id', $commodityId)
             ->orderBy('date', 'desc')
             ->first(['harga_sekarang', 'satuan', 'commodity_name', 'category']);
@@ -48,10 +48,10 @@ class PrediksiService
         $seasonalPeriods = 7; // weekly
         $damped = 0;
 
-        // Build command: python3 scripts/Holt_Winter.py <args>
+        // Build command: python scripts/Holt_Winter.py <args>
         $scriptPath = base_path('scripts/Holt_Winter.py');
         $command = sprintf(
-            'cd %s && python3 %s %s %d %s %s %d %d %s 2>&1',
+'cd %s && "C:\\\\Users\\\\Muhammad Zaiful\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe" %s %s %d %s %s %d %d %s 2>&1',
             escapeshellarg(base_path()),
             escapeshellarg($scriptPath),
             escapeshellarg($commodityId),
@@ -92,37 +92,37 @@ class PrediksiService
 
         // Format for Prediction model (sync with fillable & Holt_Winter.py)
         $predictionData = [
-            'commodity_id' => $commodityId,
+            'commodity_id'   => $commodityId,
             'commodity_name' => $latestPrice->commodity_name ?? $commodity->name,
-            'predicted_at' => Carbon::now(),
-            'horizon_days' => $steps,
-            'current_price' => $latestPrice->harga_sekarang,
-            'satuan' => $latestPrice->satuan ?? 'kg',
-            'kategori' => $latestPrice->category ?? $commodity->category ?? 'Pangan',
-            
+            'predicted_at'   => Carbon::now(),
+            'horizon_days'   => $steps,
+            'current_price'  => $latestPrice->harga_sekarang,
+            'satuan'         => $latestPrice->satuan ?? 'kg',
+            'kategori'       => $latestPrice->category ?? $commodity->category ?? 'Pangan',
+
             // Direct from script
-            'mae' => $result['mae'] ?? null,
+            'mae'  => $result['mae']  ?? null,
             'rmse' => $result['rmse'] ?? null,
             'mape' => $result['mape'] ?? null,
-            
+
             // Build arrays sync Flask
             'tanggal_pred' => array_column($result['forecast'], 'date'),
-            'forecast' => array_column($result['forecast'], 'predicted_price'),
-            'ci_lower' => array_column($result['forecast'], 'lower'),
-            'ci_upper' => array_column($result['forecast'], 'upper'),
-            
+            'forecast'     => array_column($result['forecast'], 'predicted_price'),
+            'ci_lower'     => array_column($result['forecast'], 'lower'),
+            'ci_upper'     => array_column($result['forecast'], 'upper'),
+
             // Detailed results array (for show/export)
             'results' => $result['forecast'],
-            
+
             // Metrics object
             'metrics' => [
-                'mae' => $result['mae'] ?? 0,
-                'rmse' => $result['rmse'] ?? 0,
-                'mape' => $result['mape'] ?? 0,
+                'mae'      => $result['mae']   ?? 0,
+                'rmse'     => $result['rmse']  ?? 0,
+                'mape'     => $result['mape']  ?? 0,
                 'accuracy' => 100 - ($result['mape'] ?? 0),
-                'alpha' => $result['alpha'] ?? 0,
-                'beta' => $result['beta'] ?? 0,
-                'gamma' => $result['gamma'] ?? 0,
+                'alpha'    => $result['alpha'] ?? 0,
+                'beta'     => $result['beta']  ?? 0,
+                'gamma'    => $result['gamma'] ?? 0,
             ],
         ];
 
@@ -143,10 +143,10 @@ class PrediksiService
 
     /**
      * Get all commodities with price data for dropdown.
+     * Fix: hapus select kolom spesifik agar tidak jadi array di MongoDB
      */
     public static function getCommodities(): \Illuminate\Database\Eloquent\Collection
     {
-        return Commodity::whereHas('priceHistories')->get(['_id', 'name']);
+        return Commodity::whereHas('priceHistories')->get();
     }
 }
-

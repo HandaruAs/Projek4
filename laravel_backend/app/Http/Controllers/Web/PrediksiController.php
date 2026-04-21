@@ -28,7 +28,7 @@ class PrediksiController extends Controller
     {
         $user = session('user');
         $predictions = $this->prediksiService->getLatestPredictions(10, $request->get('page', 1));
-        $commodities = PrediksiService::getCommodities();
+        $commodities = Commodity::all();
 
         return view('admin.prediksi', compact('user', 'predictions', 'commodities'));
     }
@@ -53,7 +53,6 @@ class PrediksiController extends Controller
 
             return redirect()->route('prediksi.index')
                 ->with('success', "Prediksi untuk {$predictionData['commodity_name']} berhasil digenerate!");
-
         } catch (\Exception $e) {
             Log::error('Prediction generate failed: ' . $e->getMessage());
             return redirect()->back()
@@ -85,31 +84,31 @@ class PrediksiController extends Controller
             foreach ($rows as $i => $row) {
                 $lineNum = $i + 2;
 
-                if (empty($row['commodity_name']) || empty($row['harga_sekarang']) || empty($row['date'])) {
+                if (empty($row['tanggal']) || empty($row['komoditas']) || empty($row['harga_sekarang'])) {
                     $errors[] = "Baris {$lineNum}: kolom wajib tidak lengkap.";
                     $skipped++;
                     continue;
                 }
 
-                $commodity = Commodity::where('name', trim($row['commodity_name']))->first();
+                $commodity = Commodity::where('name', trim($row['komoditas']))->first();
 
                 try {
-                    $date = Carbon::parse($row['date']);
+                    $date = Carbon::parse($row['tanggal']);
                 } catch (\Exception $e) {
-                    $errors[] = "Baris {$lineNum}: tanggal invalid ({$row['date']}).";
+                    $errors[] = "Baris {$lineNum}: tanggal invalid ({$row['tanggal']}).";
                     $skipped++;
                     continue;
                 }
 
                 $hargaSekarang = (float) str_replace(',', '.', preg_replace('/[^0-9,]/', '', $row['harga_sekarang']));
-                $hargaLama = isset($row['harga_lama']) 
-                    ? (float) str_replace(',', '.', preg_replace('/[^0-9,]/', '', $row['harga_lama'])) 
+                $hargaLama = isset($row['harga_lama'])
+                    ? (float) str_replace(',', '.', preg_replace('/[^0-9,]/', '', $row['harga_lama']))
                     : 0;
 
                 PriceHistory::create([
                     'commodity_id' => $commodity?->_id,
-                    'commodity_name' => trim($row['commodity_name']),
-                    'category' => $commodity?->category ?? ($row['category'] ?? null),
+                    'commodity_name' => trim($row['komoditas']),
+                    'category' => $commodity?->category ?? null,
                     'date' => $date,
                     'satuan' => $row['satuan'] ?? 'kg',
                     'harga_lama' => $hargaLama,
@@ -125,7 +124,6 @@ class PrediksiController extends Controller
             return redirect()->route('prediksi.index')
                 ->with('success', $message)
                 ->with('import_errors', $errors);
-
         } catch (\Exception $e) {
             Log::error('CSV Upload failed: ' . $e->getMessage());
             return back()->with('error', 'Gagal import: ' . $e->getMessage());
@@ -182,7 +180,7 @@ class PrediksiController extends Controller
 
         $callback = function () use ($results) {
             $handle = fopen('php://output', 'w');
-            fputs($handle, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM
+            fputs($handle, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
             fputcsv($handle, ['Tanggal', 'Prediksi (Rp)', 'Bawah (Rp)', 'Atas (Rp)']);
             foreach ($results as $row) {
                 fputcsv($handle, [
@@ -222,17 +220,16 @@ class PrediksiController extends Controller
 
         $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
         $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
-        
+
         $headers = array_map('trim', array_shift($rows) ?? []);
         $result = [];
-        
+
         foreach ($rows as $row) {
             if (count($row) >= count($headers)) {
                 $result[] = array_combine($headers, array_slice($row, 0, count($headers)));
             }
         }
-        
+
         return $result;
     }
 }
-

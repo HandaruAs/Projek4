@@ -63,7 +63,7 @@ class PrediksiService
 
         // 4. Jalankan Holt-Winters Python script
         $command = sprintf(
-            'python %s %s %d add add 7 1 %s',
+            'py %s %s %d add add 7 1 %s',
             escapeshellarg($this->scriptPath),
             escapeshellarg($commodityId),
             $steps,

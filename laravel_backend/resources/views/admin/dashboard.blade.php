@@ -85,16 +85,28 @@
             @forelse($recentPrices as $item)
             <tr>
                 <td class="commodity-name">{{ $item->commodity_name }}</td>
-                <td class="region-text">{{ $item->category ?? '-' }}</td>
+                <td class="region-text">
+                    @if(is_array($item->category))
+                        {{ implode(', ', $item->category) }}
+                    @else
+                        {{ $item->category ?? '-' }}
+                    @endif
+                </td>
                 <td class="price-text">Rp {{ number_format($item->harga_sekarang, 0, ',', '.') }}</td>
                 <td>
-                    @if($item->selisih > 0)
+                    @php
+                        $selisih = $item->selisih ?? 0;
+                        $persen = $item->persen ?? 0;
+                        if (is_array($selisih)) $selisih = $selisih[0] ?? 0;
+                        if (is_array($persen)) $persen = $persen[0] ?? 0;
+                    @endphp
+                    @if($selisih > 0)
                         <span class="stat-change up" style="font-size:12px">
-                            <i class="fas fa-arrow-up"></i> {{ number_format($item->persen, 2) }}%
+                            <i class="fas fa-arrow-up"></i> {{ number_format($persen, 2) }}%
                         </span>
-                    @elseif($item->selisih < 0)
+                    @elseif($selisih < 0)
                         <span class="stat-change down" style="font-size:12px">
-                            <i class="fas fa-arrow-down"></i> {{ number_format(abs($item->persen), 2) }}%
+                            <i class="fas fa-arrow-down"></i> {{ number_format(abs($persen), 2) }}%
                         </span>
                     @else
                         <span class="stat-change neutral" style="font-size:12px">
