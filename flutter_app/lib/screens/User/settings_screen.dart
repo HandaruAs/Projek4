@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
+import 'package:flutter_app/providers/theme_provider.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
+import 'package:flutter_app/screens/user/change_password_screen.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -12,21 +14,15 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifications = true;
-  bool _darkMode = false;
-  bool _priceAlerts = true;
-  bool _weeklyReport = false;
-  String _language = 'Indonesia';
+  bool _priceAlerts   = true;
 
-  // ── CONFIRM LOGOUT ──
   void _confirmLogout() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Keluar'),
-        content:
-            const Text('Apakah kamu yakin ingin keluar dari akun ini?'),
+        content: const Text('Apakah kamu yakin ingin keluar dari akun ini?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -45,8 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Keluar'),
           ),
@@ -55,16 +50,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── CONFIRM SWITCH ACCOUNT ──
   void _confirmSwitchAccount() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Ganti Akun'),
-        content:
-            const Text('Kamu akan keluar dan diarahkan ke halaman login.'),
+        content: const Text('Kamu akan keluar dan diarahkan ke halaman login.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -83,113 +75,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1976D2),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Lanjutkan'),
           ),
         ],
-      ),
-    );
-  }
-
-  // ── CHANGE PASSWORD ──
-  void _showChangePassword() {
-    final oldCtrl = TextEditingController();
-    final newCtrl = TextEditingController();
-    final confirmCtrl = TextEditingController();
-    bool obscureOld = true;
-    bool obscureNew = true;
-    bool obscureConfirm = true;
-
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
-          title: const Text('Ubah Password'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _PasswordField(
-                controller: oldCtrl,
-                label: 'Password Lama',
-                obscure: obscureOld,
-                onToggle: () => setState(() => obscureOld = !obscureOld),
-              ),
-              const SizedBox(height: 12),
-              _PasswordField(
-                controller: newCtrl,
-                label: 'Password Baru',
-                obscure: obscureNew,
-                onToggle: () => setState(() => obscureNew = !obscureNew),
-              ),
-              const SizedBox(height: 12),
-              _PasswordField(
-                controller: confirmCtrl,
-                label: 'Konfirmasi Password',
-                obscure: obscureConfirm,
-                onToggle: () =>
-                    setState(() => obscureConfirm = !obscureConfirm),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: implementasi API change password
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password berhasil diubah'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1976D2),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Simpan'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── LANGUAGE PICKER ──
-  void _showLanguagePicker() {
-    final languages = ['Indonesia', 'English'];
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialog) => SimpleDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
-          title: const Text('Pilih Bahasa'),
-          children: languages
-              .map((lang) => RadioListTile<String>(
-                    value: lang,
-                    groupValue: _language,
-                    title: Text(lang),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() => _language = v);
-                        setDialog(() {});
-                        Navigator.pop(context);
-                      }
-                    },
-                  ))
-              .toList(),
-        ),
       ),
     );
   }
@@ -211,8 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             iconColor: Colors.orange,
             title: 'Ganti Akun',
             subtitle: 'Masuk dengan akun lain',
-            trailing:
-                const Icon(Icons.chevron_right, color: Colors.grey),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
             onTap: _confirmSwitchAccount,
           ),
 
@@ -221,9 +110,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             iconColor: Colors.purple,
             title: 'Ubah Password',
             subtitle: 'Ganti kata sandi akun',
-            trailing:
-                const Icon(Icons.chevron_right, color: Colors.grey),
-            onTap: _showChangePassword,
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+            ),
           ),
 
           const Divider(height: 1, indent: 16),
@@ -246,18 +137,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Alert Harga',
             subtitle: 'Notifikasi saat harga berubah signifikan',
             value: _priceAlerts,
-            onChanged:
-                _notifications ? (v) => setState(() => _priceAlerts = v) : null,
-          ),
-
-          _SettingsSwitchTile(
-            icon: Icons.summarize_outlined,
-            iconColor: Colors.teal,
-            title: 'Laporan Mingguan',
-            subtitle: 'Ringkasan harga komoditas setiap minggu',
-            value: _weeklyReport,
             onChanged: _notifications
-                ? (v) => setState(() => _weeklyReport = v)
+                ? (v) => setState(() => _priceAlerts = v)
                 : null,
           ),
 
@@ -266,23 +147,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── SECTION: Tampilan ──
           const _SectionHeader(label: 'Tampilan'),
 
-          _SettingsSwitchTile(
-            icon: Icons.dark_mode_outlined,
-            iconColor: Colors.indigo,
-            title: 'Mode Gelap',
-            subtitle: 'Gunakan tema gelap',
-            value: _darkMode,
-            onChanged: (v) => setState(() => _darkMode = v),
-          ),
-
-          _SettingsTile(
-            icon: Icons.language,
-            iconColor: Colors.cyan,
-            title: 'Bahasa',
-            subtitle: _language,
-            trailing:
-                const Icon(Icons.chevron_right, color: Colors.grey),
-            onTap: _showLanguagePicker,
+          // ← Hubungkan ke ThemeProvider
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) => _SettingsSwitchTile(
+              icon: Icons.dark_mode_outlined,
+              iconColor: Colors.indigo,
+              title: 'Mode Gelap',
+              subtitle: 'Gunakan tema gelap',
+              value: themeProvider.isDarkMode,
+              onChanged: (v) => themeProvider.toggleTheme(v),
+            ),
           ),
 
           const Divider(height: 1, indent: 16),
@@ -295,8 +169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             iconColor: Colors.blueGrey,
             title: 'Tentang Aplikasi',
             subtitle: 'SIMOPANG v1.0.0',
-            trailing:
-                const Icon(Icons.chevron_right, color: Colors.grey),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
             onTap: () => showAboutDialog(
               context: context,
               applicationName: 'SIMOPANG',
@@ -317,28 +190,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-
-          _SettingsTile(
-            icon: Icons.help_outline,
-            iconColor: Colors.green,
-            title: 'Bantuan & FAQ',
-            subtitle: 'Panduan penggunaan aplikasi',
-            trailing:
-                const Icon(Icons.chevron_right, color: Colors.grey),
-            onTap: () {},
-          ),
-
-          _SettingsTile(
-            icon: Icons.star_outline,
-            iconColor: Colors.amber,
-            title: 'Beri Ulasan',
-            subtitle: 'Nilai aplikasi di Play Store',
-            trailing:
-                const Icon(Icons.chevron_right, color: Colors.grey),
-            onTap: () {},
-          ),
-
-          const Divider(height: 1, indent: 16),
 
           // ── LOGOUT ──
           Padding(
@@ -416,8 +267,7 @@ class _SettingsTile extends StatelessWidget {
         child: Icon(icon, color: iconColor, size: 20),
       ),
       title: Text(title,
-          style: const TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w500)),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
       subtitle: Text(subtitle,
           style: TextStyle(fontSize: 12, color: Colors.grey[500])),
       trailing: trailing,
@@ -468,40 +318,6 @@ class _SettingsSwitchTile extends StatelessWidget {
         value: value,
         onChanged: onChanged,
         activeColor: const Color(0xFF1976D2),
-      ),
-    );
-  }
-}
-
-class _PasswordField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final bool obscure;
-  final VoidCallback onToggle;
-
-  const _PasswordField({
-    required this.controller,
-    required this.label,
-    required this.obscure,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10)),
-        suffixIcon: IconButton(
-          icon:
-              Icon(obscure ? Icons.visibility_off : Icons.visibility),
-          onPressed: onToggle,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12, vertical: 14),
       ),
     );
   }
