@@ -55,7 +55,9 @@ class AuthController extends Controller
                     'id'    => (string) $user->_id,
                     'name'  => $user->name,
                     'email' => $user->email,
-                    'role'  => $user->role
+                    'role'  => $user->role,
+                    'phone' => $user->phone ?? '',
+                    'address' => $user->address ?? '',
                 ],
                 'token' => $token
             ]
@@ -346,6 +348,42 @@ class AuthController extends Controller
                 'address' => $user->address ?? '',
                 'role'    => $user->role,
             ]
+        ]);
+    }
+
+    // ─────────────────────────────────────────────
+    // CHANGE PASSWORD (user harus login)
+    // ─────────────────────────────────────────────
+    public function changePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'old_password' => 'required|string',
+            'password'     => 'required|string|min:6',
+            'password_confirmation' => 'required|same:password',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $user = auth()->user();
+
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Password lama tidak sesuai',
+            ], 400);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Password berhasil diubah',
         ]);
     }
 }

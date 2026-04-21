@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/providers/commodity_provider.dart';
+import 'package:flutter_app/models/price_latest_model.dart';
+import 'package:flutter_app/providers/price_provider.dart';
 import 'package:flutter_app/screens/User/commodity_detail_screen.dart';
-import 'package:flutter_app/models/commodity_model.dart';
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -14,52 +14,53 @@ class UserHomeScreen extends StatefulWidget {
 }
 
 class _UserHomeScreenState extends State<UserHomeScreen> {
-  DateTime _selectedDate = DateTime.now();
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+  final NumberFormat _rupiahFmt =
+      NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
-  // Pagination
-  int _currentPage = 1;
-  static const int _itemsPerPage = 10;
+  String _searchQuery      = '';
+  String _selectedCategory = 'Semua';
+  int    _currentPage      = 1;
+  static const int _perPage = 10;
 
-  static const Map<String, Color> _categoryColors = {
+  static const Map<String, Color> _catColors = {
     'sayur mayur': Color(0xFF4CAF50),
-    'bawang': Color(0xFF9C27B0),
-    'ikan segar': Color(0xFF2196F3),
-    'buah': Color(0xFFFF9800),
-    'beras': Color(0xFF795548),
-    'daging': Color(0xFFF44336),
-    'minyak': Color(0xFFFFAB00),
-    'bumbu': Color(0xFFFF5722),
-    'telur ayam': Color(0xFFFFB300),
-    'gula': Color(0xFF8D6E63),
+    'bawang':      Color(0xFF9C27B0),
+    'ikan segar':  Color(0xFF2196F3),
+    'buah':        Color(0xFFFF9800),
+    'beras':       Color(0xFF795548),
+    'daging':      Color(0xFFF44336),
+    'minyak':      Color(0xFFFFAB00),
+    'bumbu':       Color(0xFFFF5722),
+    'telur ayam':  Color(0xFFFFB300),
+    'gula':        Color(0xFF8D6E63),
   };
 
-  static const Map<String, IconData> _categoryIcons = {
+  static const Map<String, IconData> _catIcons = {
     'sayur mayur': Icons.eco,
-    'bawang': Icons.bubble_chart,
-    'ikan segar': Icons.set_meal,
-    'buah': Icons.apple,
-    'beras': Icons.grain,
-    'daging': Icons.kebab_dining,
-    'minyak': Icons.opacity,
-    'bumbu': Icons.spa,
-    'telur ayam': Icons.egg,
-    'gula': Icons.cake,
+    'bawang':      Icons.bubble_chart,
+    'ikan segar':  Icons.set_meal,
+    'buah':        Icons.apple,
+    'beras':       Icons.grain,
+    'daging':      Icons.kebab_dining,
+    'minyak':      Icons.opacity,
+    'bumbu':       Icons.spa,
+    'telur ayam':  Icons.egg,
+    'gula':        Icons.cake,
   };
 
-  Color _getCategoryColor(String category) {
-    final key = category.toLowerCase();
-    for (final entry in _categoryColors.entries) {
-      if (key.contains(entry.key)) return entry.value;
+  Color _color(String cat) {
+    final k = cat.toLowerCase();
+    for (final e in _catColors.entries) {
+      if (k.contains(e.key)) return e.value;
     }
     return const Color(0xFF1976D2);
   }
 
-  IconData _getCategoryIcon(String category) {
-    final key = category.toLowerCase();
-    for (final entry in _categoryIcons.entries) {
-      if (key.contains(entry.key)) return entry.value;
+  IconData _icon(String cat) {
+    final k = cat.toLowerCase();
+    for (final e in _catIcons.entries) {
+      if (k.contains(e.key)) return e.value;
     }
     return Icons.inventory_2;
   }
@@ -67,11 +68,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCommodities());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAll());
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
-        _currentPage = 1; // reset ke halaman 1 saat search berubah
+        _currentPage = 1;
       });
     });
   }
@@ -82,362 +83,605 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadCommodities({bool forceReload = false}) async {
-    final provider = Provider.of<CommodityProvider>(context, listen: false);
-    await provider.loadCommodities(forceReload: forceReload);
+  Future<void> _loadAll({bool force = false}) async {
+    final provider = context.read<PriceProvider>();
+    await Future.wait([
+      provider.loadLatestPrices(forceReload: force),
+      provider.loadTopPrices(),
+      provider.loadCategories(),
+    ]);
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final provider = Provider.of<CommodityProvider>(context, listen: false);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _currentPage = 1;
-      });
-      await provider.loadCommodities(forceReload: true);
+  List<PriceLatestModel> _filtered(PriceProvider p) {
+    var list = p.latestPrices;
+    if (_selectedCategory != 'Semua') {
+      list = list
+          .where((x) => x.category.toLowerCase() == _selectedCategory.toLowerCase())
+          .toList();
     }
+    if (_searchQuery.isNotEmpty) {
+      list = list
+          .where((x) => x.commodityName.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .toList();
+    }
+    return list;
   }
 
-  List<CommodityModel> _getPaginatedItems(List<CommodityModel> all) {
-    final start = (_currentPage - 1) * _itemsPerPage;
-    final end = (start + _itemsPerPage).clamp(0, all.length);
+  List<PriceLatestModel> _paginated(List<PriceLatestModel> all) {
+    final start = (_currentPage - 1) * _perPage;
+    final end   = (start + _perPage).clamp(0, all.length);
+    if (start >= all.length) return [];
     return all.sublist(start, end);
-  }
-
-  int _totalPages(int totalItems) {
-    return (totalItems / _itemsPerPage).ceil();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CommodityProvider>(
-      builder: (context, provider, _) {
-        final filtered = _searchQuery.isNotEmpty
-            ? provider.searchCommodities(_searchQuery)
-            : provider.commodities;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        final totalPages = _totalPages(filtered.length);
-        final paginated = filtered.isEmpty ? [] : _getPaginatedItems(filtered);
+    return Consumer<PriceProvider>(
+      builder: (context, provider, _) {
+        final filtered  = _filtered(provider);
+        final paginated = _paginated(filtered);
+        final totalPages = (filtered.length / _perPage).ceil();
 
         return RefreshIndicator(
-          onRefresh: () => _loadCommodities(forceReload: true),
+          onRefresh: () => _loadAll(force: true),
           child: CustomScrollView(
             slivers: [
 
-              // ── HEADER ──
+              SliverToBoxAdapter(child: _buildHeader(isDark)),
+
+              if (provider.categories.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _buildCategoryChips(provider.categories),
+                ),
+
               SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                child: _buildFeaturedSection(provider, isDark),
+              ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today,
-                              color: Colors.white70, size: 14),
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () => _selectDate(context),
-                            child: Text(
-                              DateFormat('dd MMM yyyy').format(_selectedDate),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _searchController,
-                        style: const TextStyle(fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: 'Cari komoditas...',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                              vertical: 0, horizontal: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
+                      Text(
+                        'Semua Komoditas',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                         ),
                       ),
+                      if (!provider.isLoading)
+                        Text(
+                          '${filtered.length} item',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        ),
                     ],
                   ),
                 ),
               ),
 
-              // ── INFO BAR ──
-              if (!provider.isLoading && filtered.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${filtered.length} komoditas ditemukan',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey[600]),
-                        ),
-                        Text(
-                          'Halaman $_currentPage / $totalPages',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              // ── LOADING ──
               if (provider.isLoading)
                 const SliverFillRemaining(
                   child: Center(child: LoadingWidget()),
                 )
-
-              // ── EMPTY ──
               else if (filtered.isEmpty)
-                const SliverFillRemaining(
+                SliverFillRemaining(
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off,
-                            size: 48, color: Colors.grey),
-                        SizedBox(height: 8),
-                        Text('Tidak ada data',
-                            style: TextStyle(color: Colors.grey)),
+                        Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tidak ada data komoditas',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
                       ],
                     ),
                   ),
                 )
-
-              // ── GRID ──
               else
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
-                  sliver: SliverGrid(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final commodity = paginated[index];
-                        final color = _getCategoryColor(commodity.category);
-                        final icon = _getCategoryIcon(commodity.category);
-
-                        return GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CommodityDetailScreen(
-                                commodityId: commodity.id,
-                              ),
-                            ),
-                          ),
-                          child: Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: color.withOpacity(0.12),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(icon, color: color, size: 26),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    commodity.name,
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: color.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      commodity.category,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: color,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                      (context, i) => _buildListItem(paginated[i], isDark),
                       childCount: paginated.length,
                     ),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 1.0,
-                    ),
                   ),
                 ),
 
-              // ── PAGINATION CONTROLS ──
               if (!provider.isLoading && totalPages > 1)
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-
-                        // Tombol Prev
-                        IconButton(
-                          onPressed: _currentPage > 1
-                              ? () => setState(() => _currentPage--)
-                              : null,
-                          icon: const Icon(Icons.chevron_left),
-                          style: IconButton.styleFrom(
-                            backgroundColor: _currentPage > 1
-                                ? const Color(0xFF1976D2)
-                                : Colors.grey[200],
-                            foregroundColor: _currentPage > 1
-                                ? Colors.white
-                                : Colors.grey,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        // Nomor halaman
-                        ...List.generate(totalPages, (i) {
-                          final page = i + 1;
-                          final isActive = page == _currentPage;
-
-                          // Tampilkan hanya halaman yang dekat current
-                          if (totalPages > 5 &&
-                              page != 1 &&
-                              page != totalPages &&
-                              (page - _currentPage).abs() > 1) {
-                            if (page == 2 && _currentPage > 3) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 2),
-                                child: Text('...',
-                                    style: TextStyle(color: Colors.grey)),
-                              );
-                            }
-                            if (page == totalPages - 1 &&
-                                _currentPage < totalPages - 2) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 2),
-                                child: Text('...',
-                                    style: TextStyle(color: Colors.grey)),
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          }
-
-                          return Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 3),
-                            child: InkWell(
-                              onTap: () =>
-                                  setState(() => _currentPage = page),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: isActive
-                                      ? const Color(0xFF1976D2)
-                                      : Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '$page',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                    color: isActive
-                                        ? Colors.white
-                                        : Colors.grey[700],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-
-                        const SizedBox(width: 8),
-
-                        // Tombol Next
-                        IconButton(
-                          onPressed: _currentPage < totalPages
-                              ? () => setState(() => _currentPage++)
-                              : null,
-                          icon: const Icon(Icons.chevron_right),
-                          style: IconButton.styleFrom(
-                            backgroundColor: _currentPage < totalPages
-                                ? const Color(0xFF1976D2)
-                                : Colors.grey[200],
-                            foregroundColor: _currentPage < totalPages
-                                ? Colors.white
-                                : Colors.grey,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _buildPagination(totalPages, isDark),
                 ),
 
-              // Bottom padding
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHeader(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.storefront, color: Colors.white70, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                'Harga Pasar Hari Ini',
+                style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+              ),
+              const Spacer(),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, color: Colors.white54, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    DateFormat('dd MMM yyyy').format(DateTime.now()),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Pantau Harga Komoditas',
+            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            child: Row(
+              children: [
+                Icon(Icons.search, color: Colors.grey[500], size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Cari komoditas...',
+                      hintStyle: TextStyle(color: Colors.grey[500], fontSize: 13),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+                if (_searchQuery.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      _searchController.clear();
+                      setState(() { _searchQuery = ''; _currentPage = 1; });
+                    },
+                    child: Icon(Icons.close, size: 16, color: Colors.grey[500]),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChips(List<String> cats) {
+    return Container(
+      color: const Color(0xFF1565C0),
+      padding: const EdgeInsets.only(bottom: 12, top: 4),
+      child: SizedBox(
+        height: 34,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          itemCount: cats.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (_, i) {
+            final cat      = cats[i];
+            final isActive = cat == _selectedCategory;
+            return GestureDetector(
+              onTap: () => setState(() {
+                _selectedCategory = cat;
+                _currentPage      = 1;
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.white : Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isActive ? Colors.white : Colors.white.withOpacity(0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  cat,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive ? const Color(0xFF1565C0) : Colors.white,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturedSection(PriceProvider provider, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+          child: Text(
+            'Harga Tertinggi Hari Ini',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+            ),
+          ),
+        ),
+        if (provider.isLoadingTop)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        else if (provider.topPrices.isEmpty)
+          const SizedBox.shrink()
+        else
+          SizedBox(
+            height: 160,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: provider.topPrices.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => _buildFeaturedCard(provider.topPrices[i], isDark),
+            ),
+          ),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+
+  Widget _buildFeaturedCard(PriceLatestModel item, bool isDark) {
+    final color   = _color(item.category);
+    final icon    = _icon(item.category);
+    final isNaik  = item.isNaik;
+    final isTurun = item.isTurun;
+    final cardBg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CommodityDetailScreen(commodityId: item.commodityId),
+        ),
+      ),
+      child: Container(
+        width: 140,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.2), width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.commodityName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              item.category,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+            ),
+            const Spacer(),
+            Text(
+              _rupiahFmt.format(item.hargaSekarang),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isNaik
+                    ? const Color(0xFF3B6D11).withOpacity(isDark ? 0.3 : 0.1)
+                    : isTurun
+                        ? const Color(0xFFA32D2D).withOpacity(isDark ? 0.3 : 0.1)
+                        : Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                isNaik
+                    ? '▲ ${item.persenFormatted}'
+                    : isTurun
+                        ? '▼ ${item.persenFormatted}'
+                        : '— 0%',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: isNaik
+                      ? const Color(0xFF639922)
+                      : isTurun
+                          ? const Color(0xFFE24B4A)
+                          : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListItem(PriceLatestModel item, bool isDark) {
+    final color   = _color(item.category);
+    final icon    = _icon(item.category);
+    final isNaik  = item.isNaik;
+    final isTurun = item.isTurun;
+    final cardBg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CommodityDetailScreen(commodityId: item.commodityId),
+        ),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? Colors.grey.withOpacity(0.2) : Colors.grey.withOpacity(0.12),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.commodityName,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.category,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _rupiahFmt.format(item.hargaSekarang),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  item.satuan.isNotEmpty ? '/ ${item.satuan}' : '',
+                  style: TextStyle(fontSize: 10, color: Colors.grey[400]),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isNaik
+                          ? Icons.arrow_upward
+                          : isTurun
+                              ? Icons.arrow_downward
+                              : Icons.remove,
+                      size: 11,
+                      color: isNaik
+                          ? const Color(0xFF639922)
+                          : isTurun
+                              ? const Color(0xFFE24B4A)
+                              : Colors.grey,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      item.persenFormatted,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: isNaik
+                            ? const Color(0xFF639922)
+                            : isTurun
+                                ? const Color(0xFFE24B4A)
+                                : Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPagination(int totalPages, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _pgBtn(
+            icon: Icons.chevron_left,
+            enabled: _currentPage > 1,
+            onTap: () => setState(() => _currentPage--),
+            isDark: isDark,
+          ),
+          const SizedBox(width: 8),
+          ...List.generate(totalPages, (i) {
+            final page     = i + 1;
+            final isActive = page == _currentPage;
+
+            if (totalPages > 5 &&
+                page != 1 &&
+                page != totalPages &&
+                (page - _currentPage).abs() > 1) {
+              if (page == 2 && _currentPage > 3) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 2),
+                  child: Text('...', style: TextStyle(color: Colors.grey)),
+                );
+              }
+              if (page == totalPages - 1 && _currentPage < totalPages - 2) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 2),
+                  child: Text('...', style: TextStyle(color: Colors.grey)),
+                );
+              }
+              return const SizedBox.shrink();
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: GestureDetector(
+                onTap: () => setState(() => _currentPage = page),
+                child: Container(
+                  width: 34, height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFF1976D2)
+                        : (isDark ? const Color(0xFF2C2C2C) : Colors.grey[100]),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$page',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: isActive
+                          ? Colors.white
+                          : (isDark ? Colors.grey[300] : Colors.grey[700]),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(width: 8),
+          _pgBtn(
+            icon: Icons.chevron_right,
+            enabled: _currentPage < totalPages,
+            onTap: () => setState(() => _currentPage++),
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pgBtn({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 34, height: 34,
+        decoration: BoxDecoration(
+          color: enabled
+              ? const Color(0xFF1976D2)
+              : (isDark ? const Color(0xFF2C2C2C) : Colors.grey[200]),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: enabled ? Colors.white : Colors.grey,
+        ),
+      ),
     );
   }
 }
