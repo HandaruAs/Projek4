@@ -53,4 +53,8 @@ class Commodity extends Model
         return $this->hasMany(Prediction::class, 'commodity_id');
     }
 
+    public function trainingJobs()
+    {
+        return $this->hasMany(TrainingJob::class, 'commodity_id');
+    }
 }
