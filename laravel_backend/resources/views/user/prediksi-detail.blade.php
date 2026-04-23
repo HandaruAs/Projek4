@@ -1,8 +1,123 @@
-@extends('layouts.layout')
+<!-- @extends('layouts.layout')
 
 @section('title', 'Detail Prediksi')
 @section('page-title', 'Detail Prediksi')
 @section('page-sub', 'Hasil lengkap Holt-Winters Exponential Smoothing')
+
+@push('styles')
+<style>
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--accent);
+        font-size: 13.5px;
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .info-header .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .info-header .card-title i {
+        color: var(--accent);
+        margin-right: 8px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+        text-align: center;
+        padding: 1.2rem;
+    }
+
+    .metric-card .metric-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .05em;
+        color: var(--muted);
+        margin-bottom: 6px;
+    }
+
+    .metric-card .metric-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .metric-card .metric-value.mape-good  { color: #10b981; }
+    .metric-card .metric-value.mape-bad   { color: #ef4444; }
+
+    .metric-card .metric-desc {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 4px;
+    }
+
+    .forecast-icon {
+        margin-right: 6px;
+        color: var(--accent);
+    }
+
+    .forecast-table-wrap {
+        overflow-x: auto;
+    }
+
+    .price-cell {
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .diff-up   { color: #ef4444; font-weight: 600; }
+    .diff-down { color: #10b981; font-weight: 600; }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--muted);
+    }
+
+    .empty-state i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .no-prediction {
+        text-align: center;
+        padding: 3rem;
+        color: var(--muted);
+    }
+
+    .no-prediction i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+        color: var(--muted);
+    }
+</style>
+@endpush
 
 @section('content')
 
@@ -26,25 +141,21 @@
 @endphp
 
 {{-- Back Button --}}
-<div style="margin-bottom:1.5rem">
-    <a href="{{ route('user.prediksi') }}"
-       style="display:inline-flex;align-items:center;gap:8px;color:var(--accent);
-              font-size:13.5px;font-weight:600;text-decoration:none">
-        <i class="fas fa-arrow-left"></i> Kembali ke Prediksi
-    </a>
-</div>
+<a href="{{ route('user.prediksi') }}" class="back-link">
+    <i class="fas fa-arrow-left"></i> Kembali ke Prediksi
+</a>
 
 {{-- ── INFO HEADER ── --}}
-<div class="card" style="margin-bottom:1.5rem">
-    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card info-header">
+    <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-chart-line" style="color:var(--accent);margin-right:8px"></i>
+            <i class="fas fa-chart-line"></i>
             {{ $prediction->commodity_name ?? '—' }}
         </div>
         <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
     </div>
     <div class="card-body">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem">
+        <div class="info-grid">
 
             <div class="stat-mini">
                 <div class="stat-mini-label">Tanggal Generate</div>
@@ -83,60 +194,52 @@
 </div>
 
 {{-- ── METRICS CARDS ── --}}
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
+@php
+    $mapeClass = isset($metrics['mape']) && $metrics['mape'] > 20 ? 'mape-bad' : 'mape-good';
+    $mapeLabel = !isset($metrics['mape']) ? '' : ($metrics['mape'] <= 10 ? 'Sangat Baik' : ($metrics['mape'] <= 20 ? 'Baik' : 'Perlu Review'));
+@endphp
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">MAE</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['mae']) ? number_format($metrics['mae'], 2) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Mean Absolute Error</div>
+<div class="metrics-grid">
+
+    <div class="card metric-card">
+        <div class="metric-label">MAE</div>
+        <div class="metric-value">{{ isset($metrics['mae']) ? number_format($metrics['mae'], 2) : '—' }}</div>
+        <div class="metric-desc">Mean Absolute Error</div>
     </div>
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">RMSE</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['rmse']) ? number_format($metrics['rmse'], 2) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Root Mean Squared Error</div>
+    <div class="card metric-card">
+        <div class="metric-label">RMSE</div>
+        <div class="metric-value">{{ isset($metrics['rmse']) ? number_format($metrics['rmse'], 2) : '—' }}</div>
+        <div class="metric-desc">Root Mean Squared Error</div>
     </div>
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">MAPE</div>
-        <div style="font-size:1.5rem;font-weight:800;
-             color:{{ isset($metrics['mape']) && $metrics['mape'] > 20 ? '#ef4444' : '#10b981' }}">
+    <div class="card metric-card">
+        <div class="metric-label">MAPE</div>
+        <div class="metric-value {{ $mapeClass }}">
             {{ isset($metrics['mape']) ? number_format($metrics['mape'], 2).'%' : '—' }}
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">
+        <div class="metric-desc">
             Mean Absolute Percentage Error
-            @if(isset($metrics['mape']))
-                — {{ $metrics['mape'] <= 10 ? 'Sangat Baik' : ($metrics['mape'] <= 20 ? 'Baik' : 'Perlu Review') }}
-            @endif
+            @if(isset($metrics['mape'])) — {{ $mapeLabel }} @endif
         </div>
     </div>
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">ALPHA (α)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['alpha']) ? number_format($metrics['alpha'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Level</div>
+    <div class="card metric-card">
+        <div class="metric-label">ALPHA (α)</div>
+        <div class="metric-value">{{ isset($metrics['alpha']) ? number_format($metrics['alpha'], 4) : '—' }}</div>
+        <div class="metric-desc">Smoothing Level</div>
     </div>
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">BETA (β)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['beta']) ? number_format($metrics['beta'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Trend</div>
+    <div class="card metric-card">
+        <div class="metric-label">BETA (β)</div>
+        <div class="metric-value">{{ isset($metrics['beta']) ? number_format($metrics['beta'], 4) : '—' }}</div>
+        <div class="metric-desc">Smoothing Trend</div>
     </div>
 
-    <div class="card" style="text-align:center;padding:1.2rem">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">GAMMA (γ)</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">
-            {{ isset($metrics['gamma']) ? number_format($metrics['gamma'], 4) : '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Smoothing Seasonal</div>
+    <div class="card metric-card">
+        <div class="metric-label">GAMMA (γ)</div>
+        <div class="metric-value">{{ isset($metrics['gamma']) ? number_format($metrics['gamma'], 4) : '—' }}</div>
+        <div class="metric-desc">Smoothing Seasonal</div>
     </div>
 
 </div>
@@ -145,13 +248,13 @@
 <div class="table-card">
     <div class="table-header">
         <div class="table-title">
-            <i class="fas fa-calendar-days" style="margin-right:6px;color:var(--accent)"></i>
+            <i class="fas fa-calendar-days forecast-icon"></i>
             Hasil Forecast ({{ count($results) }} hari)
         </div>
     </div>
 
     @if(count($results) > 0)
-    <div style="overflow-x:auto">
+    <div class="forecast-table-wrap">
         <table>
             <thead>
                 <tr>
@@ -175,9 +278,7 @@
                 <tr>
                     <td class="date-text">{{ $i + 1 }}</td>
                     <td class="date-text">{{ \Carbon\Carbon::parse($row['date'])->format('d M Y') }}</td>
-                    <td style="font-weight:700;color:var(--text-primary)">
-                        Rp {{ number_format($price, 0, ',', '.') }}
-                    </td>
+                    <td class="price-cell">Rp {{ number_format($price, 0, ',', '.') }}</td>
                     <td class="date-text">
                         {{ $lower !== null ? 'Rp '.number_format($lower, 0, ',', '.') : '—' }}
                     </td>
@@ -186,7 +287,7 @@
                     </td>
                     <td class="date-text">
                         @if($diff !== null)
-                            <span style="color:{{ $diff >= 0 ? '#ef4444' : '#10b981' }};font-weight:600">
+                            <span class="{{ $diff >= 0 ? 'diff-up' : 'diff-down' }}">
                                 {{ $diff >= 0 ? '+' : '' }}Rp {{ number_format($diff, 0, ',', '.') }}
                             </span>
                         @else
@@ -199,19 +300,19 @@
         </table>
     </div>
     @else
-        <div style="text-align:center;padding:3rem;color:var(--muted)">
-            <i class="fas fa-inbox" style="font-size:2rem;margin-bottom:1rem;display:block"></i>
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
             Tidak ada data forecast tersedia.
         </div>
     @endif
 </div>
 
 @else
-<div style="text-align:center;padding:3rem;color:var(--muted)">
-    <i class="fas fa-chart-line" style="font-size:3rem;margin-bottom:1rem;display:block;color:var(--muted)"></i>
+<div class="no-prediction">
+    <i class="fas fa-chart-line"></i>
     <h3>Belum ada hasil prediksi</h3>
     <p>Tidak ada data prediksi yang tersedia.</p>
 </div>
 @endif
 
-@endsection
+@endsection -->

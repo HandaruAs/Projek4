@@ -343,7 +343,7 @@
     '#06b6d4','#a855f7','#fb923c','#22d3ee','#e11d48',
     '#4ade80','#facc15',
   ];
-  $totalVal = array_sum($chartValues->toArray());
+  $totalVal = array_sum($chartValues);
   @endphp
 
   <table class="cat-table">

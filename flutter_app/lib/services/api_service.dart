@@ -8,7 +8,7 @@ class ApiService {
   ApiService._internal();
 
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.10.182.237:8000/api',
+    baseUrl: 'http://172.23.48.1:8000/api',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -38,7 +38,8 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -52,14 +53,15 @@ class ApiService {
     try {
       final endpoint = role == 'admin' ? '/register/admin' : '/register/user';
       final response = await _dio.post(endpoint, data: {
-        'name':                  name,
-        'email':                 email,
-        'password':              password,
+        'name': name,
+        'email': email,
+        'password': password,
         'password_confirmation': password,
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -72,7 +74,8 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -85,7 +88,8 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -98,14 +102,15 @@ class ApiService {
   ) async {
     try {
       final response = await _dio.post('/reset-password', data: {
-        'email':                 email,
-        'otp':                   otp,
-        'password':              password,
+        'email': email,
+        'otp': otp,
+        'password': password,
         'password_confirmation': passwordConfirmation,
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -129,7 +134,8 @@ class ApiService {
       final response = await _dio.get('/profile');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -143,14 +149,15 @@ class ApiService {
     try {
       await _addAuthHeader();
       final response = await _dio.put('/profile', data: {
-        if (name    != null) 'name':    name,
-        if (email   != null) 'email':   email,
-        if (phone   != null) 'phone':   phone,
+        if (name != null) 'name': name,
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
         if (address != null) 'address': address,
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -162,13 +169,14 @@ class ApiService {
     try {
       await _addAuthHeader();
       final response = await _dio.post('/change-password', data: {
-        'old_password':          oldPassword,
-        'password':              newPassword,
+        'old_password': oldPassword,
+        'password': newPassword,
         'password_confirmation': newPassword,
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -186,13 +194,15 @@ class ApiService {
         final list = data['data'] as List;
         debugPrint('=== TOTAL COMMODITIES: ${list.length}');
         list.take(3).forEach((item) {
-          debugPrint('=== item: name=${item['name']}, category=${item['category']}');
+          debugPrint(
+              '=== item: name=${item['name']}, category=${item['category']}');
         });
       }
 
       return data;
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -202,7 +212,8 @@ class ApiService {
       final response = await _dio.get('/commodities/$commodityId');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -216,36 +227,49 @@ class ApiService {
     String period,
   ) async {
     try {
-      final now     = DateTime.now();
+      final now = DateTime.now();
       final endDate = now.toIso8601String().substring(0, 10);
       late String startDate;
 
       switch (period) {
         case '7days':
-          startDate = now.subtract(const Duration(days: 7)).toIso8601String().substring(0, 10);
+          startDate = now
+              .subtract(const Duration(days: 7))
+              .toIso8601String()
+              .substring(0, 10);
           break;
         case '30days':
-          startDate = now.subtract(const Duration(days: 30)).toIso8601String().substring(0, 10);
+          startDate = now
+              .subtract(const Duration(days: 30))
+              .toIso8601String()
+              .substring(0, 10);
           break;
         case '3months':
-          startDate = now.subtract(const Duration(days: 90)).toIso8601String().substring(0, 10);
+          startDate = now
+              .subtract(const Duration(days: 90))
+              .toIso8601String()
+              .substring(0, 10);
           break;
         default:
-          startDate = now.subtract(const Duration(days: 7)).toIso8601String().substring(0, 10);
+          startDate = now
+              .subtract(const Duration(days: 7))
+              .toIso8601String()
+              .substring(0, 10);
       }
 
       final response = await _dio.get(
         '/price-histories',
         queryParameters: {
           'commodity_id': commodityId,
-          'start_date':   startDate,
-          'end_date':     endDate,
-          'per_page':     '200',
+          'start_date': startDate,
+          'end_date': endDate,
+          'per_page': '200',
         },
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -260,8 +284,9 @@ class ApiService {
   }) async {
     try {
       final params = <String, String>{};
-      if (category != null && category != 'Semua') params['category'] = category;
-      if (search != null && search.isNotEmpty)     params['search']   = search;
+      if (category != null && category != 'Semua')
+        params['category'] = category;
+      if (search != null && search.isNotEmpty) params['search'] = search;
 
       final response = await _dio.get(
         '/prices/latest',
@@ -269,7 +294,8 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -284,7 +310,8 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -296,7 +323,8 @@ class ApiService {
       final response = await _dio.get('/prices/categories');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -317,7 +345,8 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -331,7 +360,8 @@ class ApiService {
       final response = await _dio.get('/statistics');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }

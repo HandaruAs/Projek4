@@ -38,6 +38,11 @@ class PriceHistory extends Model
         return $this->belongsTo(Commodity::class, 'commodity_id');
     }
 
+    public function categoryRelation()
+    {
+        return $this->belongsTo(\App\Models\Category::class, 'category_id');
+    }
+
     public function scopeByCommodity($query, string $commodityId)
     {
         return $query->where('commodity_id', $commodityId);
@@ -55,4 +60,5 @@ class PriceHistory extends Model
             ->orderBy('date', 'asc')
             ->select(['date', 'harga_sekarang']);
     }
+
 }

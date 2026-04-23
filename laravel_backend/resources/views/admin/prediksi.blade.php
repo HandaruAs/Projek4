@@ -1,8 +1,150 @@
-@extends('layouts.layout')
+<!-- @extends('layouts.layout')
 
 @section('title', 'Generate Prediksi')
 @section('page-title', 'Generate Prediksi')
 @section('page-sub', 'Upload data historis & jalankan model Holt-Winters')
+
+@push('styles')
+<style>
+    .alert-box {
+        margin-bottom: 1rem;
+        padding: .75rem 1rem;
+        border-radius: 10px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
+    .alert-error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+    .alert-warning {
+        margin-bottom: 1rem;
+        padding: .75rem 1rem;
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        font-size: 13px;
+    }
+    .alert-warning-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .alert-warning ul {
+        margin: 0;
+        padding-left: 1.25rem;
+    }
+
+    .section-card {
+        margin-bottom: 1.5rem;
+    }
+    .section-icon {
+        color: var(--accent);
+        margin-right: 8px;
+    }
+
+    .upload-form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+        padding: 1.5rem;
+    }
+    .upload-field {
+        flex: 1;
+        min-width: 260px;
+    }
+    .upload-hint {
+        font-size: 11.5px;
+        color: var(--text-muted);
+        margin-top: 4px;
+        display: block;
+    }
+    .upload-hint i {
+        font-size: 10px;
+    }
+    .file-input {
+        padding: 6px 10px;
+        cursor: pointer;
+    }
+
+    .generate-form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+        padding: 1.5rem;
+    }
+    .generate-field-lg { flex: 2; min-width: 220px; }
+    .generate-field-sm { flex: 1; min-width: 160px; }
+    .btn-success {
+        background: var(--success, #10b981);
+    }
+
+    .pred-count {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-left: 6px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11.5px;
+        font-weight: 600;
+        background: #d1fae5;
+        color: #065f46;
+    }
+    .status-badge i {
+        font-size: 6px;
+    }
+
+    .btn-export {
+        background: #f0fdf4;
+        color: #16a34a;
+        border-color: #bbf7d0;
+    }
+
+    .mape-good  { font-weight: 600; color: #16a34a; }
+    .mape-warn  { font-weight: 600; color: #d97706; }
+    .mape-bad   { font-weight: 600; color: #dc2626; }
+    .mape-muted { font-weight: 600; color: var(--text-muted); }
+
+    .empty-pred {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-muted);
+    }
+    .empty-pred i {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 1rem;
+        opacity: .35;
+    }
+    .empty-pred-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    .empty-pred-sub {
+        font-size: 13px;
+    }
+</style>
+@endpush
 
 @section('content')
 
@@ -154,9 +296,11 @@
                 @php
                     $metrics      = $pred->metrics ?? [];
                     $mape         = $metrics['mape'] ?? null;
-                    $mapeColor    = $mape === null ? 'var(--text-muted)'
-                                    : ($mape < 5  ? '#16a34a'
-                                    : ($mape < 10 ? '#d97706' : '#dc2626'));
+
+                    if ($mape === null)    { $mapeClass = 'mape-muted'; }
+                    elseif ($mape < 5)    { $mapeClass = 'mape-good'; }
+                    elseif ($mape < 10)   { $mapeClass = 'mape-warn'; }
+                    else                  { $mapeClass = 'mape-bad'; }
                 @endphp
                 <tr>
                     <td class="date-text">{{ $loop->iteration }}</td>
@@ -167,7 +311,7 @@
                     <td class="date-text">{{ $pred->horizon_days ?? '-' }} days</td>
                     <td>
                         @if($mape !== null)
-                            <span style="font-weight:700; color:{{ $mapeColor }}">
+                            <span class="{{ $mapeClass }}">
                                 {{ number_format($mape, 2) }}%
                             </span>
                         @else
@@ -214,4 +358,12 @@
     @endif
 </div>
 
-@endsection
+
+<style>
+.mape-good  { font-weight:600; color:#16a34a; }
+.mape-warn  { font-weight:600; color:#d97706; }
+.mape-bad   { font-weight:600; color:#dc2626; }
+.mape-muted { font-weight:600; color:var(--text-muted); }
+</style>
+
+@endsection -->
