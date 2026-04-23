@@ -80,6 +80,9 @@ Route::middleware(['auth','role:user'])->group(function () {
     Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class,'prediksi'])->name('user.prediksi');
     Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class,'simulasi'])->name('user.simulasi');
     Route::get('/chatai', [App\Http\Controllers\Web\UserChatAiController::class, 'index'])->name('user.chatai');
+    Route::get('/chatai/komoditas', [UserChatAiController::class, 'komoditas'])->name('user.chatai.komoditas');
+    Route::post('/chatai/rekomendasi', [UserChatAiController::class, 'rekomendasi'])->name('user.chatai.rekomendasi');
+    Route::post('/chatai/followup', [UserChatAiController::class, 'followup'])->name('user.chatai.followup');
     Route::get('/user/profil', [UserProfilController::class, 'index'])->name('user.profil');
     Route::put('/user/profil', [UserProfilController::class, 'update'])->name('user.profil.update');
     Route::put('/user/profil/password', [UserProfilController::class, 'password'])->name('user.profil.password');
