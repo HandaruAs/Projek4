@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'flask' => [
+        'url' => env('FLASK_API_URL', 'http://localhost:5000'),
+        'key' => env('FLASK_API_KEY', '018bebf855c3d0889727d47deaff81ff3366b11a6e96d0d36077e96eff64f435'),
+    ],
 
 ];

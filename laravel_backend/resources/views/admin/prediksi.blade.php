@@ -1,4 +1,4 @@
-<!-- @extends('layouts.layout')
+@extends('layouts.layout')
 
 @section('title', 'Generate Prediksi')
 @section('page-title', 'Generate Prediksi')
@@ -366,4 +366,4 @@
 .mape-muted { font-weight:600; color:var(--text-muted); }
 </style>
 
-@endsection -->
+@endsection

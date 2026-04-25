@@ -58,9 +58,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Prediksi
     Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi.index');
     Route::post('/prediksi/generate', [PrediksiController::class, 'generate'])->name('prediksi.generate');
+    Route::post('/prediksi/upload', [PrediksiController::class, 'upload'])->name('prediksi.upload');
+    Route::get('/prediksi/export/{id}', [PrediksiController::class, 'export'])->name('prediksi.export'); // ← tambah ini
     Route::get('/prediksi/{id}', [PrediksiController::class, 'show'])->name('prediksi.show');
     Route::delete('/prediksi/{id}', [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
-
     // Profile
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
     Route::put('/profile', [AdminController::class, 'updateProfile'])->name('profile.update');
@@ -68,13 +69,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
 
 // ── USER ROUTES ───────────────────────────────────────────────
-Route::middleware(['auth','role:user'])->group(function () {
+Route::middleware(['auth', 'role:user'])->group(function () {
 
-    Route::get('/home',      [App\Http\Controllers\Web\UserController::class,'home'])->name('user.home');
+    Route::get('/home',      [App\Http\Controllers\Web\UserController::class, 'home'])->name('user.home');
 
     Route::get('/harga', [UserHargaController::class, 'harga'])->name('user.harga');
-    Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class,'prediksi'])->name('user.prediksi');
-    Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class,'simulasi'])->name('user.simulasi');
+    Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class, 'prediksi'])->name('user.prediksi');
+    Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class, 'simulasi'])->name('user.simulasi');
 
     Route::get('/chatai', [App\Http\Controllers\Web\UserChatAiController::class, 'index'])->name('user.chatai');
     Route::get('/chatai/komoditas', [UserChatAiController::class, 'komoditas'])->name('user.chatai.komoditas');

@@ -26,8 +26,10 @@ Route::get('/categories',           [CategoryController::class, 'index']);
 Route::get('/price-histories',      [PriceHistoryController::class, 'index']);
 Route::get('/price-histories/{id}', [PriceHistoryController::class, 'show']);
 Route::get('/statistics',           [StatisticsController::class, 'index']);
-Route::get('/predictions',          [PredictionController::class, 'index']);
-Route::get('/predictions/{id}',     [PredictionController::class, 'show']);
+// Urutan ini penting — rekomendasi harus di atas {komoditas}
+Route::post('/predictions/rekomendasi',         [PredictionController::class, 'rekomendasi']);
+Route::get('/predictions',                      [PredictionController::class, 'index']);
+Route::get('/predictions/{komoditas}',          [PredictionController::class, 'show']);
 Route::get('/prices/latest',        [PriceLatestController::class, 'index']);
 Route::get('/prices/categories',    [PriceLatestController::class, 'categories']);
 Route::get('/prices/top',           [PriceLatestController::class, 'top']);

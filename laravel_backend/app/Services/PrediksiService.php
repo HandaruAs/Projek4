@@ -2,151 +2,82 @@
 
 namespace App\Services;
 
-use App\Models\Prediction;
-use App\Models\Commodity;
-use App\Models\PriceHistory;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\File;
-use Carbon\Carbon;
 
 class PrediksiService
 {
-    /**
-     * Generate prediction for commodity using Holt-Winter script.
-     *
-     * @param string $commodityId MongoDB _id
-     * @param int $steps Forecast horizon (default 30)
-     * @return array Data ready for Prediction::create()
-     */
-    public function generate(string $commodityId, int $steps = 30): array
+    private string $baseUrl;
+    private string $apiKey;
+
+    public function __construct()
     {
-        // Validate commodity exists & has data
-        $commodity = Commodity::findOrFail($commodityId);
-
-        $latestPrice = PriceHistory::where('commodity_id', $commodityId)
-            ->orderBy('date', 'desc')
-            ->first(['harga_sekarang', 'satuan', 'commodity_name', 'category']);
-
-        if (!$latestPrice) {
-            throw new \Exception("No price history data for {$commodity->name}");
-        }
-
-        // Delete old predictions for same commodity/steps (cache clear)
-        Prediction::where('commodity_id', $commodityId)
-            ->where('horizon_days', $steps)
-            ->delete();
-
-        // Temp files
-        $tempJson = storage_path("app/temp/holt_output_{$commodityId}.json");
-        $tempScriptLog = storage_path("app/temp/holt_log_{$commodityId}.txt");
-
-        File::ensureDirectoryExists(dirname($tempJson));
-
-        // Default Holt-Winters params (tune later)
-        $trend = 'add';
-        $seasonal = 'add';
-        $seasonalPeriods = 7; // weekly
-        $damped = 0;
-
-        // Build command: python scripts/Holt_Winter.py <args>
-        $scriptPath = base_path('scripts/Holt_Winter.py');
-        $command = sprintf(
-'cd %s && "C:\\\\Users\\\\Muhammad Zaiful\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe" %s %s %d %s %s %d %d %s 2>&1',
-            escapeshellarg(base_path()),
-            escapeshellarg($scriptPath),
-            escapeshellarg($commodityId),
-            $steps,
-            escapeshellarg($trend),
-            escapeshellarg($seasonal),
-            $seasonalPeriods,
-            $damped,
-            escapeshellarg($tempJson)
-        );
-
-        Log::info('Running Holt-Winter: ' . $command);
-
-        // Exec script
-        $output = [];
-        $returnVar = 0;
-        exec($command, $output, $returnVar);
-
-        // Check script log
-        $scriptLog = implode(PHP_EOL, $output);
-        Log::info('Holt-Winter output: ' . $scriptLog);
-
-        if ($returnVar !== 0) {
-            throw new \Exception("Holt-Winter script failed. Code: {$returnVar}. Log: {$scriptLog}");
-        }
-
-        // Read JSON result
-        if (!File::exists($tempJson)) {
-            throw new \Exception("Holt-Winter output file not created: {$tempJson}");
-        }
-
-        $result = json_decode(File::get($tempJson), true);
-        File::delete($tempJson);
-
-        if (!$result || !isset($result['forecast'])) {
-            throw new \Exception('Invalid Holt-Winter JSON output');
-        }
-
-        // Format for Prediction model (sync with fillable & Holt_Winter.py)
-        $predictionData = [
-            'commodity_id'   => $commodityId,
-            'commodity_name' => $latestPrice->commodity_name ?? $commodity->name,
-            'predicted_at'   => Carbon::now(),
-            'horizon_days'   => $steps,
-            'current_price'  => $latestPrice->harga_sekarang,
-            'satuan'         => $latestPrice->satuan ?? 'kg',
-            'kategori'       => $latestPrice->category ?? $commodity->category ?? 'Pangan',
-
-            // Direct from script
-            'mae'  => $result['mae']  ?? null,
-            'rmse' => $result['rmse'] ?? null,
-            'mape' => $result['mape'] ?? null,
-
-            // Build arrays sync Flask
-            'tanggal_pred' => array_column($result['forecast'], 'date'),
-            'forecast'     => array_column($result['forecast'], 'predicted_price'),
-            'ci_lower'     => array_column($result['forecast'], 'lower'),
-            'ci_upper'     => array_column($result['forecast'], 'upper'),
-
-            // Detailed results array (for show/export)
-            'results' => $result['forecast'],
-
-            // Metrics object
-            'metrics' => [
-                'mae'      => $result['mae']   ?? 0,
-                'rmse'     => $result['rmse']  ?? 0,
-                'mape'     => $result['mape']  ?? 0,
-                'accuracy' => 100 - ($result['mape'] ?? 0),
-                'alpha'    => $result['alpha'] ?? 0,
-                'beta'     => $result['beta']  ?? 0,
-                'gamma'    => $result['gamma'] ?? 0,
-            ],
-        ];
-
-        Log::info('Prediction generated', ['commodity' => $commodity->name, 'steps' => $steps]);
-
-        return $predictionData;
+        $this->baseUrl = config('services.flask.url');
+        $this->apiKey  = config('services.flask.key');
     }
 
-    /**
-     * Get latest predictions for admin index view.
-     */
-    public static function getLatestPredictions(int $limit = 10, int $page = 1): \Illuminate\Pagination\LengthAwarePaginator
+    private function headers(): array
     {
-        return Prediction::orderBy('predicted_at', 'desc')
-            ->with('commodity')
-            ->paginate($limit, ['*'], 'page', $page);
+        return ['X-API-Key' => $this->apiKey];
     }
 
-    /**
-     * Get all commodities with price data for dropdown.
-     * Fix: hapus select kolom spesifik agar tidak jadi array di MongoDB
-     */
-    public static function getCommodities(): \Illuminate\Database\Eloquent\Collection
+    // Ambil daftar komoditas dari Flask
+    public static function getCommodities(): array
     {
-        return Commodity::whereHas('priceHistories')->get();
+        $instance = new self();
+        try {
+            $res = Http::withHeaders($instance->headers())
+                ->timeout(10)
+                ->get("{$instance->baseUrl}/api/external/komoditas");
+            return $res->successful() ? $res->json() : [];
+        } catch (\Exception $e) {
+            Log::error('PrediksiService::getCommodities - ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Generate prediksi dari Flask
+    public function generate(string $komoditas, int $steps = 30): array
+    {
+        try {
+            $res = Http::withHeaders($this->headers())
+                ->timeout(60)
+                ->get("{$this->baseUrl}/api/external/prediksi/" . rawurlencode($komoditas), [
+                    'steps' => $steps,
+                ]);
+
+            if (!$res->successful()) {
+                throw new \Exception($res->json('error', 'Flask error'));
+            }
+
+            return $res->json();
+
+        } catch (\Exception $e) {
+            Log::error('PrediksiService::generate - ' . $e->getMessage());
+            throw new \Exception('Gagal ambil prediksi dari Flask: ' . $e->getMessage());
+        }
+    }
+
+    // Ambil rekomendasi dari Flask
+    public function rekomendasi(string $komoditas, float $konsumsi = 1.0): array
+    {
+        try {
+            $res = Http::withHeaders($this->headers())
+                ->timeout(60)
+                ->post("{$this->baseUrl}/api/external/rekomendasi", [
+                    'komoditas' => $komoditas,
+                    'konsumsi'  => $konsumsi,
+                ]);
+
+            if (!$res->successful()) {
+                throw new \Exception($res->json('error', 'Flask error'));
+            }
+
+            return $res->json();
+
+        } catch (\Exception $e) {
+            Log::error('PrediksiService::rekomendasi - ' . $e->getMessage());
+            throw new \Exception('Gagal ambil rekomendasi dari Flask: ' . $e->getMessage());
+        }
     }
 }
