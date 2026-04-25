@@ -4,12 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\PrediksiService;
-use App\Models\Prediction;
-use App\Models\PriceHistory;
-use App\Models\Commodity;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class PrediksiController extends Controller
 {
@@ -20,216 +15,213 @@ class PrediksiController extends Controller
         $this->prediksiService = $prediksiService;
     }
 
-    /**
-     * GET /admin/prediksi - List predictions
-     * Sync with Flask: GET /api/admin/prediksi_logs
-     */
+    // GET /admin/prediksi
     public function index(Request $request)
     {
-        $user = session('user');
-        $predictions = $this->prediksiService->getLatestPredictions(10, $request->get('page', 1));
-        $commodities = Commodity::all();
+        $rawList = PrediksiService::getCommodities();
 
-        return view('admin.prediksi', compact('user', 'predictions', 'commodities'));
+        // FIX: Normalisasi komoditasList — pastikan selalu array of string,
+        // apapun format yang dikembalikan Flask (array of string atau array of array)
+        $komoditasList = collect($rawList)->map(function ($item) {
+            if (is_array($item)) {
+                return $item['name'] ?? $item['nama'] ?? (string) array_values($item)[0];
+            }
+            return (string) $item;
+        })->filter()->values()->toArray();
+
+        $firstKomoditas = $komoditasList[0] ?? null;
+        $selectedNama   = $request->get('komoditas', $firstKomoditas);
+
+        $prediksiData = null;
+        $chartData    = null;
+
+        if ($selectedNama) {
+            try {
+                $prediksiData = $this->prediksiService->generate($selectedNama, 30);
+                dd($prediksiData);
+
+                $forecast  = $prediksiData['forecast']       ?? [];
+                $tanggal   = $prediksiData['tanggal_pred']   ?? [];
+                $ciLower   = $prediksiData['ci_lower']       ?? [];
+                $ciUpper   = $prediksiData['ci_upper']       ?? [];
+                $hargaKini = $prediksiData['harga_terakhir'] ?? 0;
+
+                $chartData = [
+                    'pred_tanggal' => array_slice($tanggal, 0, 14),
+                    'pred_harga'   => array_slice($forecast, 0, 14),
+                    'ci_lower'     => array_slice($ciLower, 0, 14),
+                    'ci_upper'     => array_slice($ciUpper, 0, 14),
+                    'harga_kini'   => $hargaKini,
+                ];
+            } catch (\Exception $e) {
+                $prediksiData = ['error' => $e->getMessage()];
+            }
+        }
+
+        // Ambil prediction history dari MongoDB
+        $predictions = \App\Models\Prediction::orderBy('predicted_at', 'desc')
+            ->paginate(10);
+
+        // Konversi ke format object untuk view
+        $commodities = collect($komoditasList)->map(fn($nama) => (object)[
+            'id'   => $nama,
+            'name' => $nama,
+        ])->toArray();
+
+
+        return view('admin.prediksi', compact(
+            'komoditasList',
+            'selectedNama',
+            'prediksiData',
+            'chartData',
+            'commodities',
+            'predictions'
+        ));
     }
 
-    /**
-     * POST /admin/prediksi/generate - Run Holt-Winters prediction
-     */
+    // POST /admin/prediksi/generate
     public function generate(Request $request)
     {
         $request->validate([
-            'commodity_id' => 'required|string',
-            'steps' => 'required|integer|min:1|max:90',
+            'komoditas' => 'required|string',
+            'steps'     => 'nullable|integer|min:1|max:90',
         ]);
 
-        try {
-            $predictionData = $this->prediksiService->generate(
-                $request->commodity_id,
-                (int) $request->steps
-            );
-
-            Prediction::create($predictionData);
-
-            return redirect()->route('prediksi.index')
-                ->with('success', "Prediksi untuk {$predictionData['commodity_name']} berhasil digenerate!");
-        } catch (\Exception $e) {
-            Log::error('Prediction generate failed: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * POST /admin/prediksi/upload - Import CSV/XLSX price data
-     */
-    public function upload(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240',
-        ]);
+        $komoditas = $request->komoditas;
+        $steps     = (int) ($request->steps ?? 30);
 
         try {
-            $file = $request->file('file');
-            $ext = strtolower($file->getClientOriginalExtension());
+            $data = $this->prediksiService->generate($komoditas, $steps);
 
-            $rows = $ext === 'csv'
-                ? $this->parseCsv($file->getRealPath())
-                : $this->parseXlsx($file->getRealPath());
+            $results  = [];
+            $tanggal  = $data['tanggal_pred'] ?? [];
+            $forecast = $data['forecast']     ?? [];
+            $ciLower  = $data['ci_lower']     ?? [];
+            $ciUpper  = $data['ci_upper']     ?? [];
 
-            $inserted = 0;
-            $skipped = 0;
-            $errors = [];
-
-            foreach ($rows as $i => $row) {
-                $lineNum = $i + 2;
-
-                if (empty($row['tanggal']) || empty($row['komoditas']) || empty($row['harga_sekarang'])) {
-                    $errors[] = "Baris {$lineNum}: kolom wajib tidak lengkap.";
-                    $skipped++;
-                    continue;
-                }
-
-                $commodity = Commodity::where('name', trim($row['komoditas']))->first();
-
-                try {
-                    $date = Carbon::parse($row['tanggal']);
-                } catch (\Exception $e) {
-                    $errors[] = "Baris {$lineNum}: tanggal invalid ({$row['tanggal']}).";
-                    $skipped++;
-                    continue;
-                }
-
-                $hargaSekarang = (float) str_replace(',', '.', preg_replace('/[^0-9,]/', '', $row['harga_sekarang']));
-                $hargaLama = isset($row['harga_lama'])
-                    ? (float) str_replace(',', '.', preg_replace('/[^0-9,]/', '', $row['harga_lama']))
-                    : 0;
-
-                PriceHistory::create([
-                    'commodity_id' => $commodity?->_id,
-                    'commodity_name' => trim($row['komoditas']),
-                    'category' => $commodity?->category ?? null,
-                    'date' => $date,
-                    'satuan' => $row['satuan'] ?? 'kg',
-                    'harga_lama' => $hargaLama,
-                    'harga_sekarang' => $hargaSekarang,
-                    'source' => 'import_csv',
-                ]);
-
-                $inserted++;
-            }
-
-            $message = "Import selesai: {$inserted} berhasil, {$skipped} dilewati.";
-
-            return redirect()->route('prediksi.index')
-                ->with('success', $message)
-                ->with('import_errors', $errors);
-        } catch (\Exception $e) {
-            Log::error('CSV Upload failed: ' . $e->getMessage());
-            return back()->with('error', 'Gagal import: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * GET /admin/prediksi/{id} - Detail view
-     */
-    public function show(string $id)
-    {
-        $user = session('user');
-        $prediction = Prediction::findOrFail($id);
-
-        return view('admin.prediksi-detail', compact('user', 'prediction'));
-    }
-
-    /**
-     * DELETE /admin/prediksi/{id}
-     */
-    public function destroy(string $id)
-    {
-        Prediction::findOrFail($id)->delete();
-
-        return redirect()->route('prediksi.index')
-            ->with('success', 'Prediksi dihapus.');
-    }
-
-    /**
-     * GET /admin/prediksi/{id}/export - CSV export
-     */
-    public function export(string $id)
-    {
-        $prediction = Prediction::findOrFail($id);
-
-        $results = $prediction->results ?? [];
-        if (empty($results) && !empty($prediction->tanggal_pred)) {
-            foreach ($prediction->tanggal_pred as $i => $tgl) {
+            foreach ($tanggal as $i => $tgl) {
                 $results[] = [
-                    'date' => $tgl,
-                    'predicted_price' => $prediction->forecast[$i] ?? null,
-                    'lower' => $prediction->ci_lower[$i] ?? null,
-                    'upper' => $prediction->ci_upper[$i] ?? null,
+                    'date'            => $tgl,
+                    'predicted_price' => $forecast[$i] ?? 0,
+                    'lower'           => $ciLower[$i]  ?? null,
+                    'upper'           => $ciUpper[$i]  ?? null,
                 ];
             }
+
+            $acc     = $data['accuracy'] ?? [];
+            $metrics = [
+                'mae'      => $acc['mae']      ?? null,
+                'rmse'     => $acc['rmse']     ?? null,
+                'mape'     => $acc['mape']     ?? null,
+                'accuracy' => $acc['accuracy'] ?? null,
+            ];
+
+            \App\Models\Prediction::where('commodity_name', $komoditas)
+                ->where('horizon_days', $steps)
+                ->delete();
+
+            \App\Models\Prediction::create([
+                'commodity_id'   => $komoditas,
+                'commodity_name' => $komoditas,
+                'predicted_at'   => now(),
+                'horizon_days'   => $steps,
+                'current_price'  => $data['harga_terakhir'] ?? 0,
+                'satuan'         => $data['satuan']   ?? 'kg',
+                'kategori'       => $data['kategori'] ?? '',
+                'tanggal_pred'   => $tanggal,
+                'forecast'       => $forecast,
+                'ci_lower'       => $ciLower,
+                'ci_upper'       => $ciUpper,
+                'results'        => $results,
+                'metrics'        => $metrics,
+            ]);
+
+            return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
+                ->with('success', "Prediksi {$komoditas} berhasil digenerate dan disimpan.");
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
+        }
+    }
+
+    // GET /admin/prediksi/export/{id}
+    public function export(string $id)
+    {
+        $prediction = \App\Models\Prediction::find($id);
+
+        if (!$prediction) {
+            return back()->with('error', 'Data prediksi tidak ditemukan.');
         }
 
-        $filename = 'prediksi_' . str_replace(' ', '_', $prediction->commodity_name) . '_' . now()->format('Ymd') . '.csv';
+        $filename = 'prediksi_' . str_replace(' ', '_', $prediction->commodity_name)
+                  . '_' . now()->format('Ymd') . '.csv';
 
         $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
         ];
 
-        $callback = function () use ($results) {
-            $handle = fopen('php://output', 'w');
-            fputs($handle, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
-            fputcsv($handle, ['Tanggal', 'Prediksi (Rp)', 'Bawah (Rp)', 'Atas (Rp)']);
-            foreach ($results as $row) {
-                fputcsv($handle, [
-                    $row['date'],
-                    $row['predicted_price'],
-                    $row['lower'] ?? '',
-                    $row['upper'] ?? '',
+        $callback = function () use ($prediction) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Tanggal', 'Prediksi Harga', 'CI Lower', 'CI Upper']);
+
+            $tanggal  = $prediction->tanggal_pred ?? [];
+            $forecast = $prediction->forecast     ?? [];
+            $ciLower  = $prediction->ci_lower     ?? [];
+            $ciUpper  = $prediction->ci_upper     ?? [];
+
+            foreach ($tanggal as $i => $tgl) {
+                fputcsv($file, [
+                    $tgl,
+                    $forecast[$i] ?? '',
+                    $ciLower[$i]  ?? '',
+                    $ciUpper[$i]  ?? '',
                 ]);
             }
-            fclose($handle);
+            fclose($file);
         };
 
         return response()->stream($callback, 200, $headers);
     }
 
-    private function parseCsv(string $path): array
+    // GET /admin/prediksi/{id}
+    public function show(string $id, Request $request)
     {
-        $rows = [];
-        $handle = fopen($path, 'r');
-        $headers = fgetcsv($handle);
-        $headers = array_map(fn($h) => trim(str_replace("\xEF\xBB\xBF", '', $h)), $headers ?? []);
+        $komoditas = urldecode($id);
+        $steps     = (int) $request->get('steps', 30);
 
-        while (($line = fgetcsv($handle)) !== false) {
-            if (count($line) === count($headers)) {
-                $rows[] = array_combine($headers, $line);
-            }
+        try {
+            $prediksiData = $this->prediksiService->generate($komoditas, $steps);
+
+            $forecast  = $prediksiData['forecast']       ?? [];
+            $tanggal   = $prediksiData['tanggal_pred']   ?? [];
+            $ciLower   = $prediksiData['ci_lower']       ?? [];
+            $ciUpper   = $prediksiData['ci_upper']       ?? [];
+            $hargaKini = $prediksiData['harga_terakhir'] ?? 0;
+
+            $chartData = [
+                'pred_tanggal' => array_slice($tanggal, 0, 14),
+                'pred_harga'   => array_slice($forecast, 0, 14),
+                'ci_lower'     => array_slice($ciLower, 0, 14),
+                'ci_upper'     => array_slice($ciUpper, 0, 14),
+                'harga_kini'   => $hargaKini,
+            ];
+        } catch (\Exception $e) {
+            $prediksiData = ['error' => $e->getMessage()];
+            $chartData    = null;
         }
-        fclose($handle);
-        return $rows;
+
+        return view('admin.prediksi-detail', compact(
+            'komoditas',
+            'prediksiData',
+            'chartData'
+        ));
     }
 
-    private function parseXlsx(string $path): array
+    // DELETE /admin/prediksi/{id}
+    public function destroy(string $id)
     {
-        if (!class_exists(\PhpOffice\PhpSpreadsheet\IOFactory::class)) {
-            throw new \Exception('Install: composer require phpoffice/phpspreadsheet');
-        }
-
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
-        $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
-
-        $headers = array_map('trim', array_shift($rows) ?? []);
-        $result = [];
-
-        foreach ($rows as $row) {
-            if (count($row) >= count($headers)) {
-                $result[] = array_combine($headers, array_slice($row, 0, count($headers)));
-            }
-        }
-
-        return $result;
+        return redirect()->route('prediksi.index')
+            ->with('info', 'Data prediksi dikelola langsung oleh Flask ML.');
     }
 }
