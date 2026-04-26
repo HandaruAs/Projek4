@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\PrediksiService;
+use App\Models\Prediction;
 use Illuminate\Http\Request;
 
 class PrediksiController extends Controller
@@ -28,28 +29,27 @@ class PrediksiController extends Controller
             try {
                 $prediksiData = $this->prediksiService->generate($selectedNama, 30);
 
-                $forecast  = $prediksiData['forecast']      ?? [];
-                $tanggal   = $prediksiData['tanggal_pred']  ?? [];
-                $ciLower   = $prediksiData['ci_lower']      ?? [];
-                $ciUpper   = $prediksiData['ci_upper']      ?? [];
-                $hargaKini = $prediksiData['harga_terakhir'] ?? 0;
+                $payload   = $prediksiData;
+                $forecast  = $payload['forecast']      ?? [];
+                $tanggal   = $payload['tanggal_pred']  ?? [];
+                $ciLower   = $payload['ci_lower']      ?? [];
+                $ciUpper   = $payload['ci_upper']      ?? [];
+                $hargaKini = $payload['harga_terakhir'] ?? 0;
 
                 $chartData = [
                     'pred_tanggal' => array_slice($tanggal, 0, 14),
                     'pred_harga'   => array_slice($forecast, 0, 14),
-                    'ci_lower'     => array_slice($ciLower, 0, 14),
-                    'ci_upper'     => array_slice($ciUpper, 0, 14),
+                    'ci_lower'     => array_slice(is_array($ciLower) ? $ciLower : [], 0, 14),
+                    'ci_upper'     => array_slice(is_array($ciUpper) ? $ciUpper : [], 0, 14),
                     'harga_kini'   => $hargaKini,
                 ];
             } catch (\Exception $e) {
                 $prediksiData = ['error' => $e->getMessage()];
             }
         }
-        // Ambil prediction history dari MongoDB
-        $predictions = \App\Models\Prediction::orderBy('predicted_at', 'desc')
-            ->paginate(10);
 
-        // Konversi komoditasList (array string) ke format object yang diharapkan view
+        $predictions = Prediction::orderBy('created_at', 'desc')->paginate(10);
+
         $commodities = collect($komoditasList)->map(fn($nama) => (object)[
             'id'   => $nama,
             'name' => $nama,
@@ -66,7 +66,6 @@ class PrediksiController extends Controller
     }
 
     // POST /admin/prediksi/generate
-    // POST /admin/prediksi/generate
     public function generate(Request $request)
     {
         $request->validate([
@@ -78,74 +77,53 @@ class PrediksiController extends Controller
         $steps     = (int) ($request->steps ?? 30);
 
         try {
-            // Ambil data dari Flask
-            $data = $this->prediksiService->generate($komoditas, $steps);
+            // Ambil data dari Flask — response sudah berupa payload lengkap
+            $payload = $this->prediksiService->generate($komoditas, $steps);
 
-            // Bangun results array (untuk tabel detail)
-            $results = [];
-            $tanggal  = $data['tanggal_pred'] ?? [];
-            $forecast = $data['forecast']     ?? [];
-            $ciLower  = $data['ci_lower']     ?? [];
-            $ciUpper  = $data['ci_upper']     ?? [];
+            // Ambil accuracy dari payload (nested object dari Flask)
+            $acc = $payload['accuracy'] ?? [];
 
-            foreach ($tanggal as $i => $tgl) {
-                $results[] = [
-                    'date'            => $tgl,
-                    'predicted_price' => $forecast[$i] ?? 0,
-                    'lower'           => $ciLower[$i]  ?? null,
-                    'upper'           => $ciUpper[$i]  ?? null,
-                ];
-            }
-
-            // Bangun metrics dari accuracy Flask
-            $acc     = $data['accuracy'] ?? [];
-            $metrics = [
-                'mae'      => $acc['mae']   ?? null,
-                'rmse'     => $acc['rmse']  ?? null,
-                'mape'     => $acc['mape']  ?? null,
-                'accuracy' => $acc['accuracy'] ?? null,
-            ];
-
-            // Hapus prediksi lama untuk komoditas + steps yang sama
-            \App\Models\Prediction::where('commodity_name', $komoditas)
-                ->where('horizon_days', $steps)
+            // Hapus dokumen lama untuk komoditas + steps yang sama
+            // (sinkron dengan Flask: col_prediction.delete_many)
+            Prediction::where('commodity_name', $komoditas)
+                ->where('steps', $steps)
                 ->delete();
 
-            // Simpan ke MongoDB
-            \App\Models\Prediction::create([
-                'commodity_id'   => $komoditas, // pakai nama sebagai id karena tidak ada relasi
+            // Simpan ke MongoDB dengan skema IDENTIK Flask (api_run_prediksi)
+            Prediction::create([
                 'commodity_name' => $komoditas,
-                'predicted_at'   => now(),
-                'horizon_days'   => $steps,
-                'current_price'  => $data['harga_terakhir'] ?? 0,
-                'satuan'         => $data['satuan']   ?? 'kg',
-                'kategori'       => $data['kategori'] ?? '',
-                'tanggal_pred'   => $tanggal,
-                'forecast'       => $forecast,
-                'ci_lower'       => $ciLower,
-                'ci_upper'       => $ciUpper,
-                'results'        => $results,
-                'metrics'        => $metrics,
+                'steps'          => $steps,
+                'created_at'     => now(),
+                'created_by'     => auth()->user()->name ?? 'laravel_web',
+                'status'         => 'completed',
+                // accuracy flat — persis seperti Flask menyimpannya
+                'accuracy_mae'   => $acc['mae']  ?? null,
+                'accuracy_rmse'  => $acc['rmse'] ?? null,
+                'accuracy_mape'  => $acc['mape'] ?? null,
+                // seluruh response Flask disimpan as-is ke dalam payload
+                'payload'        => $payload,
             ]);
 
             return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
                 ->with('success', "Prediksi {$komoditas} berhasil digenerate dan disimpan.");
+
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
         }
     }
-    // POST /admin/prediksi/upload
-    // Upload tidak lagi relevan — data dikelola Flask/MongoDB langsung
+
     // GET /admin/prediksi/export/{id}
     public function export(string $id)
     {
-        $prediction = \App\Models\Prediction::find($id);
+        $prediction = Prediction::find($id);
 
         if (!$prediction) {
             return back()->with('error', 'Data prediksi tidak ditemukan.');
         }
 
-        $filename = 'prediksi_' . str_replace(' ', '_', $prediction->commodity_name) . '_' . now()->format('Ymd') . '.csv';
+        $filename = 'prediksi_'
+            . str_replace(' ', '_', $prediction->commodity_name)
+            . '_' . now()->format('Ymd') . '.csv';
 
         $headers = [
             'Content-Type'        => 'text/csv',
@@ -156,17 +134,19 @@ class PrediksiController extends Controller
             $file = fopen('php://output', 'w');
             fputcsv($file, ['Tanggal', 'Prediksi Harga', 'CI Lower', 'CI Upper']);
 
-            $tanggal  = $prediction->tanggal_pred ?? [];
-            $forecast = $prediction->forecast     ?? [];
-            $ciLower  = $prediction->ci_lower     ?? [];
-            $ciUpper  = $prediction->ci_upper     ?? [];
+            // Baca dari payload (skema Flask)
+            $payload  = $prediction->payload ?? [];
+            $tanggal  = $payload['tanggal_pred'] ?? [];
+            $forecast = $payload['forecast']     ?? [];
+            $ciLower  = $payload['ci_lower']     ?? [];
+            $ciUpper  = $payload['ci_upper']     ?? [];
 
             foreach ($tanggal as $i => $tgl) {
                 fputcsv($file, [
                     $tgl,
                     $forecast[$i] ?? '',
-                    $ciLower[$i]  ?? '',
-                    $ciUpper[$i]  ?? '',
+                    is_array($ciLower) ? ($ciLower[$i] ?? '') : '',
+                    is_array($ciUpper) ? ($ciUpper[$i] ?? '') : '',
                 ]);
             }
             fclose($file);
@@ -176,45 +156,30 @@ class PrediksiController extends Controller
     }
 
     // GET /admin/prediksi/{id}
-    // id di sini adalah nama komoditas (karena tidak pakai DB lokal)
-    public function show(string $id, Request $request)
+    public function show(string $id)
     {
-        $komoditas = urldecode($id);
-        $steps     = (int) $request->get('steps', 30);
+        $prediction = Prediction::find($id);
 
-        try {
-            $prediksiData = $this->prediksiService->generate($komoditas, $steps);
-
-            $forecast  = $prediksiData['forecast']      ?? [];
-            $tanggal   = $prediksiData['tanggal_pred']  ?? [];
-            $ciLower   = $prediksiData['ci_lower']      ?? [];
-            $ciUpper   = $prediksiData['ci_upper']      ?? [];
-            $hargaKini = $prediksiData['harga_terakhir'] ?? 0;
-
-            $chartData = [
-                'pred_tanggal' => array_slice($tanggal, 0, 14),
-                'pred_harga'   => array_slice($forecast, 0, 14),
-                'ci_lower'     => array_slice($ciLower, 0, 14),
-                'ci_upper'     => array_slice($ciUpper, 0, 14),
-                'harga_kini'   => $hargaKini,
-            ];
-        } catch (\Exception $e) {
-            $prediksiData = ['error' => $e->getMessage()];
-            $chartData    = null;
+        if (!$prediction) {
+            return redirect()->route('prediksi.index')
+                ->with('error', 'Data prediksi tidak ditemukan.');
         }
 
-        return view('admin.prediksi-detail', compact(
-            'komoditas',
-            'prediksiData',
-            'chartData'
-        ));
+        return view('admin.prediksi-detail', compact('prediction'));
     }
 
     // DELETE /admin/prediksi/{id}
-    // Tidak relevan lagi karena tidak ada DB lokal — redirect saja
     public function destroy(string $id)
     {
+        $prediction = Prediction::find($id);
+
+        if ($prediction) {
+            $prediction->delete();
+            return redirect()->route('prediksi.index')
+                ->with('success', 'Data prediksi berhasil dihapus.');
+        }
+
         return redirect()->route('prediksi.index')
-            ->with('info', 'Data prediksi dikelola langsung oleh Flask ML.');
+            ->with('error', 'Data prediksi tidak ditemukan.');
     }
 }

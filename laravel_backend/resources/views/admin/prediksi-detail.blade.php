@@ -6,6 +6,36 @@
 
 @section('content')
 
+{{--
+    Skema dokumen MongoDB (identik Flask):
+    - $prediction->commodity_name   → field langsung
+    - $prediction->steps            → field langsung (bukan horizon_days)
+    - $prediction->created_at       → field langsung (bukan predicted_at)
+    - $prediction->accuracy_mae     → flat field langsung
+    - $prediction->accuracy_rmse    → flat field langsung
+    - $prediction->accuracy_mape    → flat field langsung
+    - $prediction->payload          → nested object berisi semua data prediksi
+      - payload.harga_terakhir
+      - payload.satuan
+      - payload.kategori
+      - payload.tanggal_pred
+      - payload.forecast
+      - payload.ci_lower
+      - payload.ci_upper
+      - payload.accuracy.accuracy   → persen akurasi model
+      - payload.accuracy.note
+      - payload.from_cache
+--}}
+
+@php
+    $payload  = $prediction->payload ?? [];
+    $acc      = $payload['accuracy'] ?? [];
+    $tanggal  = $payload['tanggal_pred'] ?? [];
+    $forecast = $payload['forecast']     ?? [];
+    $ciLower  = $payload['ci_lower']     ?? null;
+    $ciUpper  = $payload['ci_upper']     ?? null;
+@endphp
+
 {{-- Back Button --}}
 <div class="mb-4">
     <a href="{{ route('prediksi.index') }}" class="btn btn-outline-primary">
@@ -18,7 +48,8 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                <h5>{{ $prediction->horizon_days ?? 'N/A' }} Hari</h5>
+                {{-- steps: field flat langsung di dokumen --}}
+                <h5>{{ $prediction->steps ?? 'N/A' }} Hari</h5>
                 <small class="text-muted">Horizon</small>
             </div>
         </div>
@@ -26,7 +57,8 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                <h5>{{ number_format(($prediction->metrics['mape'] ?? 0), 2) }}%</h5>
+                {{-- accuracy_mape: flat field langsung di dokumen --}}
+                <h5>{{ number_format($prediction->accuracy_mape ?? 0, 2) }}%</h5>
                 <small class="text-muted">MAPE</small>
             </div>
         </div>
@@ -34,7 +66,8 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                <h5>{{ number_format(($prediction->metrics['mae'] ?? 0), 0) }}</h5>
+                {{-- accuracy_mae: flat field langsung di dokumen --}}
+                <h5>{{ number_format($prediction->accuracy_mae ?? 0, 0) }}</h5>
                 <small class="text-muted">MAE</small>
             </div>
         </div>
@@ -42,7 +75,8 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                <h5>{{ number_format(($prediction->metrics['rmse'] ?? 0), 0) }}</h5>
+                {{-- accuracy_rmse: flat field langsung di dokumen --}}
+                <h5>{{ number_format($prediction->accuracy_rmse ?? 0, 0) }}</h5>
                 <small class="text-muted">RMSE</small>
             </div>
         </div>
@@ -50,7 +84,8 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                <h5>{{ $prediction->predicted_at ? $prediction->predicted_at->format('d M Y H:i') : 'N/A' }}</h5>
+                {{-- created_at: field langsung (bukan predicted_at) --}}
+                <h5>{{ $prediction->created_at ? $prediction->created_at->format('d M Y H:i') : 'N/A' }}</h5>
                 <small class="text-muted">Generated</small>
             </div>
         </div>
@@ -58,11 +93,35 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                <h5>Rp {{ number_format($prediction->current_price ?? 0, 0) }}</h5>
+                {{-- harga_terakhir: dari dalam payload --}}
+                <h5>Rp {{ number_format($payload['harga_terakhir'] ?? 0, 0) }}</h5>
                 <small class="text-muted">Current Price</small>
             </div>
         </div>
     </div>
+</div>
+
+{{-- Accuracy & cache badge --}}
+<div class="mb-4 d-flex align-items-center gap-3 flex-wrap">
+    @if(isset($acc['accuracy']) && $acc['accuracy'] !== null)
+        @php
+            $pct = $acc['accuracy'];
+            $badgeColor = $pct >= 90 ? 'success' : ($pct >= 80 ? 'warning' : 'danger');
+        @endphp
+        <span class="badge bg-{{ $badgeColor }} fs-6">
+            Akurasi Model: {{ number_format($pct, 1) }}%
+        </span>
+    @endif
+
+    @if($payload['from_cache'] ?? false)
+        <span class="badge bg-secondary">
+            <i class="fas fa-bolt me-1"></i> Dari Cache
+        </span>
+    @endif
+
+    @if($acc['note'] ?? null)
+        <small class="text-muted">{{ $acc['note'] }}</small>
+    @endif
 </div>
 
 {{-- Export & Delete --}}
@@ -71,7 +130,7 @@
         <a href="{{ route('prediksi.export', $prediction->id) }}" class="btn btn-success">
             <i class="fas fa-download me-2"></i>Export CSV
         </a>
-        <form method="POST" action="{{ route('prediksi.destroy', $prediction->id) }}" class="d-inline" 
+        <form method="POST" action="{{ route('prediksi.destroy', $prediction->id) }}" class="d-inline"
               onsubmit="return confirm('Hapus prediksi ini?')">
             @csrf @method('DELETE')
             <button type="submit" class="btn btn-danger">
@@ -83,8 +142,14 @@
 
 {{-- Forecast Table --}}
 <div class="card">
-    <div class="card-header">
-        <h5>Forecast Results</h5>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            Forecast Results — {{ $prediction->commodity_name }}
+            <small class="text-muted">({{ $payload['satuan'] ?? 'kg' }})</small>
+        </h5>
+        <small class="text-muted">
+            Data terakhir: {{ $payload['tanggal_terakhir'] ?? '—' }}
+        </small>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -100,22 +165,38 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if(isset($prediction->results) && count($prediction->results) > 0)
-                        @foreach($prediction->results as $i => $row)
+                    @if(count($tanggal) > 0)
+                        @foreach($tanggal as $i => $tgl)
                             <tr>
                                 <td>{{ $i + 1 }}</td>
-                                <td>{{ \Carbon\Carbon::parse($row['date'])->format('d M Y') }}</td>
-                                <td><strong>Rp {{ number_format($row['predicted_price'], 0) }}</strong></td>
-                                <td>Rp {{ number_format($row['lower'] ?? 0, 0) }}</td>
-                                <td>Rp {{ number_format($row['upper'] ?? 0, 0) }}</td>
+                                <td>{{ \Carbon\Carbon::parse($tgl)->format('d M Y') }}</td>
+                                <td>
+                                    <strong>Rp {{ number_format($forecast[$i] ?? 0, 0) }}</strong>
+                                </td>
+                                <td>
+                                    @if(is_array($ciLower) && isset($ciLower[$i]))
+                                        Rp {{ number_format($ciLower[$i], 0) }}
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if(is_array($ciUpper) && isset($ciUpper[$i]))
+                                        Rp {{ number_format($ciUpper[$i], 0) }}
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 <td>
                                     @if($i > 0)
-                                        @php $diff = $row['predicted_price'] - $prediction->results[$i-1]['predicted_price']; @endphp
-                                        <span class="{{ $diff > 0 ? 'text-success' : 'text-danger' }}">
+                                        @php
+                                            $diff = ($forecast[$i] ?? 0) - ($forecast[$i - 1] ?? 0);
+                                        @endphp
+                                        <span class="{{ $diff > 0 ? 'text-danger' : ($diff < 0 ? 'text-success' : 'text-muted') }}">
                                             {{ $diff > 0 ? '+' : '' }}{{ number_format($diff, 0) }}
                                         </span>
                                     @else
-                                        —
+                                        <span class="text-muted">—</span>
                                     @endif
                                 </td>
                             </tr>
@@ -134,4 +215,3 @@
 </div>
 
 @endsection
-

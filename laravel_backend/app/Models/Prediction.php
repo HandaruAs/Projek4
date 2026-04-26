@@ -10,63 +10,49 @@ class Prediction extends Model
     protected $collection = 'predictions';
 
     /**
-     * Struktur dokumen MongoDB — sinkron dengan Flask col_prediction:
+     * Skema dokumen MongoDB — IDENTIK dengan yang dibuat Flask (api_run_prediksi & api_external_prediksi):
+     *
      * {
-     *   _id: ObjectId,
-     *   commodity_id: "...",
+     *   _id:            ObjectId,
      *   commodity_name: "Beras Medium",
-     *   predicted_at: ISODate,
-     *   horizon_days: 30,
-     *   current_price: 13500,
-     *   satuan: "kg",            ← DITAMBAH (Flask: satuan)
-     *   kategori: "Beras",       ← DITAMBAH (Flask: kategori)
-     *
-     *   // Payload sinkron Flask:
-     *   tanggal_pred: ["2024-05-01", ...],   ← DITAMBAH
-     *   forecast:     [13200, 13250, ...],   ← DITAMBAH
-     *   ci_lower:     [13000, 13050, ...],   ← DITAMBAH
-     *   ci_upper:     [13400, 13450, ...],   ← DITAMBAH
-     *
-     *   // Array detail (untuk show/export di Laravel)
-     *   results: [
-     *     { date: "2024-05-01", predicted_price: 13200, lower: 13000, upper: 13400 },
-     *     ...
-     *   ],
-     *
-     *   metrics: {
-     *     mae: 120, rmse: 145, mape: 1.02, accuracy: 98.98,
-     *     recommendation_score: 70,
-     *     score: 70,                ← alias (blade pakai $metrics['score'])
-     *     recommendation: "BELI SEGERA",
-     *     warna: "buy_soon",
-     *     emoji: "⚡",
-     *     delta_pct_7: 1.2,
-     *     delta_pct_30: 3.5,
-     *     harga_7hari: 13200,
-     *     harga_30hari: 13500,
-     *   },
-     *   created_at: ...,
-     *   updated_at: ...,
+     *   steps:          30,
+     *   created_at:     ISODate,
+     *   created_by:     "zaiful" | "laravel_api",
+     *   status:         "completed",
+     *   accuracy_mae:   120,       ← flat, bukan nested
+     *   accuracy_rmse:  145,       ← flat
+     *   accuracy_mape:  1.02,      ← flat
+     *   payload: {
+     *     komoditas:        "Beras Medium",
+     *     tanggal_pred:     ["2024-05-01", ...],
+     *     forecast:         [13200, ...],
+     *     ci_lower:         [13000, ...] | null,
+     *     ci_upper:         [13400, ...] | null,
+     *     accuracy: {
+     *       accuracy: 98.1,
+     *       mae:      120,
+     *       mape:     1.02,
+     *       rmse:     145,
+     *       note:     "Holt-Winters, walk-forward 80/20 split"
+     *     },
+     *     satuan:           "kg",
+     *     harga_terakhir:   13500,
+     *     tanggal_terakhir: "2024-04-30",
+     *     kategori:         "BERAS",
+     *     from_cache:       false
+     *   }
      * }
      */
     protected $fillable = [
-        'commodity_id',
         'commodity_name',
-        'predicted_at',
-        'horizon_days',
-        'current_price',
-        'satuan',
-        'kategori',
-        // Payload array (sinkron Flask)
-        'tanggal_pred',
-        'forecast',
-        'ci_lower',
-        'ci_upper',
-        // Detail per baris (untuk show & export)
-        'results',
-        'metrics',
-        // Legacy (masih bisa ada di data lama)
-        'recommendation_score',
+        'steps',
+        'created_at',
+        'created_by',
+        'status',
+        'accuracy_mae',
+        'accuracy_rmse',
+        'accuracy_mape',
+        'payload',
     ];
 
     protected $primaryKey = 'id';
@@ -74,58 +60,112 @@ class Prediction extends Model
     protected $keyType    = 'string';
 
     protected $casts = [
-        'predicted_at'         => 'datetime',
-        'results'              => 'array',
-        'metrics'              => 'array',
-        'tanggal_pred'         => 'array',
-        'forecast'             => 'array',
-        'ci_lower'             => 'array',
-        'ci_upper'             => 'array',
-        'horizon_days'         => 'integer',
-        'current_price'        => 'decimal:2',
-        'recommendation_score' => 'integer',
-        'created_at'           => 'datetime',
-        'updated_at'           => 'datetime',
+        'created_at'    => 'datetime',
+        'updated_at'    => 'datetime',
+        'steps'         => 'integer',
+        'accuracy_mae'  => 'float',
+        'accuracy_rmse' => 'float',
+        'accuracy_mape' => 'float',
+        'payload'       => 'array',
     ];
 
+    // ──────────────────────────────────────────────────────────────
+    // ACCESSORS — shortcut ke dalam payload agar blade tetap ringkas
+    // ──────────────────────────────────────────────────────────────
 
-
-    public function commodity()
+    /** Alias: predicted_at → created_at */
+    public function getPredictedAtAttribute()
     {
-        return $this->belongsTo(Commodity::class, 'commodity_id', '_id');
+        return $this->created_at;
+    }
+
+    /** Alias: horizon_days → steps */
+    public function getHorizonDaysAttribute(): int
+    {
+        return (int) ($this->steps ?? 0);
+    }
+
+    /** Harga terakhir dari payload */
+    public function getCurrentPriceAttribute()
+    {
+        return $this->payload['harga_terakhir'] ?? null;
+    }
+
+    /** Satuan dari payload */
+    public function getSatuanAttribute(): string
+    {
+        return $this->payload['satuan'] ?? 'kg';
+    }
+
+    /** Kategori dari payload */
+    public function getKategoriAttribute(): string
+    {
+        return $this->payload['kategori'] ?? '';
+    }
+
+    /** Array forecast dari payload */
+    public function getForecastAttribute(): array
+    {
+        return $this->payload['forecast'] ?? [];
+    }
+
+    /** Array tanggal prediksi dari payload */
+    public function getTanggalPredAttribute(): array
+    {
+        return $this->payload['tanggal_pred'] ?? [];
+    }
+
+    /** CI lower dari payload */
+    public function getCiLowerAttribute(): ?array
+    {
+        return $this->payload['ci_lower'] ?? null;
+    }
+
+    /** CI upper dari payload */
+    public function getCiUpperAttribute(): ?array
+    {
+        return $this->payload['ci_upper'] ?? null;
     }
 
     /**
-     * Scope: prediksi terbaru untuk satu commodity_id.
-     * Sinkron Flask: col_prediction.find_one(sort=[("created_at", DESCENDING)])
+     * metrics → payload.accuracy
+     * Blade $prediction->metrics['mape'] tetap bekerja.
      */
-    public function scopeLatestByCommodity($query, string $commodityId)
+    public function getMetricsAttribute(): array
     {
-        return $query->where('commodity_id', $commodityId)
-                     ->orderBy('predicted_at', 'desc');
+        return $this->payload['accuracy'] ?? [];
     }
 
     /**
-     * Accessor: ambil harga_terakhir (alias Flask: payload.harga_terakhir)
+     * results → dibangun on-the-fly dari payload arrays.
+     * Blade $prediction->results tetap bekerja.
      */
-    public function getHargaTerakhirAttribute(): ?int
+    public function getResultsAttribute(): array
     {
-        return $this->current_price ? (int) $this->current_price : null;
+        $tanggal  = $this->payload['tanggal_pred'] ?? [];
+        $forecast = $this->payload['forecast']     ?? [];
+        $ciLower  = $this->payload['ci_lower']     ?? [];
+        $ciUpper  = $this->payload['ci_upper']     ?? [];
+
+        $results = [];
+        foreach ($tanggal as $i => $tgl) {
+            $results[] = [
+                'date'            => $tgl,
+                'predicted_price' => $forecast[$i] ?? 0,
+                'lower'           => is_array($ciLower) ? ($ciLower[$i] ?? null) : null,
+                'upper'           => is_array($ciUpper) ? ($ciUpper[$i] ?? null) : null,
+            ];
+        }
+        return $results;
     }
 
-    /**
-     * Accessor: rekomendasi dari metrics
-     */
-    public function getRekomendasiAttribute(): ?string
-    {
-        return $this->metrics['recommendation'] ?? null;
-    }
+    // ──────────────────────────────────────────────────────────────
+    // SCOPES
+    // ──────────────────────────────────────────────────────────────
 
-    /**
-     * Accessor: accuracy dari metrics
-     */
-    public function getAccuracyAttribute(): ?float
+    public function scopeLatestByCommodity($query, string $commodityName)
     {
-        return $this->metrics['accuracy'] ?? null;
+        return $query->where('commodity_name', $commodityName)
+                     ->orderBy('created_at', 'desc');
     }
 }
