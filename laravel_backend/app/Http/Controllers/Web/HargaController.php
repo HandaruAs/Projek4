@@ -4,21 +4,22 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Commodity;
-use App\Models\Category;
 use App\Models\PriceHistory;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class HargaController extends Controller
 {
-    private function checkAdmin()
+    private function getCategories(): \Illuminate\Support\Collection
     {
-        $user = session('user');
-        if (!$user) return redirect('/login');
-        if ($user->role !== 'admin') return redirect('/dashboard');
-        return $user;
+        return collect(
+            PriceHistory::raw(fn($col) => $col->distinct('category', []))
+        )->filter(fn($c) => !is_null($c) && $c !== '')
+         ->sort()
+         ->values();
     }
 
+    // ── ADMIN: /admin/harga ───────────────────────────────────
     public function index()
     {
         $totalRecords   = PriceHistory::count();
@@ -46,22 +47,19 @@ class HargaController extends Controller
             ]);
         }
 
-        $hargaList = $query->orderBy('date', 'desc')->paginate(20)->withQueryString();
-
-        $categoryList = collect(
-            PriceHistory::raw(fn($col) => $col->distinct('category', []))
-        )->filter()->sort()->values();
+        $hargaList  = $query->orderBy('date', 'desc')->paginate(20)->withQueryString();
+        $categories = $this->getCategories();
 
         return view('admin.harga', compact(
             'totalRecords',
             'todayRecords',
             'totalKomoditas',
             'hargaList',
-            'categoryList',
+            'categories',
         ));
     }
 
-    // ── USER: /harga ─────────────────────────────────────────
+    // ── USER: /harga ──────────────────────────────────────────
     public function userIndex()
     {
         $totalRecords   = PriceHistory::count();
@@ -76,9 +74,11 @@ class HargaController extends Controller
         if (request('search')) {
             $query->where('commodity_name', 'like', '%' . request('search') . '%');
         }
+
         if (request('category')) {
             $query->where('category', request('category'));
         }
+
         if (request('date')) {
             $date = Carbon::parse(request('date'));
             $query->whereBetween('date', [
@@ -87,18 +87,15 @@ class HargaController extends Controller
             ]);
         }
 
-        $hargaList = $query->orderBy('date', 'desc')->paginate(20)->withQueryString();
-
-        $categoryList = collect(
-            PriceHistory::raw(fn($col) => $col->distinct('category', []))
-        )->filter()->sort()->values();
+        $hargaList  = $query->orderBy('date', 'desc')->paginate(20)->withQueryString();
+        $categories = $this->getCategories();
 
         return view('user.harga', compact(
             'totalRecords',
             'todayRecords',
             'totalKomoditas',
             'hargaList',
-            'categoryList',
+            'categories',
         ));
     }
 }

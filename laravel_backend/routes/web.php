@@ -30,38 +30,40 @@ Route::post('/login',          [AuthController::class, 'login']);
 Route::post('/logout',         [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot.password');
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot.password');
 Route::post('/forgot-password', [AuthController::class, 'sendOtp']);
 
 Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
+Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
+Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('reset.password');
 Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('reset.password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
 // ── ADMIN ROUTES ─────────────────────────────────────────────
-Route::middleware(['auth','role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     Route::get('/admin/dashboard', [App\Http\Controllers\Web\AdminController::class, 'dashboard'])->name('dashboard');
     Route::prefix('admin')->group(function () {
 
     // Komoditas
-    Route::get('/komoditas',           [KomoditasController::class, 'index'])->name('komoditas.index');
-    Route::get('/komoditas/create',    [KomoditasController::class, 'create'])->name('komoditas.create');
-    Route::post('/komoditas',          [KomoditasController::class, 'store'])->name('komoditas.store');
+    Route::get('/komoditas', [KomoditasController::class, 'index'])->name('komoditas.index');
+    Route::get('/komoditas/create', [KomoditasController::class, 'create'])->name('komoditas.create');
+    Route::post('/komoditas', [KomoditasController::class, 'store'])->name('komoditas.store');
     Route::get('/komoditas/{id}/edit', [KomoditasController::class, 'edit'])->name('komoditas.edit');
-    Route::put('/komoditas/{id}',      [KomoditasController::class, 'update'])->name('komoditas.update');
-    Route::delete('/komoditas/{id}',   [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
+    Route::put('/komoditas/{id}', [KomoditasController::class, 'update'])->name('komoditas.update');
+    Route::delete('/komoditas/{id}', [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
 
-        // Data Harga
-        Route::get('/harga',               [HargaController::class, 'index'])->name('harga.index');
+    // Harga
+    Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
 
-
-    // Generate Prediksi
-    Route::get('/prediksi',            [PrediksiController::class, 'index'])->name('prediksi.index');
-    Route::post('/prediksi/generate',  [PrediksiController::class, 'generate'])->name('prediksi.generate');
-    Route::get('/prediksi/{id}',       [PrediksiController::class, 'show'])->name('prediksi.show');
-    Route::delete('/prediksi/{id}',    [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
+    // Prediksi
+    Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi.index');
+    Route::post('/prediksi/generate', [PrediksiController::class, 'generate'])->name('prediksi.generate');
+    Route::get('/prediksi/{id}', [PrediksiController::class, 'show'])->name('prediksi.show');
+    Route::delete('/prediksi/{id}', [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
 
         // Profile
         Route::get('/profile',  [AdminController::class, 'profile'])->name('profile');
@@ -76,12 +78,19 @@ Route::middleware(['auth','role:admin'])->group(function () {
 Route::middleware(['auth','role:user'])->group(function () {
 
     Route::get('/home',      [App\Http\Controllers\Web\UserController::class,'home'])->name('user.home');
+
     Route::get('/harga', [UserHargaController::class, 'harga'])->name('user.harga');
     Route::get('/prediksi',  [App\Http\Controllers\Web\UserPrediksiController::class,'prediksi'])->name('user.prediksi');
     Route::get('/simulasi',  [App\Http\Controllers\Web\UserSimulasiController::class,'simulasi'])->name('user.simulasi');
+
     Route::get('/chatai', [App\Http\Controllers\Web\UserChatAiController::class, 'index'])->name('user.chatai');
+    Route::get('/chatai/komoditas', [UserChatAiController::class, 'komoditas'])->name('user.chatai.komoditas');
+    Route::post('/chatai/rekomendasi', [UserChatAiController::class, 'rekomendasi'])->name('user.chatai.rekomendasi');
+    Route::post('/chatai/followup', [UserChatAiController::class, 'followup'])->name('user.chatai.followup');
+
     Route::get('/user/profil', [UserProfilController::class, 'index'])->name('user.profil');
     Route::put('/user/profil', [UserProfilController::class, 'update'])->name('user.profil.update');
     Route::put('/user/profil/password', [UserProfilController::class, 'password'])->name('user.profil.password');
+
     Route::get('/download-pdf', [UserController::class, 'downloadPdf'])->name('user.downloadPdf');
 });

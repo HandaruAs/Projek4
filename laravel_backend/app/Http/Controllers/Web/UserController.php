@@ -5,32 +5,32 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\PriceHistory;
+use App\Models\Category;
 use App\Models\Commodity;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
-
     public function home(Request $request)
     {
         $user = Auth::user();
 
-        // Filter parameters
-        $search = $request->get('search');
-        $category = $request->get('category');
-        $date = $request->get('date');
+        $search   = $request->get('search');
+        $category = $request->get('category'); // ini sekarang category_id
+        $date     = $request->get('date');
 
-        // Query recent prices
         $query = PriceHistory::query();
 
         if ($search) {
             $query->where('commodity_name', 'like', '%' . $search . '%');
         }
 
+        // FIX: filter by category_id, bukan category string
         if ($category && $category !== 'Semua') {
-            $query->where('category', $category);
+            $query->where('category_id', $category);
         }
 
         if ($date) {
@@ -39,26 +39,25 @@ class UserController extends Controller
         }
 
         $recentPrices = $query->orderBy('date', 'desc')->paginate(10)->appends(request()->query());
+        $recentPrices->load('categoryRelation');
 
-        // Hitung selisih dan persen untuk setiap item di tabel
         foreach ($recentPrices as $item) {
             $hargaKemarin = PriceHistory::where('commodity_name', $item->commodity_name)
                 ->where('date', '>=', Carbon::parse($item->date)->subDay()->startOfDay())
                 ->where('date', '<=', Carbon::parse($item->date)->subDay()->endOfDay())
                 ->first();
 
-            $hargaLama = $hargaKemarin ? $hargaKemarin->harga_sekarang : $item->harga_sekarang;
+            $hargaLama     = $hargaKemarin ? $hargaKemarin->harga_sekarang : $item->harga_sekarang;
             $item->selisih = $item->harga_sekarang - $hargaLama;
-            $item->persen = $hargaLama > 0 ? ($item->selisih / $hargaLama) * 100 : 0;
+            $item->persen  = $hargaLama > 0 ? ($item->selisih / $hargaLama) * 100 : 0;
         }
 
-        // Stat cards data — ikut filter yang aktif
         $statQuery = PriceHistory::query();
         if ($search) {
             $statQuery->where('commodity_name', 'like', '%' . $search . '%');
         }
         if ($category && $category !== 'Semua') {
-            $statQuery->where('category', $category);
+            $statQuery->where('category_id', $category); // FIX
         }
         if ($date) {
             $statQuery->whereDate('date', $date);
@@ -66,20 +65,16 @@ class UserController extends Controller
 
         $adaFilter = $search || ($category && $category !== 'Semua') || $date;
 
-        // Harga terbaru
         if ($adaFilter) {
             $hargaTerbaruData = (clone $statQuery)->orderBy('date', 'desc')->first();
             $hargaTerbaru     = $hargaTerbaruData ? $hargaTerbaruData->harga_sekarang : 0;
             $namaKomoditas    = $hargaTerbaruData ? $hargaTerbaruData->commodity_name : '-';
         } else {
-            // Tanpa filter — tampilkan rata-rata harga semua komoditas terbaru
-            $hargaTerbaru  = (clone $statQuery)->orderBy('date', 'desc')->avg('harga_sekarang') ?? 0;
-            $hargaTerbaru  = round($hargaTerbaru);
-            $namaKomoditas = 'Semua Komoditas';
+            $hargaTerbaru     = round((clone $statQuery)->orderBy('date', 'desc')->avg('harga_sekarang') ?? 0);
+            $namaKomoditas    = 'Semua Komoditas';
             $hargaTerbaruData = (clone $statQuery)->orderBy('date', 'desc')->first();
         }
 
-        // Perubahan bulanan
         if ($adaFilter && isset($hargaTerbaruData)) {
             $bulanLalu = Carbon::parse($hargaTerbaruData->date)->subMonth()->endOfDay();
             $hargaBulanLaluData = PriceHistory::where('commodity_name', $hargaTerbaruData->commodity_name)
@@ -88,24 +83,20 @@ class UserController extends Controller
                 ->first();
             $hargaBulanLalu = $hargaBulanLaluData ? $hargaBulanLaluData->harga_sekarang : $hargaTerbaru;
         } else {
-            $bulanLalu    = Carbon::now()->subMonth()->endOfDay();
-            $hargaBulanLalu = PriceHistory::where('date', '<=', $bulanLalu)
-                ->avg('harga_sekarang') ?? $hargaTerbaru;
-            $hargaBulanLalu = round($hargaBulanLalu);
+            $bulanLalu      = Carbon::now()->subMonth()->endOfDay();
+            $hargaBulanLalu = round(PriceHistory::where('date', '<=', $bulanLalu)->avg('harga_sekarang') ?? $hargaTerbaru);
         }
 
         $hargaKemarin = $hargaBulanLalu;
         $hargaChange  = $hargaTerbaru - $hargaBulanLalu;
         $hargaPercent = $hargaBulanLalu > 0 ? ($hargaChange / $hargaBulanLalu) * 100 : 0;
 
-        // Volatilitas 7 hari
         $last7Days = (clone $statQuery)->orderBy('date', 'desc')->take(7)->pluck('harga_sekarang')->toArray();
 
         if (count($last7Days) > 1) {
-            $mean      = array_sum($last7Days) / count($last7Days);
-            $variance  = array_sum(array_map(fn($x) => pow($x - $mean, 2), $last7Days)) / count($last7Days);
+            $mean             = array_sum($last7Days) / count($last7Days);
+            $variance         = array_sum(array_map(fn($x) => pow($x - $mean, 2), $last7Days)) / count($last7Days);
             $indexVolatilitas = round(sqrt($variance) / $mean, 2);
-
             $statusVolatilitas = match(true) {
                 $indexVolatilitas < 0.1 => 'Rendah',
                 $indexVolatilitas < 0.3 => 'Sedang',
@@ -116,104 +107,91 @@ class UserController extends Controller
             $indexVolatilitas  = 0;
         }
 
-        // Data untuk filter category
-        $categoryList = PriceHistory::distinct('category')->pluck('category')->filter()->sort()->values();
-// ========== PIE CHART ==========
-try {
-    $allData = PriceHistory::where('category', '!=', null)
-        ->where('category', '!=', '')
-        ->orderBy('date', 'desc')
-        ->limit(1000)
-        ->get(['category', 'commodity_name', 'harga_sekarang', 'date']);
+        // FIX: categoryList dari model Category, bukan distinct dari PriceHistory
+        $categoryList = Category::orderBy('name')->get(['_id', 'name']);
 
-    \Log::info('Pie chart raw count: ' . $allData->count()); // debug log
+        // PIE CHART — pakai categoryRelation
+        try {
+            $allData = PriceHistory::whereNotNull('category_id')
+                ->orderBy('date', 'desc')
+                ->limit(1000)
+                ->get(['category_id', 'commodity_name', 'harga_sekarang', 'date']);
 
-    if ($allData->isEmpty()) {
-        $chartLabels = [];
-        $chartValues = [];
-    } else {
-        $grouped = $allData
-            ->filter(fn($item) => !empty($item->category)) // double filter
-            ->groupBy('category')
-            ->map(function ($items) {
-                $latestPerCommodity = $items
-                    ->groupBy('commodity_name')
-                    ->map(function ($rows) {
-                        return $rows->sortByDesc(function ($r) {
-                            // Sort by timestamp agar aman dengan Carbon cast
-                            return $r->date instanceof \Carbon\Carbon
-                                ? $r->date->timestamp
-                                : strtotime($r->date);
-                        })->first()->harga_sekarang;
-                    });
-                return (int) round($latestPerCommodity->avg());
-            })
-            ->filter(fn($val) => $val > 0) // buang kategori dengan avg = 0
-            ->sortDesc();
+            if ($allData->isEmpty()) {
+                $chartLabels = [];
+                $chartValues = [];
+            } else {
+                // Load category names
+                $categoryNames = Category::all()->keyBy(fn($c) => (string) $c->_id);
 
-        $chartLabels = array_values($grouped->keys()->toArray());
-        $chartValues = array_values($grouped->values()->map(fn($v) => (int) $v)->toArray());
-    }
-} catch (\Exception $e) {
-    \Log::error('Pie Chart Error: ' . $e->getMessage());
-    $chartLabels = [];
-    $chartValues = [];
-}
-// ========== END PIE CHART ==========
+                $grouped = $allData
+                    ->filter(fn($item) => !empty($item->category_id))
+                    ->groupBy(fn($item) => (string) $item->category_id)
+                    ->map(function ($items) {
+                        $latestPerCommodity = $items
+                            ->groupBy('commodity_name')
+                            ->map(function ($rows) {
+                                return $rows->sortByDesc(fn($r) => $r->date instanceof Carbon
+                                    ? $r->date->timestamp
+                                    : strtotime($r->date)
+                                )->first()->harga_sekarang;
+                            });
+                        return (int) round($latestPerCommodity->avg());
+                    })
+                    ->filter(fn($val) => $val > 0)
+                    ->sortDesc();
+
+                $chartLabels = array_values($grouped->keys()->map(
+                    fn($id) => $categoryNames[$id]->name ?? 'Unknown'
+                )->toArray());
+                $chartValues = array_values($grouped->values()->map(fn($v) => (int) $v)->toArray());
+            }
+        } catch (\Exception $e) {
+            Log::error('Pie Chart Error: ' . $e->getMessage());
+            $chartLabels = [];
+            $chartValues = [];
+        }
 
         return view('user.home', compact(
-            'user',
-            'recentPrices',
-            'namaKomoditas',
-            'hargaTerbaru',
-            'hargaChange',
-            'hargaPercent',
-            'hargaKemarin',
-            'statusVolatilitas',
-            'indexVolatilitas',
-            'categoryList',
-            'chartLabels',
-            'chartValues'
+            'user', 'recentPrices', 'namaKomoditas', 'hargaTerbaru',
+            'hargaChange', 'hargaPercent', 'hargaKemarin',
+            'statusVolatilitas', 'indexVolatilitas',
+            'categoryList', 'chartLabels', 'chartValues'
         ));
     }
 
     public function downloadPdf(Request $request)
     {
-        // Ambil filter dari query string
         $search   = $request->get('search');
         $category = $request->get('category');
         $date     = $request->get('date');
 
-        // Query harga — rebuild fresh (jangan clone dari luar)
         $query = PriceHistory::query();
 
         if ($search) {
             $query->where('commodity_name', 'like', '%' . $search . '%');
         }
         if ($category && $category !== 'Semua') {
-            $query->where('category', $category);
+            $query->where('category_id', $category); // FIX
         }
         if ($date) {
             $query->where('date', '>=', Carbon::parse($date)->startOfDay())
                   ->where('date', '<=', Carbon::parse($date)->endOfDay());
         }
 
-        // Untuk PDF: ambil semua data (tanpa paginasi)
         $recentPrices = (clone $query)->orderBy('date', 'desc')->take(500)->get();
+        $recentPrices->load('categoryRelation');
 
-        // Hitung selisih & persen
         foreach ($recentPrices as $item) {
-            $hargaKemarin = PriceHistory::where('commodity_name', $item->commodity_name)
+            $hargaKemarin  = PriceHistory::where('commodity_name', $item->commodity_name)
                 ->where('date', '>=', Carbon::parse($item->date)->subDay()->startOfDay())
                 ->where('date', '<=', Carbon::parse($item->date)->subDay()->endOfDay())
                 ->first();
-
-            $hargaLama    = $hargaKemarin ? $hargaKemarin->harga_sekarang : $item->harga_sekarang;
+            $hargaLama     = $hargaKemarin ? $hargaKemarin->harga_sekarang : $item->harga_sekarang;
             $item->selisih = $item->harga_sekarang - $hargaLama;
             $item->persen  = $hargaLama > 0 ? ($item->selisih / $hargaLama) * 100 : 0;
         }
 
-        // Stat cards
         $adaFilter = $search || ($category && $category !== 'Semua') || $date;
 
         if ($adaFilter) {
@@ -221,8 +199,8 @@ try {
             $hargaTerbaru     = $hargaTerbaruData ? $hargaTerbaruData->harga_sekarang : 0;
             $namaKomoditas    = $hargaTerbaruData ? $hargaTerbaruData->commodity_name : '-';
         } else {
-            $hargaTerbaru  = round(PriceHistory::orderBy('date', 'desc')->avg('harga_sekarang') ?? 0);
-            $namaKomoditas = 'Semua Komoditas';
+            $hargaTerbaru     = round(PriceHistory::orderBy('date', 'desc')->avg('harga_sekarang') ?? 0);
+            $namaKomoditas    = 'Semua Komoditas';
             $hargaTerbaruData = PriceHistory::orderBy('date', 'desc')->first();
         }
 
@@ -240,11 +218,10 @@ try {
         $hargaChange   = $hargaTerbaru - $hargaBulanLalu;
         $hargaPercent  = $hargaBulanLalu > 0 ? ($hargaChange / $hargaBulanLalu) * 100 : 0;
 
-        // Volatilitas
         $last7 = PriceHistory::orderBy('date', 'desc')->take(7)->pluck('harga_sekarang')->toArray();
         if (count($last7) > 1) {
-            $mean     = array_sum($last7) / count($last7);
-            $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $last7)) / count($last7);
+            $mean              = array_sum($last7) / count($last7);
+            $variance          = array_sum(array_map(fn($x) => pow($x - $mean, 2), $last7)) / count($last7);
             $indexVolatilitas  = round(sqrt($variance) / $mean, 2);
             $statusVolatilitas = match(true) {
                 $indexVolatilitas < 0.1 => 'Rendah',
@@ -256,20 +233,21 @@ try {
             $indexVolatilitas  = 0;
         }
 
-        // ========== PIE CHART UNTUK PDF ==========
+        // PIE CHART PDF
         try {
-            $allData = PriceHistory::whereNotNull('category')
-                ->where('category', '!=', '')
+            $allData = PriceHistory::whereNotNull('category_id')
                 ->orderBy('date', 'desc')
                 ->limit(500)
-                ->get(['category', 'commodity_name', 'harga_sekarang', 'date']);
+                ->get(['category_id', 'commodity_name', 'harga_sekarang', 'date']);
 
             if ($allData->isEmpty()) {
                 $chartLabels = [];
                 $chartValues = [];
             } else {
+                $categoryNames = Category::all()->keyBy(fn($c) => (string) $c->_id);
+
                 $grouped = $allData
-                    ->groupBy('category')
+                    ->groupBy(fn($item) => (string) $item->category_id)
                     ->map(function ($items) {
                         $latestPerCommodity = $items
                             ->groupBy('commodity_name')
@@ -278,34 +256,26 @@ try {
                     })
                     ->sortDesc();
 
-                $chartLabels = array_values($grouped->keys()->toArray());
+                $chartLabels = array_values($grouped->keys()->map(
+                    fn($id) => $categoryNames[$id]->name ?? 'Unknown'
+                )->toArray());
                 $chartValues = array_values($grouped->values()->map(fn($v) => (int) $v)->toArray());
             }
         } catch (\Exception $e) {
-            \Log::error('Pie Chart PDF Error: ' . $e->getMessage());
+            Log::error('Pie Chart PDF Error: ' . $e->getMessage());
             $chartLabels = [];
             $chartValues = [];
         }
-        // ========== END PIE CHART ==========
 
-        // Label periode
         $periodeLabel = $date
             ? Carbon::parse($date)->locale('id')->isoFormat('DD MMMM YYYY')
             : 'Semua Periode';
 
-        // Generate PDF
         $pdf = Pdf::loadView('user.pdf.laporan', compact(
-            'recentPrices',
-            'namaKomoditas',
-            'hargaTerbaru',
-            'hargaChange',
-            'hargaPercent',
-            'hargaKemarin',
-            'statusVolatilitas',
-            'indexVolatilitas',
-            'chartLabels',
-            'chartValues',
-            'periodeLabel'
+            'recentPrices', 'namaKomoditas', 'hargaTerbaru',
+            'hargaChange', 'hargaPercent', 'hargaKemarin',
+            'statusVolatilitas', 'indexVolatilitas',
+            'chartLabels', 'chartValues', 'periodeLabel'
         ))
         ->setPaper('a4', 'portrait')
         ->setOptions([

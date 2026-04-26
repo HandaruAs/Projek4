@@ -36,6 +36,7 @@ class AdminController extends Controller
 
     public function updateProfile(Request $request)
     {
+         /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $request->validate([

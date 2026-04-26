@@ -1,5 +1,4 @@
 <div class="filter-bar">
-
     {{-- Search --}}
     <div class="search-box" style="flex:1">
         <i class="fas fa-magnifying-glass"></i>
@@ -10,7 +9,6 @@
                placeholder="{{ $placeholder ?? 'Search...' }}"
                autocomplete="off">
     </div>
-
     {{-- Category filter --}}
     @if(isset($categories))
         <span class="filter-label">Category:</span>
@@ -20,14 +18,17 @@
                 style="width:160px">
             <option value="">All Categories</option>
             @foreach($categories as $cat)
-                <option value="{{ $cat }}"
-                        {{ request('category') == $cat ? 'selected' : '' }}>
-                    {{ $cat }}
+                @php
+                    $catValue = is_string($cat) ? $cat : (string) $cat->_id;
+                    $catLabel = is_string($cat) ? $cat : $cat->name;
+                @endphp
+                <option value="{{ $catValue }}"
+                        {{ request('category') == $catValue ? 'selected' : '' }}>
+                    {{ $catLabel }}
                 </option>
             @endforeach
         </select>
     @endif
-
     {{-- Date filter --}}
     @if($withDate ?? false)
         <span class="filter-label">Date:</span>
@@ -38,23 +39,18 @@
                class="form-input-admin"
                style="width:160px">
     @endif
-
     {{-- Slot untuk tombol tambahan --}}
     {{ $slot }}
-
 </div>
-
 {{-- Auto submit — no button needed --}}
 <script>
 (function () {
     const form = document.currentScript.closest('form');
     if (!form) return;
-
     // Category & date → submit langsung
     form.querySelectorAll('select, input[type=date]').forEach(el => {
         el.addEventListener('change', () => form.submit());
     });
-
     // Search text → submit setelah berhenti ketik 500ms
     const searchEl = form.querySelector('input[type=text]');
     if (searchEl) {

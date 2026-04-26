@@ -47,7 +47,7 @@
 <form method="GET" action="{{ url('/admin/harga') }}">
     <x-filter-bar
         placeholder="Search commodity name..."
-        :categories="$categoryList"
+        :categories="$categories" 
         :with-date="true"
         search-id="searchInput"
         category-id="categoryFilter"

@@ -63,7 +63,7 @@
 <form method="GET" action="{{ url()->current() }}">
     <x-filter-bar
         placeholder="Cari komoditas..."
-        :categories="optional($categoryList)->toArray() ?? []"
+        :categories="$categoryList ?? []"
         :withDate="true"
         searchId="komoditasSearch"
         categoryId="komoditasCategory"
@@ -114,7 +114,7 @@
                 @foreach($recentPrices as $item)
                 <tr>
                     <td class="commodity-name">{{ $item->commodity_name ?? '-' }}</td>
-                    <td class="region-text">{{ $item->category ?? '-' }}</td>
+                    <td class="region-text">{{ $item->categoryRelation->name ?? '-' }}</td>
                     <td class="price-text">Rp {{ number_format($item->harga_sekarang ?? 0, 0, ',', '.') }}</td>
                     <td>
                         @php
