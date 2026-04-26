@@ -20,7 +20,7 @@ class PrediksiController extends Controller
     public function index(Request $request)
     {
         $komoditasList = PrediksiService::getCommodities();
-        $selectedNama  = $request->get('komoditas', $komoditasList[0] ?? null);
+        $selectedNama  = $request->get('komoditas', null); // null = tidak auto-generate saat halaman dibuka
 
         $prediksiData = null;
         $chartData    = null;

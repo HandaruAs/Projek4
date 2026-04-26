@@ -132,6 +132,8 @@
                 <th>Komoditas</th>
                 <th>Generated</th>
                 <th>Days</th>
+                <th>MAE</th>
+                <th>RMSE</th>
                 <th>MAPE</th>
                 <th>Status</th>
                 <th>Aksi</th>
@@ -140,7 +142,7 @@
         <tbody>
             @foreach($predictions as $pred)
                 @php
-                    // {{-- accuracy_mape adalah flat field di dokumen (skema Flask) --}}
+                    // accuracy_mape adalah flat field di dokumen (skema Flask)
                     $mape = $pred->accuracy_mape ?? null;
                     if ($mape === null)  { $mapeClass = 'mape-muted'; }
                     elseif ($mape < 5)  { $mapeClass = 'mape-good'; }
@@ -153,6 +155,12 @@
                     <td class="date-text">{{ $pred->created_at ? $pred->created_at->format('d M Y H:i') : 'N/A' }}</td>
                     {{-- steps = field langsung di dokumen (bukan horizon_days) --}}
                     <td class="date-text">{{ $pred->steps ?? '-' }} days</td>
+                    <td class="date-text">
+                        {{ $pred->accuracy_mae !== null ? number_format($pred->accuracy_mae, 0) : '—' }}
+                    </td>
+                    <td class="date-text">
+                        {{ $pred->accuracy_rmse !== null ? number_format($pred->accuracy_rmse, 0) : '—' }}
+                    </td>
                     <td>
                         @if($mape !== null)
                             <span class="{{ $mapeClass }}">{{ number_format($mape, 2) }}%</span>
