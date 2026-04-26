@@ -12,6 +12,7 @@ use App\Http\Controllers\Web\UserPrediksiController;
 use App\Http\Controllers\Web\UserSimulasiController;
 use App\Http\Controllers\Web\UserChatAiController;
 use App\Http\Controllers\Web\UserProfilController;
+use App\Http\Controllers\Web\AdminApiStatusController; // ← tambahan
 
 // Landing Page
 Route::get('/', function () {
@@ -45,29 +46,32 @@ Route::middleware(['auth','role:admin'])->group(function () {
     Route::get('/admin/dashboard', [App\Http\Controllers\Web\AdminController::class, 'dashboard'])->name('dashboard');
     Route::prefix('admin')->group(function () {
 
-    // Komoditas
-    Route::get('/komoditas',           [KomoditasController::class, 'index'])->name('komoditas.index');
-    Route::get('/komoditas/create',    [KomoditasController::class, 'create'])->name('komoditas.create');
-    Route::post('/komoditas',          [KomoditasController::class, 'store'])->name('komoditas.store');
-    Route::get('/komoditas/{id}/edit', [KomoditasController::class, 'edit'])->name('komoditas.edit');
-    Route::put('/komoditas/{id}',      [KomoditasController::class, 'update'])->name('komoditas.update');
-    Route::delete('/komoditas/{id}',   [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
+        // Komoditas
+        Route::get('/komoditas',           [KomoditasController::class, 'index'])->name('komoditas.index');
+        Route::get('/komoditas/create',    [KomoditasController::class, 'create'])->name('komoditas.create');
+        Route::post('/komoditas',          [KomoditasController::class, 'store'])->name('komoditas.store');
+        Route::get('/komoditas/{id}/edit', [KomoditasController::class, 'edit'])->name('komoditas.edit');
+        Route::put('/komoditas/{id}',      [KomoditasController::class, 'update'])->name('komoditas.update');
+        Route::delete('/komoditas/{id}',   [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
 
         // Data Harga
         Route::get('/harga',               [HargaController::class, 'index'])->name('harga.index');
 
-
-    // Generate Prediksi
-    Route::get('/prediksi',            [PrediksiController::class, 'index'])->name('prediksi.index');
-    Route::post('/prediksi/generate',  [PrediksiController::class, 'generate'])->name('prediksi.generate');
-    Route::get('/prediksi/{id}',       [PrediksiController::class, 'show'])->name('prediksi.show');
-    Route::delete('/prediksi/{id}',    [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
+        // Generate Prediksi
+        Route::get('/prediksi',            [PrediksiController::class, 'index'])->name('prediksi.index');
+        Route::post('/prediksi/generate',  [PrediksiController::class, 'generate'])->name('prediksi.generate');
+        Route::get('/prediksi/{id}',       [PrediksiController::class, 'show'])->name('prediksi.show');
+        Route::delete('/prediksi/{id}',    [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
 
         // Profile
         Route::get('/profile',  [AdminController::class, 'profile'])->name('profile');
         Route::put('/profile',  [AdminController::class, 'updateProfile'])->name('profile.update');
 
-});
+        // ── API Status Monitor ── (tambahan)
+        Route::get('/api-status',       [AdminApiStatusController::class, 'index'])->name('admin.api-status');
+        Route::get('/api-status/check', [AdminApiStatusController::class, 'check'])->name('admin.api-status.check');
+
+    });
 
 });
 

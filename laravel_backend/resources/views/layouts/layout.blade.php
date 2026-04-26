@@ -61,6 +61,10 @@
     <a href="/admin/prediksi" class="nav-item {{ Request::is('admin/prediksi*') ? 'active' : '' }}">
       <i class="fas fa-wand-magic-sparkles"></i> Generate Prediksi
     </a>
+    {{-- ── API Status Monitor (admin only) ── --}}
+    <a href="/admin/api-status" class="nav-item {{ Request::is('admin/api-status*') ? 'active' : '' }}">
+      <i class="fas fa-circle-nodes"></i> API Status
+    </a>
   </nav>
 
   <nav class="nav-section bordered">
@@ -179,16 +183,53 @@
 
 </div>
 
-{{-- LOGOUT --}}
+{{-- LOGOUT FORM --}}
 <form id="logout-form" method="POST" action="{{ route('logout') }}" style="display:none">
   @csrf
 </form>
 
+{{-- MODAL KONFIRMASI LOGOUT --}}
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal-backdrop" onclick="closeLogout()"></div>
+  <div class="modal-box">
+    <div class="modal-icon modal-icon--rose">
+      <i class="fas fa-right-from-bracket"></i>
+    </div>
+    <div class="modal-title">{{ $isAdmin ? 'Keluar dari Admin Panel?' : 'Keluar dari SIMOPANG?' }}</div>
+    <div class="modal-desc">
+      Sesi kamu akan diakhiri dan kamu perlu login kembali untuk mengakses aplikasi.
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn--cancel" onclick="closeLogout()">
+        <i class="fas fa-xmark"></i> Batal
+      </button>
+      <button class="modal-btn modal-btn--confirm" onclick="doLogout()">
+        <i class="fas fa-right-from-bracket"></i> Ya, Keluar
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 function confirmLogout() {
+  document.getElementById('logoutModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLogout() {
+  document.getElementById('logoutModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function doLogout() {
   document.getElementById('logout-form').submit();
 }
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLogout();
+});
 </script>
-@stack('scripts')  
+
+@stack('scripts')
 </body>
 </html>
