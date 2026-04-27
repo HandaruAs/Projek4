@@ -66,7 +66,7 @@ class Prediction extends Model
         'accuracy_mae'  => 'float',
         'accuracy_rmse' => 'float',
         'accuracy_mape' => 'float',
-        'payload'       => 'array',
+        // 'payload' => 'array', // JANGAN dicast — MongoDB driver sudah decode sebagai array native
     ];
 
     // ──────────────────────────────────────────────────────────────
