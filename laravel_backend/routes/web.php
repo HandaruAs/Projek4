@@ -29,19 +29,21 @@ Route::get('/login',           [AuthController::class, 'showLogin'])->name('logi
 Route::post('/login',          [AuthController::class, 'login']);
 Route::post('/logout',         [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot.password');
+Route::get('/forgot-password',  [AuthController::class, 'showForgotPassword'])->name('forgot.password');
 Route::post('/forgot-password', [AuthController::class, 'sendOtp']);
 
-Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
+Route::get('/verify-otp',  [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
-Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('reset.password');
+Route::get('/reset-password',  [AuthController::class, 'showResetPassword'])->name('reset.password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
 // ── ADMIN ROUTES ─────────────────────────────────────────────
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
     // Komoditas
@@ -52,6 +54,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::put('/komoditas/{id}', [KomoditasController::class, 'update'])->name('komoditas.update');
     Route::delete('/komoditas/{id}', [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
 
+    // Harga
+    Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
     // Harga
     Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
 
@@ -87,4 +91,5 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     Route::put('/user/profil/password', [UserProfilController::class, 'password'])->name('user.profil.password');
 
     Route::get('/download-pdf', [UserController::class, 'downloadPdf'])->name('user.downloadPdf');
-});
+
+}); 

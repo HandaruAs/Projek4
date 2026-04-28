@@ -4,10 +4,18 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\PrediksiService;
+use App\Services\PrediksiService;
 use Illuminate\Http\Request;
 
 class UserSimulasiController extends Controller
 {
+    private PrediksiService $prediksiService;
+
+    public function __construct(PrediksiService $prediksiService)
+    {
+        $this->prediksiService = $prediksiService;
+    }
+
     private PrediksiService $prediksiService;
 
     public function __construct(PrediksiService $prediksiService)

@@ -12,6 +12,9 @@ class PrediksiController extends Controller
     private PrediksiService $prediksiService;
 
     public function __construct(PrediksiService $prediksiService)
+    private PrediksiService $prediksiService;
+
+    public function __construct(PrediksiService $prediksiService)
     {
         $this->prediksiService = $prediksiService;
     }
@@ -65,6 +68,7 @@ class PrediksiController extends Controller
         ));
     }
 
+    // POST /admin/prediksi/generate
     // POST /admin/prediksi/generate
     public function generate(Request $request)
     {
@@ -168,6 +172,7 @@ class PrediksiController extends Controller
         return view('admin.prediksi-detail', compact('prediction'));
     }
 
+    // DELETE /admin/prediksi/{id}
     // DELETE /admin/prediksi/{id}
     public function destroy(string $id)
     {

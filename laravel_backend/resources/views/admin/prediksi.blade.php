@@ -173,6 +173,10 @@
                             <i class="fas fa-circle" style="font-size:6px"></i> {{ $pred->status ?? 'Completed' }}
                         </span>
                     </td>
+                    <td class="commodity-name">{{ $pred->commodity_name }}</td>
+                    <td class="date-text">{{ $pred->horizon_days }} Days</td>
+                    <td class="date-text">{{ $mae ? number_format($mae, 2) : '—' }}</td>
+                    <td class="date-text">{{ $rmse ? number_format($rmse, 2) : '—' }}</td>
                     <td>
                         <div class="action-group">
                             <a href="{{ route('prediksi.show', $pred->id) }}" class="btn-action-edit">
