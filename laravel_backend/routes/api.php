@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CommodityController;
 use App\Http\Controllers\Api\PriceHistoryController;
 use App\Http\Controllers\Api\StatisticsController;
 use App\Http\Controllers\Api\PredictionController;
+use App\Http\Controllers\Api\PriceLatestController;
 
 // ── Authentication (public) ─────────────────────────────
 Route::post('/login',           [AuthController::class, 'login']);
@@ -25,12 +26,18 @@ Route::get('/categories',           [CategoryController::class, 'index']);
 Route::get('/price-histories',      [PriceHistoryController::class, 'index']);
 Route::get('/price-histories/{id}', [PriceHistoryController::class, 'show']);
 Route::get('/statistics',           [StatisticsController::class, 'index']);
-Route::get('/predictions',          [PredictionController::class, 'index']);
-Route::get('/predictions/{id}',     [PredictionController::class, 'show']);
+// Urutan ini penting — rekomendasi harus di atas {komoditas}
+Route::post('/predictions/rekomendasi',         [PredictionController::class, 'rekomendasi']);
+Route::get('/predictions',                      [PredictionController::class, 'index']);
+Route::get('/predictions/{komoditas}',          [PredictionController::class, 'show']);
+Route::get('/prices/latest',        [PriceLatestController::class, 'index']);
+Route::get('/prices/categories',    [PriceLatestController::class, 'categories']);
+Route::get('/prices/top',           [PriceLatestController::class, 'top']);
 
 // ── Protected: user yang login ───────────────────────────
 Route::middleware('auth:api')->group(function () {
     Route::get('/profile',  [AuthController::class, 'getProfile']);
     Route::put('/profile',  [AuthController::class, 'updateProfile']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout',  [AuthController::class, 'logout']);
 });

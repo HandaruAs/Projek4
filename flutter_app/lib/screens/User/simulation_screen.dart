@@ -17,7 +17,6 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
   final TextEditingController _konsumsiController =
       TextEditingController(text: '0.5');
 
-  // Hasil simulasi lokal (akan diisi dari provider / API)
   double? _hargaTerbaru;
   double? _hargaPrediksi;
   double? _totalSekarang;
@@ -51,9 +50,7 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     final provider = Provider.of<CommodityProvider>(context, listen: false);
     await provider.loadCommodities();
     if (provider.commodities.isNotEmpty && _selectedCommodityId == null) {
-      setState(() {
-        _selectedCommodityId = provider.commodities.first.id;
-      });
+      setState(() => _selectedCommodityId = provider.commodities.first.id);
     }
   }
 
@@ -69,36 +66,32 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     }
 
     final provider = Provider.of<CommodityProvider>(context, listen: false);
-    final success =
-        await provider.predictPrice(_selectedCommodityId!, konsumsi);
+    final success = await provider.predictPrice(_selectedCommodityId!, konsumsi);
 
     if (!mounted) return;
 
     if (success && provider.predictionResult != null) {
       final r = provider.predictionResult!;
-      final hargaTerbaru = (r['current_price'] as num?)?.toDouble() ?? 14500;
-      final hargaPrediksi =
-          (r['predicted_price'] as num?)?.toDouble() ?? 14862;
-      // total = harga * konsumsi * 4 minggu
-      final totalSekarang = hargaTerbaru * konsumsi * 4;
+      final hargaTerbaru  = (r['current_price']  as num?)?.toDouble() ?? 14500;
+      final hargaPrediksi = (r['predicted_price'] as num?)?.toDouble() ?? 14862;
+      final totalSekarang = hargaTerbaru  * konsumsi * 4;
       final totalPrediksi = hargaPrediksi * konsumsi * 4;
-      final selisih = totalPrediksi - totalSekarang;
-      final pct = totalSekarang > 0 ? (selisih / totalSekarang * 100) : 0.0;
+      final selisih       = totalPrediksi - totalSekarang;
+      final pct           = totalSekarang > 0 ? (selisih / totalSekarang * 100) : 0.0;
 
       setState(() {
-        _hargaTerbaru = hargaTerbaru;
+        _hargaTerbaru  = hargaTerbaru;
         _hargaPrediksi = hargaPrediksi;
         _totalSekarang = totalSekarang;
         _totalPrediksi = totalPrediksi;
-        _selisih = selisih;
+        _selisih       = selisih;
         _changePercent = pct;
-        _wawasanAI = r['insight'] as String? ?? _wawasanAI;
-        _hasilVisible = true;
+        _wawasanAI     = r['insight'] as String? ?? _wawasanAI;
+        _hasilVisible  = true;
       });
       _animCtrl.forward(from: 0);
     } else {
-      _showSnack(provider.errorMessage ?? 'Gagal menghitung simulasi',
-          isError: true);
+      _showSnack(provider.errorMessage ?? 'Gagal menghitung simulasi', isError: true);
     }
   }
 
@@ -118,11 +111,10 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  BUILD
-  // ─────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Consumer<CommodityProvider>(
       builder: (context, provider, _) {
         return Scaffold(
@@ -135,22 +127,21 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                   children: [
                     _buildPageHeader(),
                     const SizedBox(height: 20),
-                    _buildInputCard(provider),
+                    _buildInputCard(provider, isDark),
                     const SizedBox(height: 16),
-                    _buildAIInsight(),
+                    _buildAIInsight(isDark),
                     const SizedBox(height: 20),
-                    if (_hasilVisible) ...[
+                    if (_hasilVisible)
                       FadeTransition(
                         opacity: _fadeAnim,
                         child: Column(
                           children: [
                             _buildPriceGrid(),
                             const SizedBox(height: 16),
-                            _buildBudgetCard(),
+                            _buildBudgetCard(isDark),
                           ],
                         ),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -162,7 +153,7 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     );
   }
 
-  // ── PAGE HEADER ──────────────────────────────────────────
+  // ── PAGE HEADER ── (gradient, tidak perlu isDark)
   Widget _buildPageHeader() {
     return Container(
       width: double.infinity,
@@ -175,16 +166,12 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
             'Simulasi Pengeluaran AI',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 6),
           Text(
@@ -197,104 +184,122 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     );
   }
 
-  // ── INPUT CARD ───────────────────────────────────────────
-  Widget _buildInputCard(CommodityProvider provider) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+  // ── INPUT CARD ──
+  Widget _buildInputCard(CommodityProvider provider, bool isDark) {
+    final cardBg    = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final labelColor = isDark ? Colors.white : const Color(0xFF1A237E);
+    final subColor  = isDark ? Colors.grey[400]! : Colors.grey;
+    final iconBg    = isDark ? const Color(0xFF1976D2).withOpacity(0.2) : const Color(0xFFE3F2FD);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
+                    color: iconBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.monitor,
-                      color: Color(0xFF1976D2), size: 20),
+                  child: const Icon(Icons.monitor, color: Color(0xFF1976D2), size: 20),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Input Data Konsumsi',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: Color(0xFF1A237E)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: labelColor),
                 ),
               ],
             ),
             const SizedBox(height: 18),
 
-            // Pilih Komoditas
-            const Text('Pilih Komoditas',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('Pilih Komoditas',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E))),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               isExpanded: true,
               value: _selectedCommodityId,
+              dropdownColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+              style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 14),
               items: provider.commodities.map((c) {
                 return DropdownMenuItem(value: c.id, child: Text(c.name));
               }).toList(),
               onChanged: (val) => setState(() => _selectedCommodityId = val),
               decoration: InputDecoration(
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                filled: true,
+                fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade50,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Konsumsi
-            const Text('Konsumsi per Minggu (Kg/Liter)',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('Konsumsi per Minggu (Kg/Liter)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E))),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _konsumsiController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade50,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                      ),
                       hintText: '0.5',
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                      hintStyle: TextStyle(color: Colors.grey[500]),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 13),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
+                    color: isDark ? const Color(0xFF1976D2).withOpacity(0.2) : const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFBBDEFB)),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF1976D2).withOpacity(0.5) : const Color(0xFFBBDEFB),
+                    ),
                   ),
                   child: const Text('kg',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1976D2))),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1976D2))),
                 ),
               ],
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               '*Data ini akan digunakan untuk menghitung total bulanan',
-              style: TextStyle(fontSize: 11, color: Colors.grey),
+              style: TextStyle(fontSize: 11, color: subColor),
             ),
             const SizedBox(height: 18),
 
-            // Tombol Hitung
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -302,13 +307,11 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                 builder: (_, prov, __) => ElevatedButton.icon(
                   onPressed: prov.isLoading ? null : _hitungSimulasi,
                   icon: const Icon(Icons.calculate_outlined, size: 18),
-                  label: const Text('Hitung Estimasi',
-                      style: TextStyle(fontSize: 15)),
+                  label: const Text('Hitung Estimasi', style: TextStyle(fontSize: 15)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1976D2),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 2,
                   ),
                 ),
@@ -320,43 +323,39 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     );
   }
 
-  // ── AI INSIGHT ───────────────────────────────────────────
-  Widget _buildAIInsight() {
+  // ── AI INSIGHT ──
+  Widget _buildAIInsight(bool isDark) {
+    final bgColor     = isDark ? const Color(0xFF1B5E20).withOpacity(0.2) : const Color(0xFFE8F5E9);
+    final borderColor = isDark ? const Color(0xFF2E7D32).withOpacity(0.5) : const Color(0xFFA5D6A7);
+    final titleColor  = isDark ? const Color(0xFF81C784) : const Color(0xFF1B5E20);
+    final textColor   = isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32);
+    final iconBg      = isDark ? const Color(0xFF43A047).withOpacity(0.2) : const Color(0xFF43A047).withOpacity(0.15);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFA5D6A7)),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF43A047).withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.info_outline,
-                color: Color(0xFF2E7D32), size: 18),
+            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+            child: Icon(Icons.info_outline, color: textColor, size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Wawasan AI',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Color(0xFF1B5E20))),
+                Text('Wawasan AI',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: titleColor)),
                 const SizedBox(height: 4),
-                Text(
-                  _wawasanAI,
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF2E7D32), height: 1.5),
-                ),
+                Text(_wawasanAI,
+                    style: TextStyle(fontSize: 12, color: textColor, height: 1.5)),
               ],
             ),
           ),
@@ -365,7 +364,7 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     );
   }
 
-  // ── PRICE GRID ───────────────────────────────────────────
+  // ── PRICE GRID ── (gradient, tidak perlu isDark)
   Widget _buildPriceGrid() {
     return Row(
       children: [
@@ -393,10 +392,7 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: (isPredict
-                    ? const Color(0xFF0288D1)
-                    : const Color(0xFF1565C0))
-                .withOpacity(0.3),
+            color: (isPredict ? const Color(0xFF0288D1) : const Color(0xFF1565C0)).withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -408,122 +404,97 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
           if (isPredict)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.25),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text('AI Prediction',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold)),
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
             ),
-          Text(
-            isPredict ? 'Prediksi Bulan Depan' : 'Harga Saat Ini',
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
-          ),
+          Text(isPredict ? 'Prediksi Bulan Depan' : 'Harga Saat Ini',
+              style: const TextStyle(color: Colors.white70, fontSize: 11)),
           const SizedBox(height: 6),
-          Text(
-            harga != null ? _fmt.format(harga) : 'Rp -',
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold),
-          ),
-          const Text('/kg',
-              style: TextStyle(color: Colors.white60, fontSize: 11)),
+          Text(harga != null ? _fmt.format(harga) : 'Rp -',
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('/kg', style: TextStyle(color: Colors.white60, fontSize: 11)),
           const SizedBox(height: 10),
           const Divider(color: Colors.white24, height: 1),
           const SizedBox(height: 8),
-          Text(
-            isPredict
-                ? 'Estimasi Bulan Depan'
-                : 'Total Pengeluaran Sekarang',
-            style: const TextStyle(color: Colors.white70, fontSize: 10),
-          ),
-          Text(
-            total != null ? '${_fmt.format(total)}/bln' : 'Rp -/bln',
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w700),
-          ),
+          Text(isPredict ? 'Estimasi Bulan Depan' : 'Total Pengeluaran Sekarang',
+              style: const TextStyle(color: Colors.white70, fontSize: 10)),
+          Text(total != null ? '${_fmt.format(total)}/bln' : 'Rp -/bln',
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
         ],
       ),
     );
   }
 
-  // ── BUDGET CARD ──────────────────────────────────────────
-  Widget _buildBudgetCard() {
-    final konsumsiText = _konsumsiController.text.isNotEmpty
-        ? _konsumsiController.text
-        : '0.5';
-    final selisih = _selisih ?? 0;
-    final pct = _changePercent ?? 0;
-    final isUp = selisih >= 0;
+  // ── BUDGET CARD ──
+  Widget _buildBudgetCard(bool isDark) {
+    final cardBg     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final titleColor = isDark ? Colors.white : const Color(0xFF1A237E);
+    final subColor   = isDark ? Colors.grey[400]! : Colors.grey;
+    final konsumsiText = _konsumsiController.text.isNotEmpty ? _konsumsiController.text : '0.5';
+    final selisih    = _selisih ?? 0;
+    final pct        = _changePercent ?? 0;
+    final isUp       = selisih >= 0;
 
-    return Card(
-      elevation: 2,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Ringkasan Anggaran',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: Color(0xFF1A237E))),
+                    Text('Ringkasan Anggaran',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: titleColor)),
                     Text(
                       'Berdasarkan konsumsi $konsumsiText kg per minggu',
-                      style: const TextStyle(
-                          fontSize: 11, color: Colors.grey),
+                      style: TextStyle(fontSize: 11, color: subColor),
                     ),
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.file_present_outlined,
-                      color: Color(0xFF1976D2)),
+                  icon: const Icon(Icons.file_present_outlined, color: Color(0xFF1976D2)),
                   tooltip: 'Unduh Ringkasan',
-                  onPressed: () =>
-                      _showSnack('Fitur unduh akan segera hadir'),
+                  onPressed: () => _showSnack('Fitur unduh akan segera hadir'),
                 ),
               ],
             ),
             const SizedBox(height: 14),
-            const Divider(height: 1),
+            Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
             const SizedBox(height: 14),
 
-            // Selisih + Rekomendasi
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Selisih
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Selisih Pengeluaran',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                      Text('Selisih Pengeluaran', style: TextStyle(fontSize: 12, color: subColor)),
                       const SizedBox(height: 6),
                       Row(
                         children: [
                           Icon(
-                            isUp
-                                ? Icons.trending_up
-                                : Icons.trending_down,
+                            isUp ? Icons.trending_up : Icons.trending_down,
                             color: isUp ? Colors.red : Colors.green,
                             size: 18,
                           ),
@@ -531,26 +502,22 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                           Text(
                             '${isUp ? '+' : '-'} ${_fmt.format(selisih.abs())}',
                             style: TextStyle(
-                                color: isUp ? Colors.red : Colors.green,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14),
+                              color: isUp ? Colors.red : Colors.green,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       RichText(
                         text: TextSpan(
-                          style: const TextStyle(
-                              fontSize: 11, color: Colors.grey),
+                          style: TextStyle(fontSize: 11, color: subColor),
                           children: [
-                            const TextSpan(
-                                text: 'Peningkatan biaya estimasi sekitar '),
+                            const TextSpan(text: 'Peningkatan biaya estimasi sekitar '),
                             TextSpan(
-                              text:
-                                  '${pct.toStringAsFixed(1)}%',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red),
+                              text: '${pct.toStringAsFixed(1)}%',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
                             ),
                           ],
                         ),
@@ -559,21 +526,18 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Rekomendasi
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Rekomendasi Tindakan',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                      Text('Rekomendasi Tindakan', style: TextStyle(fontSize: 12, color: subColor)),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _actionBtn('Stok Lebih Awal', isPrimary: true),
-                          _actionBtn('Cari Promo', isPrimary: false),
+                          _actionBtn('Stok Lebih Awal', isPrimary: true, isDark: isDark),
+                          _actionBtn('Cari Promo', isPrimary: false, isDark: isDark),
                         ],
                       ),
                     ],
@@ -583,25 +547,22 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
             ),
 
             const SizedBox(height: 16),
-
-            // Mini Chart
-            _buildMiniChart(),
+            _buildMiniChart(isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _actionBtn(String label, {required bool isPrimary}) {
+  Widget _actionBtn(String label, {required bool isPrimary, required bool isDark}) {
     return GestureDetector(
       onTap: () {},
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: isPrimary
               ? const Color(0xFF1976D2)
-              : const Color(0xFFE3F2FD),
+              : (isDark ? const Color(0xFF1976D2).withOpacity(0.2) : const Color(0xFFE3F2FD)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -616,38 +577,33 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     );
   }
 
-  // ── MINI CHART ───────────────────────────────────────────
-  Widget _buildMiniChart() {
+  Widget _buildMiniChart(bool isDark) {
+    final gridColor = isDark ? Colors.grey.shade800 : const Color(0xFFE5EAF3);
+    final labelColor = isDark ? Colors.grey[500]! : Colors.grey;
+
     return Column(
       children: [
         SizedBox(
           height: 80,
           child: CustomPaint(
-            painter: _MiniChartPainter(),
+            painter: _MiniChartPainter(gridColor: gridColor),
             child: const SizedBox.expand(),
           ),
         ),
         const SizedBox(height: 6),
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('MAR',
-                style: TextStyle(fontSize: 10, color: Colors.grey)),
-            Text('APR',
-                style: TextStyle(fontSize: 10, color: Colors.grey)),
-            Text('MEI',
-                style: TextStyle(fontSize: 10, color: Colors.grey)),
-            Text('JUN →',
-                style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.bold)),
+            Text('MAR', style: TextStyle(fontSize: 10, color: labelColor)),
+            Text('APR', style: TextStyle(fontSize: 10, color: labelColor)),
+            Text('MEI', style: TextStyle(fontSize: 10, color: labelColor)),
+            Text('JUN →', style: TextStyle(fontSize: 10, color: labelColor, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Grafik Tren Harga 4 Bulan Terakhir & Prediksi',
-          style: TextStyle(fontSize: 11, color: Colors.grey),
+          style: TextStyle(fontSize: 11, color: labelColor),
           textAlign: TextAlign.center,
         ),
       ],
@@ -655,22 +611,21 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
   }
 }
 
-// ── MINI CHART PAINTER ────────────────────────────────────
+// ── MINI CHART PAINTER ──
 class _MiniChartPainter extends CustomPainter {
+  final Color gridColor;
+  const _MiniChartPainter({required this.gridColor});
+
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
 
-    // Grid lines
-    final gridPaint = Paint()
-      ..color = const Color(0xFFE5EAF3)
-      ..strokeWidth = 1;
+    final gridPaint = Paint()..color = gridColor..strokeWidth = 1;
     for (final y in [h * .22, h * .5, h * .78]) {
       canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
     }
 
-    // Actual points (left half)
     final actualPoints = [
       Offset(0, h * .69),
       Offset(w * .165, h * .64),
@@ -678,97 +633,55 @@ class _MiniChartPainter extends CustomPainter {
       Offset(w * .5, h * .5),
     ];
 
-    // Predict points (right half, dashed)
     final predictPoints = [
       Offset(w * .5, h * .5),
       Offset(w * .75, h * .33),
       Offset(w, h * .24),
     ];
 
-    // Area fill actual
-    final areaActualPath = Path()
-      ..moveTo(actualPoints.first.dx, actualPoints.first.dy);
+    final areaActualPath = Path()..moveTo(actualPoints.first.dx, actualPoints.first.dy);
     _addCurve(areaActualPath, actualPoints);
-    areaActualPath
-      ..lineTo(w * .5, h)
-      ..lineTo(0, h)
-      ..close();
-    canvas.drawPath(
-        areaActualPath,
-        Paint()
-          ..shader = LinearGradient(
-            colors: [
-              const Color(0xFF2563EB).withOpacity(.18),
-              const Color(0xFF2563EB).withOpacity(0),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ).createShader(Rect.fromLTWH(0, 0, w, h)));
+    areaActualPath..lineTo(w * .5, h)..lineTo(0, h)..close();
+    canvas.drawPath(areaActualPath, Paint()
+      ..shader = LinearGradient(
+        colors: [const Color(0xFF2563EB).withOpacity(.18), const Color(0xFF2563EB).withOpacity(0)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Rect.fromLTWH(0, 0, w, h)));
 
-    // Line actual
     final linePath = Path()..moveTo(actualPoints.first.dx, actualPoints.first.dy);
     _addCurve(linePath, actualPoints);
-    canvas.drawPath(
-        linePath,
-        Paint()
-          ..color = const Color(0xFF2563EB)
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round);
+    canvas.drawPath(linePath, Paint()
+      ..color = const Color(0xFF2563EB)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round);
 
-    // Area fill predict
-    final areaPredictPath = Path()
-      ..moveTo(predictPoints.first.dx, predictPoints.first.dy);
+    final areaPredictPath = Path()..moveTo(predictPoints.first.dx, predictPoints.first.dy);
     _addCurve(areaPredictPath, predictPoints);
-    areaPredictPath
-      ..lineTo(w, h)
-      ..lineTo(w * .5, h)
-      ..close();
-    canvas.drawPath(
-        areaPredictPath,
-        Paint()
-          ..shader = LinearGradient(
-            colors: [
-              const Color(0xFF0EA5E9).withOpacity(.22),
-              const Color(0xFF0EA5E9).withOpacity(0),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ).createShader(Rect.fromLTWH(0, 0, w, h)));
+    areaPredictPath..lineTo(w, h)..lineTo(w * .5, h)..close();
+    canvas.drawPath(areaPredictPath, Paint()
+      ..shader = LinearGradient(
+        colors: [const Color(0xFF0EA5E9).withOpacity(.22), const Color(0xFF0EA5E9).withOpacity(0)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Rect.fromLTWH(0, 0, w, h)));
 
-    // Line predict (dashed)
     _drawDashedPath(canvas, predictPoints, const Color(0xFF0EA5E9));
 
-    // Divider
-    canvas.drawLine(
-        Offset(w * .5, h * .1),
-        Offset(w * .5, h * .88),
-        Paint()
-          ..color = const Color(0xFFE5EAF3)
-          ..strokeWidth = 1
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round);
+    canvas.drawLine(Offset(w * .5, h * .1), Offset(w * .5, h * .88),
+        Paint()..color = gridColor..strokeWidth = 1..style = PaintingStyle.stroke);
 
-    // Dots
     for (int i = 0; i < actualPoints.length; i++) {
       final r = i == actualPoints.length - 1 ? 4.5 : 3.5;
-      canvas.drawCircle(actualPoints[i], r,
-          Paint()..color = const Color(0xFF2563EB));
+      canvas.drawCircle(actualPoints[i], r, Paint()..color = const Color(0xFF2563EB));
     }
     for (int i = 1; i < predictPoints.length; i++) {
-      canvas.drawCircle(
-          predictPoints[i],
-          3.5,
-          Paint()
-            ..color = Colors.white
-            ..style = PaintingStyle.fill);
-      canvas.drawCircle(
-          predictPoints[i],
-          3.5,
-          Paint()
-            ..color = const Color(0xFF0EA5E9)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5);
+      canvas.drawCircle(predictPoints[i], 3.5, Paint()..color = Colors.white..style = PaintingStyle.fill);
+      canvas.drawCircle(predictPoints[i], 3.5, Paint()
+        ..color = const Color(0xFF0EA5E9)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5);
     }
   }
 
@@ -792,7 +705,7 @@ class _MiniChartPainter extends CustomPainter {
     _addCurve(fullPath, pts);
 
     const dashLen = 6.0;
-    const gapLen = 4.0;
+    const gapLen  = 4.0;
     final metrics = fullPath.computeMetrics();
     for (final metric in metrics) {
       double dist = 0;
@@ -805,5 +718,5 @@ class _MiniChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _MiniChartPainter old) => old.gridColor != gridColor;
 }

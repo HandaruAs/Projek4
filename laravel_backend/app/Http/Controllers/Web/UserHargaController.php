@@ -1,62 +1,68 @@
 <?php
-
 namespace App\Http\Controllers\Web;
-
 use App\Http\Controllers\Controller;
 use App\Models\PriceHistory;
-use App\Models\Commodity;
+use App\Models\Category;
 use Illuminate\Http\Request;
 
 class UserHargaController extends Controller
 {
     public function harga(Request $request)
     {
-        $search   = $request->get('searchInput');
-        $category = $request->get('categoryFilter');
-        $date     = $request->get('dateFilter');
+        $search   = $request->get('search');
+        $category = $request->get('category'); // sekarang berisi category_id
+        $date     = $request->get('date');
 
-        // Base query pakai model yang benar
-        $baseQuery = PriceHistory::query();
-
+        $baseNoDate = PriceHistory::query();
         if ($search) {
-            $baseQuery->where('commodity_name', 'like', "%{$search}%");
+            $baseNoDate->where('commodity_name', 'like', "%{$search}%");
         }
-        if ($category && $category != 'Semua') {
-            $baseQuery->where('category', $category);
-        }
-        if ($date) {
-            $baseQuery->whereDate('date', $date);
+        if ($category && $category !== 'Semua') {
+            $baseNoDate->where('category_id', $category); // FIX
         }
 
-        // Pagination
+        $baseQuery = clone $baseNoDate;
+        if ($date) {
+            $start = \Carbon\Carbon::parse($date)->startOfDay()->toDateTimeString();
+            $end   = \Carbon\Carbon::parse($date)->endOfDay()->toDateTimeString();
+            $baseQuery->whereBetween('date', [$start, $end]);
+        }
+
         $hargaList = (clone $baseQuery)
             ->orderBy('date', 'desc')
             ->paginate(10)
-            ->appends(request()->query());
+            ->appends($request->query());
 
-        // Stat cards ikut filter
-        $totalRecords   = (clone $baseQuery)->count();
-        $todayRecords   = (clone $baseQuery)
-            ->whereDate('date', now()->toDateString())
-            ->count();
-        $totalKomoditas = (clone $baseQuery)
-            ->distinct('commodity_name')
-            ->count();
+        // Eager load categoryRelation
+        $hargaList->load('categoryRelation');
 
-        // Kategori untuk filter bar
-        $categoryList = PriceHistory::distinct('category')
-            ->pluck('category')
-            ->filter()
-            ->sort()
-            ->values();
-        $categoryList = collect(['Semua'])->merge($categoryList)->toArray();
+        $todayStart = now()->startOfDay()->toDateTimeString();
+        $todayEnd   = now()->endOfDay()->toDateTimeString();
+
+        $avgHargaHariIni = (clone $baseNoDate)
+            ->whereBetween('date', [$todayStart, $todayEnd])
+            ->avg('harga_sekarang');
+
+        $naikTertinggi = (clone $baseNoDate)
+            ->whereBetween('date', [$todayStart, $todayEnd])
+            ->where('selisih', '>', 0)
+            ->orderBy('selisih', 'desc')
+            ->first();
+
+        $totalKomoditas = (clone $baseQuery)->count('commodity_name');
+
+        // FIX: categoryList dari model Category
+        $categoryList = Category::orderBy('name')->get(['_id', 'name']);
+
+        $selectedCategoryName = $category ? optional(\App\Models\Category::find($category))->name : null;
 
         return view('user.harga', compact(
             'hargaList',
-            'totalRecords',
-            'todayRecords',
+            'avgHargaHariIni',
+            'naikTertinggi',
             'totalKomoditas',
-            'categoryList'
+            'categoryList',
+            'selectedCategoryName'
         ));
     }
 }

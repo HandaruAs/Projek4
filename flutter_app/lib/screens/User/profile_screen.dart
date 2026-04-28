@@ -104,6 +104,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark      = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -132,11 +135,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // ── Avatar ──────────────────────────
               CircleAvatar(
                 radius: 50,
-                backgroundColor: const Color(0xFF1976D2).withOpacity(0.1),
-                child: const Icon(
+                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                child: Icon(
                   Icons.person,
                   size: 50,
-                  color: Color(0xFF1976D2),
+                  color: colorScheme.primary,
                 ),
               ),
 
@@ -145,10 +148,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Consumer<AuthProvider>(
                 builder: (context, auth, _) => Text(
                   auth.currentUser?.name ?? '',
-                  style: const TextStyle(
-                    fontSize: 20,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
                   ),
                 ),
               ),
@@ -160,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   auth.currentUser?.email ?? '',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: Colors.grey.shade500,
                   ),
                 ),
               ),
@@ -173,6 +174,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label: 'Nama',
                 icon: Icons.person_outline,
                 enabled: _isEditing,
+                isDark: isDark,
+                primary: colorScheme.primary,
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Nama tidak boleh kosong' : null,
               ),
@@ -185,6 +188,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label: 'Email',
                 icon: Icons.email_outlined,
                 enabled: _isEditing,
+                isDark: isDark,
+                primary: colorScheme.primary,
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Email tidak boleh kosong' : null,
@@ -198,6 +203,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label: 'No. HP (opsional)',
                 icon: Icons.phone_outlined,
                 enabled: _isEditing,
+                isDark: isDark,
+                primary: colorScheme.primary,
                 keyboardType: TextInputType.phone,
                 hint: 'ex: 08562561612',
               ),
@@ -210,6 +217,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label: 'Alamat (opsional)',
                 icon: Icons.location_on_outlined,
                 enabled: _isEditing,
+                isDark: isDark,
+                primary: colorScheme.primary,
                 keyboardType: TextInputType.streetAddress,
                 maxLines: 3,
                 hint: 'ex: Jl. Hayam Wuruk No. 1, Jember',
@@ -265,6 +274,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    required bool isDark,
+    required Color primary,
     bool enabled = true,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
@@ -277,24 +288,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       keyboardType: keyboardType,
       validator: validator,
       maxLines: maxLines,
+      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1A1A2E)),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF1976D2)),
+        prefixIcon: Icon(icon, color: primary),
         filled: true,
-        fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
+        fillColor: enabled
+            ? (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade50)
+            : (isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF1976D2)),
+          borderSide: BorderSide(color: primary),
         ),
       ),
     );

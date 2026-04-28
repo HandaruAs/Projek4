@@ -8,7 +8,7 @@ class ApiService {
   ApiService._internal();
 
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.10.180.166:8000/api',
+    baseUrl: 'http://172.23.48.1:8000/api',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -26,7 +26,9 @@ class ApiService {
     }
   }
 
-  // ── AUTH ────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // AUTH
+  // ══════════════════════════════════════════════════════════
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
@@ -36,7 +38,8 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -57,33 +60,45 @@ class ApiService {
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
 
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
-      final response = await _dio.post('/forgot-password', data: {'email': email});
+      final response = await _dio.post(
+        '/forgot-password',
+        data: {'email': email},
+      );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
 
   Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
     try {
-      final response = await _dio.post('/verify-otp', data: {'email': email, 'otp': otp});
+      final response = await _dio.post(
+        '/verify-otp',
+        data: {'email': email, 'otp': otp},
+      );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
 
   Future<Map<String, dynamic>> resetPassword(
-    String email, String otp, String password, String passwordConfirmation,
+    String email,
+    String otp,
+    String password,
+    String passwordConfirmation,
   ) async {
     try {
       final response = await _dio.post('/reset-password', data: {
@@ -94,7 +109,8 @@ class ApiService {
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -108,25 +124,85 @@ class ApiService {
     }
   }
 
-  // ── COMMODITIES ─────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // PROFILE
+  // ══════════════════════════════════════════════════════════
+
+  Future<Map<String, dynamic>> getProfile() async {
+    try {
+      await _addAuthHeader();
+      final response = await _dio.get('/profile');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    String? name,
+    String? email,
+    String? phone,
+    String? address,
+  }) async {
+    try {
+      await _addAuthHeader();
+      final response = await _dio.put('/profile', data: {
+        if (name != null) 'name': name,
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        if (address != null) 'address': address,
+      });
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _addAuthHeader();
+      final response = await _dio.post('/change-password', data: {
+        'old_password': oldPassword,
+        'password': newPassword,
+        'password_confirmation': newPassword,
+      });
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // COMMODITIES
+  // ══════════════════════════════════════════════════════════
 
   Future<Map<String, dynamic>> getCommodities() async {
     try {
       final response = await _dio.get('/commodities');
-      
-      // DEBUG
       final data = Map<String, dynamic>.from(response.data);
-      if (data['data'] != null) {
+
+      if (kDebugMode && data['data'] != null) {
         final list = data['data'] as List;
-        print('=== TOTAL FROM API: ${list.length}');
+        debugPrint('=== TOTAL COMMODITIES: ${list.length}');
         list.take(3).forEach((item) {
-          print('=== item: name=${item['name']}, category=${item['category']}');
+          debugPrint(
+              '=== item: name=${item['name']}, category=${item['category']}');
         });
       }
-      
+
       return data;
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
@@ -136,54 +212,126 @@ class ApiService {
       final response = await _dio.get('/commodities/$commodityId');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
 
-  // ── PRICE HISTORIES ─────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // PRICE HISTORIES
+  // ══════════════════════════════════════════════════════════
 
   Future<Map<String, dynamic>> getPriceHistory(
     String commodityId,
     String period,
   ) async {
     try {
-      // Konversi period ke start_date & end_date yang dimengerti API Laravel
-      final now      = DateTime.now();
-      final endDate  = now.toIso8601String().substring(0, 10);
+      final now = DateTime.now();
+      final endDate = now.toIso8601String().substring(0, 10);
       late String startDate;
 
       switch (period) {
         case '7days':
-          startDate = now.subtract(const Duration(days: 7)).toIso8601String().substring(0, 10);
+          startDate = now
+              .subtract(const Duration(days: 7))
+              .toIso8601String()
+              .substring(0, 10);
           break;
         case '30days':
-          startDate = now.subtract(const Duration(days: 30)).toIso8601String().substring(0, 10);
+          startDate = now
+              .subtract(const Duration(days: 30))
+              .toIso8601String()
+              .substring(0, 10);
           break;
         case '3months':
-          startDate = now.subtract(const Duration(days: 90)).toIso8601String().substring(0, 10);
+          startDate = now
+              .subtract(const Duration(days: 90))
+              .toIso8601String()
+              .substring(0, 10);
           break;
         default:
-          startDate = now.subtract(const Duration(days: 7)).toIso8601String().substring(0, 10);
+          startDate = now
+              .subtract(const Duration(days: 7))
+              .toIso8601String()
+              .substring(0, 10);
       }
 
       final response = await _dio.get(
         '/price-histories',
         queryParameters: {
           'commodity_id': commodityId,
-          'start_date':   startDate,
-          'end_date':     endDate,
-          'per_page':     '200',
+          'start_date': startDate,
+          'end_date': endDate,
+          'per_page': '200',
         },
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
 
-  // ── PREDICTIONS ──────────────────────────────────────────
+  /// GET /api/prices/latest
+  /// Harga terbaru semua komoditas.
+  /// [category] opsional untuk filter kategori.
+  /// [search] opsional untuk filter nama komoditas.
+  Future<Map<String, dynamic>> getLatestPrices({
+    String? category,
+    String? search,
+  }) async {
+    try {
+      final params = <String, String>{};
+      if (category != null && category != 'Semua')
+        params['category'] = category;
+      if (search != null && search.isNotEmpty) params['search'] = search;
+
+      final response = await _dio.get(
+        '/prices/latest',
+        queryParameters: params.isNotEmpty ? params : null,
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
+  /// GET /api/prices/top?limit=3
+  /// Top N komoditas dengan harga tertinggi.
+  Future<Map<String, dynamic>> getTopPrices({int limit = 3}) async {
+    try {
+      final response = await _dio.get(
+        '/prices/top',
+        queryParameters: {'limit': limit.toString()},
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
+  /// GET /api/prices/categories
+  /// Daftar kategori unik dari seluruh komoditas.
+  Future<Map<String, dynamic>> getPriceCategories() async {
+    try {
+      final response = await _dio.get('/prices/categories');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // PREDICTIONS
+  // ══════════════════════════════════════════════════════════
 
   Future<Map<String, dynamic>> predictPrice(
     String commodityId,
@@ -197,56 +345,39 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
       throw _handleError(e);
     }
   }
 
-  Future<Map<String, dynamic>> getProfile() async {
-  try {
-    await _addAuthHeader();
-    final response = await _dio.get('/profile');
-    return Map<String, dynamic>.from(response.data);
-  } on DioException catch (e) {
-    if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
-    throw _handleError(e);
-  }
-}
+  // ══════════════════════════════════════════════════════════
+  // STATISTICS
+  // ══════════════════════════════════════════════════════════
 
-Future<Map<String, dynamic>> updateProfile({
-  String? name,
-  String? email,
-  String? phone,
-  String? address,
-}) async {
-  try {
-    await _addAuthHeader();
-    final response = await _dio.put('/profile', data: {
-      if (name    != null) 'name':    name,
-      if (email   != null) 'email':   email,
-      if (phone   != null) 'phone':   phone,
-      if (address != null) 'address': address,
-    });
-    return Map<String, dynamic>.from(response.data);
-  } on DioException catch (e) {
-    if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
-    throw _handleError(e);
+  Future<Map<String, dynamic>> getStatistics() async {
+    try {
+      final response = await _dio.get('/statistics');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
   }
-}
 
-Future<Map<String, dynamic>> getStatistics() async {
-  try {
-    final response = await _dio.get('/statistics');
-    return Map<String, dynamic>.from(response.data);
-  } on DioException catch (e) {
-    if (e.response != null) return Map<String, dynamic>.from(e.response!.data);
-    throw _handleError(e);
-  }
-}
-
-  // ── HELPER ───────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // HELPER
+  // ══════════════════════════════════════════════════════════
 
   String _handleError(DioException error) {
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'Koneksi timeout. Periksa jaringan Anda.';
+    }
+    if (error.type == DioExceptionType.connectionError) {
+      return 'Tidak dapat terhubung ke server.';
+    }
     if (error.response != null) {
       return error.response?.data['message'] ?? 'Server error';
     }
