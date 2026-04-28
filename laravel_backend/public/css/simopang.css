@@ -2294,3 +2294,330 @@ table.u-table  { width: 100%; border-collapse: collapse; }
         font-size: 10px;
     }
 }
+/* ═══════════════════════════════════════════════════
+   DARK MODE — tambahkan di paling bawah simopang.css
+═══════════════════════════════════════════════════ */
+
+html.dark {
+  --sidebar-bg:     #060d1a;
+  --sidebar-hover:  rgba(255,255,255,.07);
+  --sidebar-active: rgba(59,130,246,.22);
+
+  --accent:         #60a5fa;
+  --accent-dark:    #3b82f6;
+  --accent-light:   rgba(59,130,246,.12);
+  --accent-glow:    rgba(96,165,250,.2);
+  --emerald:        #34d399;
+  --em-light:       rgba(52,211,153,.12);
+  --amber:          #fbbf24;
+  --am-light:       rgba(251,191,36,.12);
+  --rose:           #fb7185;
+  --rose-light:     rgba(251,113,133,.12);
+
+  --bg:         #0f172a;
+  --surface:    #1e293b;
+  --surface-2:  #162032;
+  --border:     #2a3a50;
+
+  --text-1:  #f1f5f9;
+  --text-2:  #94a3b8;
+  --text-3:  #4b6580;
+
+  --shadow-xs: 0 1px 3px rgba(0,0,0,.3);
+  --shadow-sm: 0 2px 10px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.2);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.2);
+  --shadow:    0 4px 22px rgba(0,0,0,.45);
+}
+
+/* Topbar dark */
+html.dark .topbar {
+  background: rgba(30,41,59,.92);
+  border-bottom-color: var(--border);
+}
+
+/* Stat cards dark — hapus gradient putih hover */
+html.dark tbody tr:hover {
+  background: rgba(255,255,255,.03);
+}
+
+/* Table header dark */
+html.dark thead th {
+  background: #162032;
+}
+
+/* Table footer dark */
+html.dark .table-footer,
+html.dark .u-table-footer {
+  background: #162032;
+}
+
+/* Search box dark */
+html.dark .search-box {
+  background: var(--surface-2);
+}
+html.dark .search-box:focus-within {
+  background: var(--surface);
+}
+
+/* Filter bar dark */
+html.dark .filter-bar,
+html.dark .u-filter-bar {
+  background: var(--surface);
+}
+
+/* Modal dark */
+html.dark .modal-box {
+  background: var(--surface);
+}
+html.dark .modal-btn--cancel {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+html.dark .modal-btn--cancel:hover {
+  background: var(--bg);
+}
+
+/* View-all link dark */
+html.dark .view-all {
+  background: linear-gradient(135deg, rgba(59,130,246,.15), rgba(99,102,241,.15));
+  border-color: rgba(99,102,241,.3);
+  color: #a5b4fc;
+}
+html.dark .view-all:hover {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+}
+
+/* Btn secondary dark */
+html.dark .btn-secondary {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+html.dark .btn-secondary:hover {
+  background: rgba(99,102,241,.12);
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+/* Btn refresh dark */
+html.dark .btn-refresh {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+
+/* Badge gray dark */
+html.dark .badge-gray {
+  background: rgba(255,255,255,.06);
+  color: var(--text-3);
+}
+
+/* Upload zone dark */
+html.dark .upload-zone {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+html.dark .upload-zone:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* Form inputs dark */
+html.dark .form-input-admin,
+html.dark .form-textarea,
+html.dark .form-select,
+html.dark .u-filter-select,
+html.dark .u-form-select,
+html.dark .u-profil-input,
+html.dark .u-form-input {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-1);
+}
+html.dark .form-input-admin:focus,
+html.dark .form-textarea:focus,
+html.dark .form-select:focus,
+html.dark .u-filter-select:focus,
+html.dark .u-form-select:focus,
+html.dark .u-profil-input:focus {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+
+/* Last updated chip dark */
+html.dark .last-updated {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-3);
+}
+
+/* Period buttons dark */
+html.dark .u-period-btn {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+html.dark .u-period-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Pred item dark */
+html.dark .u-pred-item {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+/* Info bar dark */
+html.dark .u-info-bar__icon {
+  background: var(--accent-light);
+  border-color: rgba(59,130,246,.25);
+}
+
+/* Quick info card dark */
+html.dark .u-quick-info-list__icon {
+  background: var(--accent-light);
+  border-color: rgba(59,130,246,.25);
+}
+
+/* Profile tabs dark */
+html.dark .u-profil-tabs {
+  background: var(--surface);
+  border-color: var(--border);
+}
+html.dark .u-profil-tab {
+  color: var(--text-3);
+}
+html.dark .u-profil-tab:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+html.dark .u-profil-tab.active {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+/* Profile form card dark */
+html.dark .u-profil-form-card__header,
+html.dark .u-profil-form-card__footer,
+html.dark .u-input-card__header {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+/* Pass tips dark */
+html.dark .u-pass-tips {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+/* Action btn dark */
+html.dark .action-btn {
+  border-color: var(--border);
+  color: var(--text-3);
+  background: transparent;
+}
+
+/* Input unit dark */
+html.dark .u-input-unit,
+html.dark .u-input-unit-wrap {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+/* Btn CSV / Print dark */
+html.dark .u-btn-csv,
+html.dark .u-btn-print,
+html.dark .u-btn-api {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+
+/* Btn reset zoom dark */
+html.dark .u-btn-reset-zoom {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+html.dark .u-btn-reset-zoom:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* AI Chat sidebar dark sudah oke (sudah --sidebar-bg) */
+/* AI Chat main area dark */
+html.dark .ai-chat-main {
+  background: var(--surface);
+  border-color: var(--border);
+}
+html.dark .ai-chat-header {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+html.dark .ai-chat-input-wrap {
+  background: var(--surface);
+  border-color: var(--border);
+}
+html.dark .ai-chat-input-box {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+html.dark .ai-chat-input-box:focus-within {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+html.dark .ai-msg--bot .ai-msg__bubble {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-1);
+}
+html.dark .ai-qr-btn {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-1);
+}
+html.dark .ai-qr-btn:hover {
+  background: var(--accent-light);
+  border-color: rgba(99,102,241,.4);
+  color: var(--accent);
+}
+html.dark .ai-chat-header__model {
+  background: rgba(99,102,241,.15);
+  border-color: rgba(99,102,241,.3);
+  color: #a5b4fc;
+}
+
+/* Skeleton dark */
+html.dark .skel {
+  background: linear-gradient(90deg, #1e293b 25%, #2a3a50 50%, #1e293b 75%);
+  background-size: 200% 100%;
+}
+
+/* Dark mode toggle button */
+#dm-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+#dm-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+#dm-toggle .dm-icon { font-size: 14px; line-height: 1; }

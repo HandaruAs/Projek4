@@ -150,6 +150,13 @@
   </div>
 
   <div class="topbar-right">
+    {{-- ── Dark Mode Toggle ── --}}
+  <button id="dm-toggle" onclick="dmToggle()" title="Toggle Dark Mode">
+    <span class="dm-icon" id="dm-icon">🌙</span>
+    <span id="dm-label">Dark</span>
+  </button>
+
+  <div class="topbar-divider"></div>
 
     @if($isAdmin)
     <a href="/admin/profile">
@@ -228,6 +235,33 @@ function doLogout() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeLogout();
 });
+
+/* ── Dark Mode ── */
+(function () {
+  const KEY = 'simopang_dark';
+  const root = document.documentElement;
+
+  function applyDark(on) {
+    root.classList.toggle('dark', on);
+    const icon  = document.getElementById('dm-icon');
+    const label = document.getElementById('dm-label');
+    if (icon)  icon.textContent  = on ? '☀️' : '🌙';
+    if (label) label.textContent = on ? 'Light' : 'Dark';
+  }
+ const saved = localStorage.getItem(KEY);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyDark(saved !== null ? saved === '1' : prefersDark);
+
+  window.dmToggle = function () {
+    const isDark = root.classList.toggle('dark');
+    localStorage.setItem(KEY, isDark ? '1' : '0');
+    const icon  = document.getElementById('dm-icon');
+    const label = document.getElementById('dm-label');
+    if (icon)  icon.textContent  = isDark ? '☀️' : '🌙';
+    if (label) label.textContent = isDark ? 'Light' : 'Dark';
+  };
+})();
+
 </script>
 
 @stack('scripts')
