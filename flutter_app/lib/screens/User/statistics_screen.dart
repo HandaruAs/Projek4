@@ -46,6 +46,10 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme   = Theme.of(context).textTheme;
+    final isDark      = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) return const Center(child: LoadingWidget());
     if (_error != null) return _buildError();
 
@@ -54,13 +58,12 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
     final topTurun    = List<Map<String, dynamic>>.from(_data!['top_turun']);
     final perKategori = List<Map<String, dynamic>>.from(_data!['per_kategori']);
 
-    // Untuk bar chart — ambil nilai max
     final maxRataRata = perKategori.isEmpty ? 1.0 :
         perKategori.map((e) => (e['rata_rata'] as num).toDouble()).reduce((a, b) => a > b ? a : b);
 
     return RefreshIndicator(
       onRefresh: _loadStatistics,
-      color: const Color(0xFF1976D2),
+      color: colorScheme.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
@@ -68,14 +71,15 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // ── Ringkasan ────────────────────────────
+            // ── Ringkasan ──
             Row(
               children: [
                 Expanded(child: _metricCard(
                   label: 'Total Komoditas',
                   value: '${ringkasan['total_komoditas']}',
                   sub: 'terdaftar',
-                  color: const Color(0xFF1976D2),
+                  color: colorScheme.primary,
+                  isDark: isDark,
                 )),
                 const SizedBox(width: 10),
                 Expanded(child: _metricCard(
@@ -83,6 +87,7 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
                   value: '${ringkasan['naik']}',
                   sub: 'komoditas',
                   color: Colors.green,
+                  isDark: isDark,
                 )),
                 const SizedBox(width: 10),
                 Expanded(child: _metricCard(
@@ -90,30 +95,28 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
                   value: '${ringkasan['turun']}',
                   sub: 'komoditas',
                   color: Colors.red,
+                  isDark: isDark,
                 )),
               ],
             ),
 
             const SizedBox(height: 24),
 
-            // ── Top Naik ─────────────────────────────
-            _sectionTitle('Naik tertinggi minggu ini', Icons.trending_up, Colors.green),
+            _sectionTitle('Naik tertinggi minggu ini', Icons.trending_up, Colors.green, textTheme),
             const SizedBox(height: 10),
-            _buildPriceList(topNaik, isUp: true),
+            _buildPriceList(topNaik, isUp: true, isDark: isDark),
 
             const SizedBox(height: 24),
 
-            // ── Top Turun ────────────────────────────
-            _sectionTitle('Turun terbanyak minggu ini', Icons.trending_down, Colors.red),
+            _sectionTitle('Turun terbanyak minggu ini', Icons.trending_down, Colors.red, textTheme),
             const SizedBox(height: 10),
-            _buildPriceList(topTurun, isUp: false),
+            _buildPriceList(topTurun, isUp: false, isDark: isDark),
 
             const SizedBox(height: 24),
 
-            // ── Per Kategori ─────────────────────────
-            _sectionTitle('Rata-rata harga per kategori', Icons.category, const Color(0xFF1976D2)),
+            _sectionTitle('Rata-rata harga per kategori', Icons.category, colorScheme.primary, textTheme),
             const SizedBox(height: 10),
-            _buildKategoriChart(perKategori, maxRataRata),
+            _buildKategoriChart(perKategori, maxRataRata, isDark: isDark, primary: colorScheme.primary),
 
             const SizedBox(height: 16),
           ],
@@ -146,18 +149,19 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
     required String value,
     required String sub,
     required Color color,
+    required bool isDark,
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withOpacity(isDark ? 0.15 : 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
           const SizedBox(height: 4),
           Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
           Text(sub, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
@@ -166,22 +170,24 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
     );
   }
 
-  Widget _sectionTitle(String title, IconData icon, Color color) {
+  Widget _sectionTitle(String title, IconData icon, Color color, TextTheme textTheme) {
     return Row(
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 8),
-        Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1A2E))),
+        Text(title, style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
       ],
     );
   }
 
-  Widget _buildPriceList(List<Map<String, dynamic>> items, {required bool isUp}) {
+  Widget _buildPriceList(List<Map<String, dynamic>> items, {required bool isUp, required bool isDark}) {
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     if (items.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
         ),
@@ -191,14 +197,14 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: items.asMap().entries.map((entry) {
-          final i    = entry.key;
-          final item = entry.value;
+          final i      = entry.key;
+          final item   = entry.value;
           final persen = (item['persen'] as num).toDouble();
           final isLast = i == items.length - 1;
 
@@ -206,7 +212,7 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               border: isLast ? null : Border(
-                bottom: BorderSide(color: Colors.grey.shade100),
+                bottom: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade100),
               ),
             ),
             child: Row(
@@ -217,7 +223,11 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
                     children: [
                       Text(
                         item['commodity_name'] ?? '-',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1A1A2E)),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -234,13 +244,17 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
                   children: [
                     Text(
                       _currencyFormat.format(item['harga_sekarang']),
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A2E)),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: isUp ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                        color: isUp ? Colors.green.withOpacity(0.15) : Colors.red.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -248,7 +262,7 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: isUp ? Colors.green.shade700 : Colors.red.shade700,
+                          color: isUp ? Colors.green.shade400 : Colors.red.shade400,
                         ),
                       ),
                     ),
@@ -262,13 +276,15 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
     );
   }
 
-  Widget _buildKategoriChart(List<Map<String, dynamic>> items, double maxVal) {
+  Widget _buildKategoriChart(List<Map<String, dynamic>> items, double maxVal, {required bool isDark, required Color primary}) {
     if (items.isEmpty) return const SizedBox();
+
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
@@ -285,7 +301,7 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
                   width: 90,
                   child: Text(
                     item['category'] ?? '-',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -297,8 +313,8 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
                     child: LinearProgressIndicator(
                       value: ratio,
                       minHeight: 8,
-                      backgroundColor: Colors.grey.shade100,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1976D2)),
+                      backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                      valueColor: AlwaysStoppedAnimation<Color>(primary),
                     ),
                   ),
                 ),
@@ -307,7 +323,11 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
                   width: 65,
                   child: Text(
                     _currencyFormat.format(rataRata),
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1A1A2E)),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                    ),
                     textAlign: TextAlign.right,
                   ),
                 ),

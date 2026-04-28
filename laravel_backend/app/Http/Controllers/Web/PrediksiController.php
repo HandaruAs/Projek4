@@ -3,68 +3,225 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Services\PrediksiService;
 use Illuminate\Http\Request;
 
 class PrediksiController extends Controller
 {
-    private function checkAdmin()
+    private PrediksiService $prediksiService;
+
+    public function __construct(PrediksiService $prediksiService)
     {
-        $user = session('user');
-        if (!$user) return redirect('/login');
-        if ($user->role !== 'admin') return redirect('/dashboard');
-        return $user;
+        $this->prediksiService = $prediksiService;
     }
 
-    /** GET /admin/prediksi */
-    public function index()
+    // GET /admin/prediksi
+    public function index(Request $request)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $rawList = PrediksiService::getCommodities();
 
-        // $predictions = Prediction::with('commodity')
-        //                  ->orderBy('created_at','desc')->paginate(10);
+        // FIX: Normalisasi komoditasList — pastikan selalu array of string,
+        // apapun format yang dikembalikan Flask (array of string atau array of array)
+        $komoditasList = collect($rawList)->map(function ($item) {
+            if (is_array($item)) {
+                return $item['name'] ?? $item['nama'] ?? (string) array_values($item)[0];
+            }
+            return (string) $item;
+        })->filter()->values()->toArray();
 
-        return view('admin.prediksi', compact('user'));
+        $firstKomoditas = $komoditasList[0] ?? null;
+        $selectedNama   = $request->get('komoditas', $firstKomoditas);
+
+        $prediksiData = null;
+        $chartData    = null;
+
+        if ($selectedNama) {
+            try {
+                $prediksiData = $this->prediksiService->generate($selectedNama, 30);
+                dd($prediksiData);
+
+                $forecast  = $prediksiData['forecast']       ?? [];
+                $tanggal   = $prediksiData['tanggal_pred']   ?? [];
+                $ciLower   = $prediksiData['ci_lower']       ?? [];
+                $ciUpper   = $prediksiData['ci_upper']       ?? [];
+                $hargaKini = $prediksiData['harga_terakhir'] ?? 0;
+
+                $chartData = [
+                    'pred_tanggal' => array_slice($tanggal, 0, 14),
+                    'pred_harga'   => array_slice($forecast, 0, 14),
+                    'ci_lower'     => array_slice($ciLower, 0, 14),
+                    'ci_upper'     => array_slice($ciUpper, 0, 14),
+                    'harga_kini'   => $hargaKini,
+                ];
+            } catch (\Exception $e) {
+                $prediksiData = ['error' => $e->getMessage()];
+            }
+        }
+
+        // Ambil prediction history dari MongoDB
+        $predictions = \App\Models\Prediction::orderBy('predicted_at', 'desc')
+            ->paginate(10);
+
+        // Konversi ke format object untuk view
+        $commodities = collect($komoditasList)->map(fn($nama) => (object)[
+            'id'   => $nama,
+            'name' => $nama,
+        ])->toArray();
+
+
+        return view('admin.prediksi', compact(
+            'komoditasList',
+            'selectedNama',
+            'prediksiData',
+            'chartData',
+            'commodities',
+            'predictions'
+        ));
     }
 
-    /** POST /admin/prediksi/generate */
+    // POST /admin/prediksi/generate
     public function generate(Request $request)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-
         $request->validate([
-            'commodity_id' => 'required',
-            'region'       => 'required|string',
-            'period'       => 'required|string',
-            'model'        => 'required|string',
+            'komoditas' => 'required|string',
+            'steps'     => 'nullable|integer|min:1|max:90',
         ]);
 
-        // $result = PredictionService::generate($request->all());
-        // Prediction::create($result);
+        $komoditas = $request->komoditas;
+        $steps     = (int) ($request->steps ?? 30);
 
-        return redirect('/admin/prediksi')->with('success', 'Prediksi berhasil digenerate.');
+        try {
+            $data = $this->prediksiService->generate($komoditas, $steps);
+
+            $results  = [];
+            $tanggal  = $data['tanggal_pred'] ?? [];
+            $forecast = $data['forecast']     ?? [];
+            $ciLower  = $data['ci_lower']     ?? [];
+            $ciUpper  = $data['ci_upper']     ?? [];
+
+            foreach ($tanggal as $i => $tgl) {
+                $results[] = [
+                    'date'            => $tgl,
+                    'predicted_price' => $forecast[$i] ?? 0,
+                    'lower'           => $ciLower[$i]  ?? null,
+                    'upper'           => $ciUpper[$i]  ?? null,
+                ];
+            }
+
+            $acc     = $data['accuracy'] ?? [];
+            $metrics = [
+                'mae'      => $acc['mae']      ?? null,
+                'rmse'     => $acc['rmse']     ?? null,
+                'mape'     => $acc['mape']     ?? null,
+                'accuracy' => $acc['accuracy'] ?? null,
+            ];
+
+            \App\Models\Prediction::where('commodity_name', $komoditas)
+                ->where('horizon_days', $steps)
+                ->delete();
+
+            \App\Models\Prediction::create([
+                'commodity_id'   => $komoditas,
+                'commodity_name' => $komoditas,
+                'predicted_at'   => now(),
+                'horizon_days'   => $steps,
+                'current_price'  => $data['harga_terakhir'] ?? 0,
+                'satuan'         => $data['satuan']   ?? 'kg',
+                'kategori'       => $data['kategori'] ?? '',
+                'tanggal_pred'   => $tanggal,
+                'forecast'       => $forecast,
+                'ci_lower'       => $ciLower,
+                'ci_upper'       => $ciUpper,
+                'results'        => $results,
+                'metrics'        => $metrics,
+            ]);
+
+            return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
+                ->with('success', "Prediksi {$komoditas} berhasil digenerate dan disimpan.");
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
+        }
     }
 
-    /** GET /admin/prediksi/{id} */
-    public function show(string $id)
+    // GET /admin/prediksi/export/{id}
+    public function export(string $id)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $prediction = \App\Models\Prediction::find($id);
 
-        // $prediction = Prediction::with('commodity')->findOrFail($id);
+        if (!$prediction) {
+            return back()->with('error', 'Data prediksi tidak ditemukan.');
+        }
 
-        return view('admin.prediksi-detail', compact('user'));
+        $filename = 'prediksi_' . str_replace(' ', '_', $prediction->commodity_name)
+                  . '_' . now()->format('Ymd') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+        ];
+
+        $callback = function () use ($prediction) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Tanggal', 'Prediksi Harga', 'CI Lower', 'CI Upper']);
+
+            $tanggal  = $prediction->tanggal_pred ?? [];
+            $forecast = $prediction->forecast     ?? [];
+            $ciLower  = $prediction->ci_lower     ?? [];
+            $ciUpper  = $prediction->ci_upper     ?? [];
+
+            foreach ($tanggal as $i => $tgl) {
+                fputcsv($file, [
+                    $tgl,
+                    $forecast[$i] ?? '',
+                    $ciLower[$i]  ?? '',
+                    $ciUpper[$i]  ?? '',
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
-    /** DELETE /admin/prediksi/{id} */
+    // GET /admin/prediksi/{id}
+    public function show(string $id, Request $request)
+    {
+        $komoditas = urldecode($id);
+        $steps     = (int) $request->get('steps', 30);
+
+        try {
+            $prediksiData = $this->prediksiService->generate($komoditas, $steps);
+
+            $forecast  = $prediksiData['forecast']       ?? [];
+            $tanggal   = $prediksiData['tanggal_pred']   ?? [];
+            $ciLower   = $prediksiData['ci_lower']       ?? [];
+            $ciUpper   = $prediksiData['ci_upper']       ?? [];
+            $hargaKini = $prediksiData['harga_terakhir'] ?? 0;
+
+            $chartData = [
+                'pred_tanggal' => array_slice($tanggal, 0, 14),
+                'pred_harga'   => array_slice($forecast, 0, 14),
+                'ci_lower'     => array_slice($ciLower, 0, 14),
+                'ci_upper'     => array_slice($ciUpper, 0, 14),
+                'harga_kini'   => $hargaKini,
+            ];
+        } catch (\Exception $e) {
+            $prediksiData = ['error' => $e->getMessage()];
+            $chartData    = null;
+        }
+
+        return view('admin.prediksi-detail', compact(
+            'komoditas',
+            'prediksiData',
+            'chartData'
+        ));
+    }
+
+    // DELETE /admin/prediksi/{id}
     public function destroy(string $id)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-
-        // Prediction::findOrFail($id)->delete();
-
-        return redirect('/admin/prediksi')->with('success', 'Prediksi berhasil dihapus.');
+        return redirect()->route('prediksi.index')
+            ->with('info', 'Data prediksi dikelola langsung oleh Flask ML.');
     }
 }

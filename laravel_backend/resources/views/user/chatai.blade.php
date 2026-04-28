@@ -3,6 +3,7 @@
   SIMOPANG — Chat AI / Budget Wizard
   File : resources/views/user/chatai.blade.php
   Desc : Wizard rekomendasi belanja pangan berbasis AI
+  AI   : Groq (Llama 3.3) via Flask ML
   =====================================================
 --}}
 @extends('layouts.layout')
@@ -12,6 +13,13 @@
 @section('page-sub', 'Wizard belanja cerdas berbasis AI untuk rekomendasi personal')
 
 @section('content')
+
+  {{-- Route URLs & Data dirender di sini agar tidak konflik dengan @push('scripts') --}}
+  <div id="app-routes"
+       data-rekomendasi="{{ route('user.chatai.rekomendasi') }}"
+       data-followup="{{ route('user.chatai.followup') }}"
+       data-komoditas="{{ route('user.chatai.komoditas') }}"
+       style="display:none"></div>
 
   {{-- ── LAYOUT UTAMA ────────────────────────────────── --}}
   <div class="ai-chat-layout">
@@ -106,7 +114,7 @@
           </div>
         </div>
         <div class="ai-chat-header__model">
-          <span>Powered by Claude</span>
+          <span>Powered by Groq AI</span>
         </div>
       </div>
 
@@ -145,6 +153,108 @@
 
   </div>
 
+  {{-- ── CSS CAROUSEL KOMODITAS ───────────────────────── --}}
+  <style>
+    .komoditas-carousel-wrap {
+      width: 100%;
+      margin-top: 8px;
+    }
+    .komoditas-carousel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding: 0 2px;
+    }
+    .komoditas-carousel-hint {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .komoditas-selected-count {
+      font-size: 11px;
+      color: #3b82f6;
+      font-weight: 600;
+    }
+    .komoditas-carousel {
+      display: grid;
+      grid-template-rows: repeat(3, auto);
+      grid-auto-flow: column;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      /* Sembunyikan scrollbar tapi tetap bisa scroll */
+      scrollbar-width: thin;
+      scrollbar-color: #e2e8f0 transparent;
+    }
+    .komoditas-carousel::-webkit-scrollbar {
+      height: 4px;
+    }
+    .komoditas-carousel::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .komoditas-carousel::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 4px;
+    }
+    .komoditas-carousel::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+    .komoditas-btn {
+      white-space: nowrap;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .komoditas-btn:hover {
+      border-color: #94a3b8;
+      background: #f8fafc;
+    }
+    .komoditas-btn.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+    .komoditas-confirm-row {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .komoditas-confirm-btn {
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: none;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .komoditas-confirm-btn:hover {
+      background: #2563eb;
+    }
+    .komoditas-confirm-btn:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+    .komoditas-loading {
+      color: #94a3b8;
+      font-size: 13px;
+      padding: 12px 0;
+    }
+  </style>
+
 @endsection
 
 @push('scripts')
@@ -161,7 +271,10 @@ const wizard = {
   }
 };
 
-// ── STEP DEFINITIONS (Gunakan @{{variable}} untuk menghindari Blade parsing) ──
+// Cache daftar komoditas dari DB
+let dbKomoditas = [];
+
+// ── STEP DEFINITIONS ─────────────────────────────────
 const steps = {
   1: {
     key: 'periode',
@@ -175,43 +288,31 @@ const steps = {
   },
   2: {
     key: 'anggota',
-    question: 'Baik, untuk periode <strong>@{{periode}}</strong>.<br><br>Berapa jumlah anggota keluarga yang perlu dipenuhi kebutuhan pangannya?',
+    question: 'Baik, untuk periode <strong>{[periode]}</strong>.<br><br>Berapa jumlah anggota keluarga yang perlu dipenuhi kebutuhan pangannya?',
     type: 'choice',
     choices: [
-      { label: '👤 1 Orang',         value: '1 orang' },
-      { label: '👥 2 Orang',         value: '2 orang' },
-      { label: '👨‍👩‍👦 3–4 Orang',     value: '3-4 orang' },
-      { label: '👨‍👩‍👧‍👦 5+ Orang',       value: '5 orang atau lebih' },
+      { label: '👤 1 Orang',      value: '1 orang' },
+      { label: '👥 2 Orang',      value: '2 orang' },
+      { label: '👨‍👩‍👦 3–4 Orang',  value: '3-4 orang' },
+      { label: '👨‍👩‍👧‍👦 5+ Orang',    value: '5 orang atau lebih' },
     ]
   },
   3: {
     key: 'budget',
-    question: 'Untuk <strong>@{{anggota}}</strong> selama <strong>@{{periode}}</strong>.<br><br>Berapa total budget belanja pangan Anda?',
+    question: 'Untuk <strong>{[anggota]}</strong> selama <strong>{[periode]}</strong>.<br><br>Berapa total budget belanja pangan Anda?',
     type: 'choice',
     choices: [
-      { label: '💰 < Rp 200rb',          value: 'di bawah Rp 200.000' },
-      { label: '💳 Rp 200rb – 500rb',    value: 'Rp 200.000 – 500.000' },
-      { label: '💵 Rp 500rb – 1 juta',   value: 'Rp 500.000 – 1.000.000' },
-      { label: '💎 Rp 1 juta – 2 juta',  value: 'Rp 1.000.000 – 2.000.000' },
-      { label: '🏆 > Rp 2 juta',         value: 'lebih dari Rp 2.000.000' },
+      { label: '💰 < Rp 200rb',         value: 'di bawah Rp 200.000' },
+      { label: '💳 Rp 200rb – 500rb',   value: 'Rp 200.000 – 500.000' },
+      { label: '💵 Rp 500rb – 1 juta',  value: 'Rp 500.000 – 1.000.000' },
+      { label: '💎 Rp 1 juta – 2 juta', value: 'Rp 1.000.000 – 2.000.000' },
+      { label: '🏆 > Rp 2 juta',        value: 'lebih dari Rp 2.000.000' },
     ]
   },
   4: {
     key: 'komoditas',
-    question: 'Budget <strong>@{{budget}}</strong>. Bagus!<br><br>Komoditas pangan apa saja yang biasanya Anda beli? <em>(Pilih satu atau lebih)</em>',
-    type: 'multi',
-    choices: [
-      { label: '🌾 Beras',         value: 'beras' },
-      { label: '🥚 Telur',         value: 'telur' },
-      { label: '🌶️ Cabai',         value: 'cabai' },
-      { label: '🧅 Bawang Merah',  value: 'bawang merah' },
-      { label: '🧄 Bawang Putih',  value: 'bawang putih' },
-      { label: '🥩 Daging Sapi',   value: 'daging sapi' },
-      { label: '🍗 Daging Ayam',   value: 'daging ayam' },
-      { label: '🐟 Ikan',          value: 'ikan' },
-      { label: '🥬 Sayuran',       value: 'sayuran' },
-      { label: '🛢️ Minyak Goreng', value: 'minyak goreng' },
-    ],
+    question: 'Budget <strong>{[budget]}</strong>. Bagus!<br><br>Komoditas pangan apa saja yang biasanya Anda beli? <em>(Pilih satu atau lebih, geser → untuk lihat semua)</em>',
+    type: 'komoditas_carousel', // tipe khusus dari DB
   },
   5: {
     key: 'prioritas',
@@ -226,33 +327,42 @@ const steps = {
   },
 };
 
+// ── ROUTE URLs ────────────────────────────────────────
+const CSRF_TOKEN      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const ROUTE_REKOMENDASI = document.getElementById('app-routes').dataset.rekomendasi;
+const ROUTE_FOLLOWUP    = document.getElementById('app-routes').dataset.followup;
+const ROUTE_KOMODITAS   = document.getElementById('app-routes').dataset.komoditas;
+
 // ── HELPERS ──────────────────────────────────────────
 function getTime() {
   return new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
-
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 160) + 'px';
 }
-
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFreeText(); }
 }
-
-// Fungsi untuk mengganti placeholder @{{variabel}} dengan nilai dari wizard.answers
 function fillTemplate(str) {
-  return str.replace(/@\{\{(\w+)\}\}/g, (match, key) => {
+  return str.replace(/\{\[(\w+)\]\}/g, (match, key) => {
     const value = wizard.answers[key];
     if (value === null || value === undefined) return '';
     if (Array.isArray(value)) return value.join(', ');
     return value;
   });
 }
-
 function scrollBottom() {
   const el = document.getElementById('aiMessages');
   if (el) el.scrollTop = el.scrollHeight;
+}
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+function stripEmojiPrefix(label) {
+  return label.replace(/^[\u{1F000}-\u{1FFFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FEFF}\u200d\uFE0F\s]+/u, '').trim();
 }
 
 // ── DOM HELPERS ──────────────────────────────────────
@@ -276,7 +386,6 @@ function appendBotBubble(html) {
   scrollBottom();
   return div;
 }
-
 function appendUserBubble(text) {
   const container = document.getElementById('aiMessages');
   const div = document.createElement('div');
@@ -289,13 +398,6 @@ function appendUserBubble(text) {
   container.appendChild(div);
   scrollBottom();
 }
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 function appendTyping() {
   removeTyping();
   const container = document.getElementById('aiMessages');
@@ -318,18 +420,16 @@ function appendTyping() {
   container.appendChild(div);
   scrollBottom();
 }
-
 function removeTyping() {
   const el = document.getElementById('typingIndicator');
   if (el) el.remove();
 }
-
 function clearQuickReplies() {
   const container = document.getElementById('quickReplies');
   if (container) container.innerHTML = '';
 }
 
-// ── SIDEBAR STEP UPDATE ───────────────────────────────
+// ── SIDEBAR ───────────────────────────────────────────
 function updateSidebarSteps(currentStep) {
   document.querySelectorAll('.ai-wizard-step').forEach(el => {
     const s = parseInt(el.dataset.step);
@@ -346,8 +446,6 @@ function updateSidebarSteps(currentStep) {
     }
   });
 }
-
-// ── SIDEBAR SUMMARY UPDATE ────────────────────────────
 function updateSummary() {
   const labels = {
     periode:   'Jangka Waktu',
@@ -360,23 +458,18 @@ function updateSummary() {
   const list    = document.getElementById('summaryList');
   const entries = Object.entries(wizard.answers)
     .filter(([k, v]) => v && (!Array.isArray(v) || v.length > 0));
-
-  if (!entries.length) { 
-    if (section) section.style.display = 'none'; 
-    return; 
-  }
+  if (!entries.length) { if (section) section.style.display = 'none'; return; }
   if (section) section.style.display = 'block';
   if (list) {
     list.innerHTML = entries.map(([k, v]) => `
       <div class="ai-summary-item">
         <div class="ai-summary-item__key">${labels[k] || k}</div>
         <div class="ai-summary-item__val">${Array.isArray(v) ? v.join(', ') : v}</div>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
 }
 
-// ── RENDER QUICK REPLIES ──────────────────────────────
+// ── RENDER CHOICES ────────────────────────────────────
 const multiSelected = new Set();
 
 function renderChoices(stepDef) {
@@ -396,43 +489,102 @@ function renderChoices(stepDef) {
     });
   }
 
-  if (stepDef.type === 'multi') {
-    stepDef.choices.forEach(c => {
-      const btn = document.createElement('button');
-      btn.className = 'ai-qr-btn';
-      btn.dataset.value = c.value;
-      btn.textContent = c.label;
-      btn.onclick = () => toggleMulti(btn, c.value);
-      container.appendChild(btn);
-    });
-
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'ai-qr-btn ai-qr-btn--confirm';
-    confirmBtn.textContent = '✓ Lanjutkan';
-    confirmBtn.onclick = () => confirmMulti(stepDef.key);
-    container.appendChild(confirmBtn);
+  if (stepDef.type === 'komoditas_carousel') {
+    renderKomoditasCarousel(container);
   }
 }
 
-// ── MULTI SELECT ─────────────────────────────────────
-function toggleMulti(btn, value) {
-  if (multiSelected.has(value)) {
-    multiSelected.delete(value);
-    btn.classList.remove('selected');
-  } else {
-    multiSelected.add(value);
-    btn.classList.add('selected');
+// ── CAROUSEL KOMODITAS DARI DB ────────────────────────
+async function renderKomoditasCarousel(container) {
+  multiSelected.clear();
+
+  // Tampilkan loading dulu
+  container.innerHTML = `<div class="komoditas-loading">⏳ Memuat daftar komoditas...</div>`;
+
+  // Fetch dari DB jika belum di-cache
+  if (!dbKomoditas.length) {
+    try {
+      const res  = await fetch(ROUTE_KOMODITAS);
+      const data = await res.json();
+      dbKomoditas = data.komoditas ?? [];
+    } catch (e) {
+      container.innerHTML = `<div class="komoditas-loading">⚠️ Gagal memuat komoditas. <button onclick="renderKomoditasCarousel(document.getElementById('quickReplies'))" style="color:#3b82f6;background:none;border:none;cursor:pointer;text-decoration:underline">Coba lagi</button></div>`;
+      return;
+    }
   }
+
+  container.innerHTML = '';
+
+  // Buat wrapper carousel
+  const wrap = document.createElement('div');
+  wrap.className = 'komoditas-carousel-wrap';
+
+  // Header: hint geser + counter terpilih
+  const header = document.createElement('div');
+  header.className = 'komoditas-carousel-header';
+  header.innerHTML = `
+    <span class="komoditas-carousel-hint">← Geser untuk lihat semua (${dbKomoditas.length} komoditas)</span>
+    <span class="komoditas-selected-count" id="komCountLabel">0 dipilih</span>`;
+  wrap.appendChild(header);
+
+  // Grid carousel (3 baris, scroll horizontal)
+  const grid = document.createElement('div');
+  grid.className = 'komoditas-carousel';
+
+  dbKomoditas.forEach(nama => {
+    const btn = document.createElement('button');
+    btn.className = 'komoditas-btn';
+    btn.textContent = nama;
+    btn.dataset.value = nama;
+    btn.onclick = () => {
+      if (multiSelected.has(nama)) {
+        multiSelected.delete(nama);
+        btn.classList.remove('selected');
+      } else {
+        multiSelected.add(nama);
+        btn.classList.add('selected');
+      }
+      // Update counter
+      const label = document.getElementById('komCountLabel');
+      if (label) label.textContent = `${multiSelected.size} dipilih`;
+      // Enable/disable confirm
+      const confirmBtn = document.getElementById('komConfirmBtn');
+      if (confirmBtn) confirmBtn.disabled = multiSelected.size === 0;
+    };
+    grid.appendChild(btn);
+  });
+
+  wrap.appendChild(grid);
+
+  // Baris konfirmasi
+  const confirmRow = document.createElement('div');
+  confirmRow.className = 'komoditas-confirm-row';
+  confirmRow.innerHTML = `
+    <button class="komoditas-confirm-btn" id="komConfirmBtn" disabled>
+      ✓ Lanjutkan
+    </button>
+    <span style="font-size:11px;color:#94a3b8">Pilih minimal 1 komoditas</span>`;
+  confirmRow.querySelector('#komConfirmBtn').onclick = () => confirmKomoditas();
+  wrap.appendChild(confirmRow);
+
+  container.appendChild(wrap);
 }
 
-function confirmMulti(key) {
+function confirmKomoditas() {
   if (!multiSelected.size) {
     appendBotBubble('⚠️ Pilih minimal satu komoditas dulu ya!');
     return;
   }
-  wizard.answers[key] = Array.from(multiSelected);
+  wizard.answers.komoditas = Array.from(multiSelected);
   multiSelected.clear();
-  appendUserBubble(wizard.answers[key].join(', '));
+
+  // Tampilkan di bubble: maks 5 nama + "dan X lainnya"
+  const list = wizard.answers.komoditas;
+  const preview = list.length > 5
+    ? list.slice(0, 5).join(', ') + ` dan ${list.length - 5} lainnya`
+    : list.join(', ');
+  appendUserBubble(preview);
+
   clearQuickReplies();
   updateSummary();
   nextStep();
@@ -441,7 +593,7 @@ function confirmMulti(key) {
 // ── SINGLE CHOICE ────────────────────────────────────
 function handleChoice(choice, key) {
   wizard.answers[key] = choice.value;
-  const cleanLabel = choice.label.replace(/^[^\w]+/, '').replace(/^\S+\s/, '');
+  const cleanLabel = stripEmojiPrefix(choice.label);
   appendUserBubble(cleanLabel);
   clearQuickReplies();
   updateSummary();
@@ -474,9 +626,8 @@ function nextStep(freeVal = null) {
 
   const stepDef = steps[wizard.step];
   if (!stepDef) return;
-  
-  const question = fillTemplate(stepDef.question);
 
+  const question = fillTemplate(stepDef.question);
   setTimeout(() => {
     appendBotBubble(`<p>${question}</p>`);
     renderChoices(stepDef);
@@ -486,73 +637,47 @@ function nextStep(freeVal = null) {
 // ── GENERATE REKOMENDASI ──────────────────────────────
 function generateRekomendasi() {
   updateSidebarSteps(6);
-
   setTimeout(() => {
     const loadingDiv = appendBotBubble(`
       <div class="ai-rekom-loading">
         <div class="ai-rekom-spinner"></div>
-        <span>Sedang menganalisis dan menyusun rekomendasi belanja terbaik untuk Anda...</span>
-      </div>
-    `);
-    callClaudeAPI(buildPrompt(), loadingDiv);
+        <span>Sedang menganalisis data harga pangan dan menyusun rekomendasi terbaik untuk Anda...</span>
+      </div>`);
+    kirimKeGroq(loadingDiv);
   }, 400);
 }
 
-function buildPrompt() {
-  const a = wizard.answers;
-  return `Buatkan rekomendasi belanja pangan untuk kondisi berikut:
-- Jangka waktu: ${a.periode}
-- Jumlah anggota keluarga: ${a.anggota}
-- Budget total: ${a.budget}
-- Komoditas yang dibutuhkan: ${Array.isArray(a.komoditas) ? a.komoditas.join(', ') : a.komoditas}
-- Prioritas: ${a.prioritas}
-
-Berikan rekomendasi dalam format berikut (Bahasa Indonesia, ramah dan informatif):
-
-1. **Ringkasan Alokasi Budget** — tabel alokasi per komoditas dengan estimasi harga dan jumlah yang disarankan (format: | Komoditas | Jumlah | Estimasi Harga |). Sesuaikan dengan anggota keluarga dan periode waktu.
-
-2. **Tips Belanja Cerdas** — 3 tips spesifik sesuai kondisi mereka.
-
-3. **Peringatan Harga** — komoditas yang sedang fluktuatif dan perlu diperhatikan.
-
-4. **Saran Substitusi** — alternatif lebih hemat jika ada komoditas mahal.
-
-Gunakan emoji secukupnya. Jawaban praktis dan langsung bisa diterapkan. Maksimal 400 kata.`;
-}
-
-async function callClaudeAPI(prompt, loadingDiv) {
+async function kirimKeGroq(loadingDiv) {
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(ROUTE_REKOMENDASI, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-api-key': 'YOUR_API_KEY_HERE'
-      },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
       body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: 1000,
-        system: 'Kamu adalah SIMOPANG AI, asisten cerdas Sistem Monitoring Pangan Nasional Indonesia. Tugasmu memberikan rekomendasi belanja pangan yang praktis, hemat, dan bergizi berdasarkan budget dan kebutuhan pengguna. Jawab dalam Bahasa Indonesia yang hangat dan mudah dipahami. Gunakan data harga pangan yang realistis di Indonesia.',
-        messages: [{ role: 'user', content: prompt }]
+        periode:   wizard.answers.periode,
+        anggota:   wizard.answers.anggota,
+        budget:    wizard.answers.budget,
+        komoditas: wizard.answers.komoditas,
+        prioritas: wizard.answers.prioritas,
       })
     });
-
     const data = await res.json();
-    const reply = data.content?.[0]?.text ?? 'Maaf, terjadi kesalahan. Coba lagi ya.';
     const bubble = loadingDiv.querySelector('.ai-msg__bubble');
-    if (bubble) bubble.innerHTML = formatReply(reply);
+    if (data.success) {
+      if (bubble) bubble.innerHTML = formatReply(data.reply);
+    } else {
+      if (bubble) bubble.innerHTML = `⚠️ ${data.error ?? 'Terjadi kesalahan, coba lagi.'}`;
+    }
     scrollBottom();
     showFollowUpButtons();
-
   } catch (err) {
-    console.error('API Error:', err);
+    console.error('Error:', err);
     const bubble = loadingDiv.querySelector('.ai-msg__bubble');
-    if (bubble) {
-      bubble.innerHTML = '⚠️ Gagal terhubung ke AI. Periksa koneksi internet Anda dan coba lagi.';
-    }
+    if (bubble) bubble.innerHTML = '⚠️ Gagal terhubung ke server. Pastikan Flask ML berjalan.';
     showFollowUpButtons();
   }
 }
 
+// ── FORMAT REPLY ─────────────────────────────────────
 function formatReply(text) {
   let formatted = text
     .replace(/&/g, '&amp;')
@@ -560,38 +685,49 @@ function formatReply(text) {
     .replace(/>/g, '&gt;')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/^#{1,3} (.+)$/gm, '<strong style="font-size:13.5px;color:#1e293b">$1</strong>')
+    .replace(/^#{1,3} (.+)$/gm, '<strong style="font-size:13.5px;color:#1e293b;display:block;margin:10px 0 4px">$1</strong>')
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>');
-  
-  formatted = formatted.replace(/\|(.+)\|/g, match => {
-    const cells = match.split('|').filter(c => c.trim() && !c.match(/^[-\s:]+$/));
-    if (!cells.length) return '';
-    return `<tr>${cells.map(c => `<td>${c.trim()}</td>`).join('')}</tr>`;
+
+  formatted = formatted.replace(/(\|.+\|\n?)+/g, tableBlock => {
+    const rawLines = tableBlock.trim().split('\n').map(l => l.trim()).filter(l => l);
+    let headerCells = [], dataRows = [];
+    rawLines.forEach((line, idx) => {
+      const cells = line.split('|').map(c => c.trim()).filter(c => c !== '');
+      if (idx === 0) headerCells = cells;
+      else if (cells.every(c => /^[-:\s]+$/.test(c))) { /* skip separator */ }
+      else dataRows.push(cells);
+    });
+    if (!dataRows.length) return tableBlock;
+    const cards = dataRows.map(row => {
+      const items = headerCells.map((header, i) => {
+        const val = row[i] ?? '';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f1f5f9">
+          <span style="color:#64748b;font-size:12px;font-weight:500">${header}</span>
+          <span style="color:#1e293b;font-size:13px;font-weight:600;text-align:right;max-width:60%">${val}</span>
+        </div>`;
+      }).join('');
+      return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:8px">${items}</div>`;
+    }).join('');
+    return `<div style="margin:8px 0">${cards}</div>`;
   });
-  
-  formatted = formatted.replace(/(<td>[\s\S]*?<\/tr>\n?)+/g, rows =>
-    `<table class="ai-rekom-table"><tbody>${rows}</tbody></table>`);
-  
+
   formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
   formatted = formatted.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, lis => `<ul>${lis}</ul>`);
-  
   return `<div>${formatted}</div>`;
 }
 
-// ── FOLLOW UP BUTTONS ────────────────────────────────
+// ── FOLLOW UP BUTTONS ─────────────────────────────────
 function showFollowUpButtons() {
   const container = document.getElementById('quickReplies');
   if (!container) return;
   container.innerHTML = '';
-
   const followUps = [
-    { label: '🔄 Coba Budget Berbeda',            action: 'resetStep3'   },
-    { label: '📊 Komoditas Murah Sekarang?',       action: 'cheapNow'     },
-    { label: '📦 Tips Menyimpan Stok?',            action: 'storageTips'  },
-    { label: '🔁 Mulai Ulang Wizard',              action: 'reset'        },
+    { label: '🔄 Coba Budget Berbeda',      action: 'resetStep3'  },
+    { label: '📊 Komoditas Murah Sekarang?', action: 'cheapNow'    },
+    { label: '📦 Tips Menyimpan Stok?',      action: 'storageTips' },
+    { label: '🔁 Mulai Ulang Wizard',        action: 'reset'       },
   ];
-
   followUps.forEach(f => {
     const btn = document.createElement('button');
     btn.className = 'ai-qr-btn';
@@ -605,45 +741,28 @@ async function handleFollowUp(action, btn) {
   btn.classList.add('selected');
   clearQuickReplies();
   appendUserBubble(btn.textContent);
-
   if (action === 'reset')      { resetWizard(); return; }
   if (action === 'resetStep3') { resetToStep(3); return; }
-
-  const prompts = {
-    cheapNow:    'Berdasarkan kondisi pasar pangan Indonesia saat ini, komoditas pangan apa yang sedang harganya terjangkau atau turun? Info singkat per komoditas (beras, telur, cabai, bawang, daging ayam, dll) dan tips memanfaatkannya. Bahasa Indonesia, ringkas, dengan emoji.',
-    storageTips: `Berikan tips menyimpan stok bahan pangan seperti ${wizard.answers.komoditas?.join(', ') || 'bahan pangan'} agar lebih tahan lama dan tidak cepat rusak. Bahasa Indonesia, praktis, dengan emoji.`,
-  };
-
-  if (prompts[action]) {
-    appendTyping();
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-api-key': 'YOUR_API_KEY_HERE'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-sonnet-20240229',
-          max_tokens: 600,
-          system: 'Kamu adalah SIMOPANG AI, asisten pangan nasional Indonesia. Jawab dalam Bahasa Indonesia yang ramah dan praktis.',
-          messages: [{ role: 'user', content: prompts[action] }]
-        })
-      });
-      const data = await res.json();
-      removeTyping();
-      appendBotBubble(formatReply(data.content?.[0]?.text ?? 'Maaf, terjadi kesalahan.'));
-      showFollowUpButtons();
-    } catch (err) {
-      console.error('Follow-up Error:', err);
-      removeTyping();
-      appendBotBubble('⚠️ Gagal terhubung. Coba lagi.');
-      showFollowUpButtons();
-    }
+  appendTyping();
+  try {
+    const res = await fetch(ROUTE_FOLLOWUP, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+      body: JSON.stringify({ action, komoditas: wizard.answers.komoditas ?? [] })
+    });
+    const data = await res.json();
+    removeTyping();
+    if (data.success) appendBotBubble(formatReply(data.reply));
+    else appendBotBubble(`⚠️ ${data.error ?? 'Terjadi kesalahan.'}`);
+    showFollowUpButtons();
+  } catch (err) {
+    removeTyping();
+    appendBotBubble('⚠️ Gagal terhubung. Coba lagi.');
+    showFollowUpButtons();
   }
 }
 
-// ── RESET ────────────────────────────────────────────
+// ── RESET ─────────────────────────────────────────────
 function resetWizard() {
   wizard.step              = 1;
   wizard.answers.periode   = null;
@@ -652,17 +771,10 @@ function resetWizard() {
   wizard.answers.komoditas = [];
   wizard.answers.prioritas = null;
   multiSelected.clear();
-
-  const messagesDiv = document.getElementById('aiMessages');
-  const quickRepliesDiv = document.getElementById('quickReplies');
-  const inputWrap = document.getElementById('inputWrap');
-  const summarySection = document.getElementById('summarySection');
-  
-  if (messagesDiv) messagesDiv.innerHTML = '';
-  if (quickRepliesDiv) quickRepliesDiv.innerHTML = '';
-  if (inputWrap) inputWrap.style.display = 'none';
-  if (summarySection) summarySection.style.display = 'none';
-
+  document.getElementById('aiMessages').innerHTML    = '';
+  document.getElementById('quickReplies').innerHTML  = '';
+  document.getElementById('inputWrap').style.display = 'none';
+  document.getElementById('summarySection').style.display = 'none';
   updateSidebarSteps(1);
   startWizard();
 }
@@ -677,11 +789,10 @@ function resetToStep(stepNum) {
   nextStep();
 }
 
-// ── INIT ─────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────
 function startWizard() {
   updateSidebarSteps(1);
-  const question = steps[1].question;
-  appendBotBubble(`<p>${question}</p>`);
+  appendBotBubble(`<p>${steps[1].question}</p>`);
   renderChoices(steps[1]);
 }
 
