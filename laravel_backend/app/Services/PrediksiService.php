@@ -29,7 +29,7 @@ class PrediksiService
             $res = Http::withHeaders($instance->headers())
                 ->timeout(10)
                 ->get("{$instance->baseUrl}/api/external/komoditas");
-            return $res->successful() ? $res->json() : [];
+            return $res->successful ? $res->json : [];
         } catch (\Exception $e) {
             Log::error('PrediksiService::getCommodities - ' . $e->getMessage());
             return [];
@@ -46,7 +46,7 @@ class PrediksiService
                     'steps' => $steps,
                 ]);
 
-            if (!$res->successful()) {
+            if (!$res->successful) {
                 throw new \Exception($res->json('error', 'Flask error'));
             }
 
