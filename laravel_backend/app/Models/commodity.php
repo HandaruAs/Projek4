@@ -34,7 +34,7 @@ class Commodity extends Model
     ];
 
     protected $casts = [
-        'created_at' => 'datetime', 
+        'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
@@ -52,5 +52,8 @@ class Commodity extends Model
     {
         return $this->hasMany(Prediction::class, 'commodity_id');
     }
-
+        public function trainingJobs()
+    {
+        return $this->hasMany(TrainingJob::class, 'commodity_id');
+    }
 }
