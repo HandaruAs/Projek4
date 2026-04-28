@@ -12,9 +12,6 @@ class PrediksiController extends Controller
     private PrediksiService $prediksiService;
 
     public function __construct(PrediksiService $prediksiService)
-    private PrediksiService $prediksiService;
-
-    public function __construct(PrediksiService $prediksiService)
     {
         $this->prediksiService = $prediksiService;
     }
@@ -23,7 +20,7 @@ class PrediksiController extends Controller
     public function index(Request $request)
     {
         $komoditasList = PrediksiService::getCommodities();
-        $selectedNama  = $request->get('komoditas', null); // null = tidak auto-generate saat halaman dibuka
+        $selectedNama  = $request->get('komoditas', null);
 
         $prediksiData = null;
         $chartData    = null;
@@ -33,10 +30,10 @@ class PrediksiController extends Controller
                 $prediksiData = $this->prediksiService->generate($selectedNama, 30);
 
                 $payload   = $prediksiData;
-                $forecast  = $payload['forecast']      ?? [];
-                $tanggal   = $payload['tanggal_pred']  ?? [];
-                $ciLower   = $payload['ci_lower']      ?? [];
-                $ciUpper   = $payload['ci_upper']      ?? [];
+                $forecast  = $payload['forecast']       ?? [];
+                $tanggal   = $payload['tanggal_pred']   ?? [];
+                $ciLower   = $payload['ci_lower']       ?? [];
+                $ciUpper   = $payload['ci_upper']       ?? [];
                 $hargaKini = $payload['harga_terakhir'] ?? 0;
 
                 $chartData = [
@@ -69,7 +66,6 @@ class PrediksiController extends Controller
     }
 
     // POST /admin/prediksi/generate
-    // POST /admin/prediksi/generate
     public function generate(Request $request)
     {
         $request->validate([
@@ -81,30 +77,22 @@ class PrediksiController extends Controller
         $steps     = (int) ($request->steps ?? 30);
 
         try {
-            // Ambil data dari Flask — response sudah berupa payload lengkap
             $payload = $this->prediksiService->generate($komoditas, $steps);
+            $acc     = $payload['accuracy'] ?? [];
 
-            // Ambil accuracy dari payload (nested object dari Flask)
-            $acc = $payload['accuracy'] ?? [];
-
-            // Hapus dokumen lama untuk komoditas + steps yang sama
-            // (sinkron dengan Flask: col_prediction.delete_many)
             Prediction::where('commodity_name', $komoditas)
                 ->where('steps', $steps)
                 ->delete();
 
-            // Simpan ke MongoDB dengan skema IDENTIK Flask (api_run_prediksi)
             Prediction::create([
                 'commodity_name' => $komoditas,
                 'steps'          => $steps,
                 'created_at'     => now(),
                 'created_by'     => auth()->user()->name ?? 'laravel_web',
                 'status'         => 'completed',
-                // accuracy flat — persis seperti Flask menyimpannya
                 'accuracy_mae'   => $acc['mae']  ?? null,
                 'accuracy_rmse'  => $acc['rmse'] ?? null,
                 'accuracy_mape'  => $acc['mape'] ?? null,
-                // seluruh response Flask disimpan as-is ke dalam payload
                 'payload'        => $payload,
             ]);
 
@@ -138,7 +126,6 @@ class PrediksiController extends Controller
             $file = fopen('php://output', 'w');
             fputcsv($file, ['Tanggal', 'Prediksi Harga', 'CI Lower', 'CI Upper']);
 
-            // Baca dari payload (skema Flask)
             $payload  = $prediction->payload ?? [];
             $tanggal  = $payload['tanggal_pred'] ?? [];
             $forecast = $payload['forecast']     ?? [];
@@ -172,7 +159,6 @@ class PrediksiController extends Controller
         return view('admin.prediksi-detail', compact('prediction'));
     }
 
-    // DELETE /admin/prediksi/{id}
     // DELETE /admin/prediksi/{id}
     public function destroy(string $id)
     {

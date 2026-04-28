@@ -41,9 +41,8 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // ── ADMIN ROUTES ─────────────────────────────────────────────
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
-    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
     // Komoditas
@@ -56,9 +55,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     // Harga
     Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
-    // Harga
-    Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
-
+    
     // Prediksi
     Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi.index');
     Route::post('/prediksi/generate', [PrediksiController::class, 'generate'])->name('prediksi.generate');

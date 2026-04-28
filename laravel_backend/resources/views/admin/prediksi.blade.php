@@ -6,16 +6,70 @@
 
 @push('styles')
 <style>
-    .alert-box    { margin-bottom:1rem; padding:.75rem 1rem; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:8px; }
-    .alert-success{ background:#d1fae5; color:#065f46; border:1px solid #a7f3d0; }
-    .alert-error  { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
-    .alert-warning{ margin-bottom:1rem; padding:.75rem 1rem; background:#fffbeb; color:#92400e; border:1px solid #fde68a; border-radius:10px; font-size:13px; }
-    .mape-good    { font-weight:600; color:#16a34a; }
-    .mape-warn    { font-weight:600; color:#d97706; }
-    .mape-bad     { font-weight:600; color:#dc2626; }
-    .mape-muted   { font-weight:600; color:var(--text-muted); }
-    .empty-pred   { text-align:center; padding:3rem; color:var(--text-muted); }
-    .empty-pred i { font-size:2.5rem; display:block; margin-bottom:1rem; opacity:.35; }
+    .alert-box {
+        margin-bottom: 1rem;
+        padding: .75rem 1rem;
+        border-radius: 10px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
+
+    .alert-error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    .alert-warning {
+        margin-bottom: 1rem;
+        padding: .75rem 1rem;
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        font-size: 13px;
+    }
+
+    .mape-good {
+        font-weight: 600;
+        color: #16a34a;
+    }
+
+    .mape-warn {
+        font-weight: 600;
+        color: #d97706;
+    }
+
+    .mape-bad {
+        font-weight: 600;
+        color: #dc2626;
+    }
+
+    .mape-muted {
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .empty-pred {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-muted);
+    }
+
+    .empty-pred i {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 1rem;
+        opacity: .35;
+    }
 </style>
 @endpush
 
@@ -23,20 +77,20 @@
 
 {{-- ── FLASH MESSAGES ── --}}
 @if(session('success'))
-    <div class="alert-box alert-success"><i class="fas fa-circle-check"></i> {{ session('success') }}</div>
+<div class="alert-box alert-success"><i class="fas fa-circle-check"></i> {{ session('success') }}</div>
 @endif
 @if(session('error'))
-    <div class="alert-box alert-error"><i class="fas fa-circle-xmark"></i> {{ session('error') }}</div>
+<div class="alert-box alert-error"><i class="fas fa-circle-xmark"></i> {{ session('error') }}</div>
 @endif
 @if(session('import_errors') && count(session('import_errors')) > 0)
-    <div class="alert-warning">
-        <div style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px">
-            <i class="fas fa-triangle-exclamation"></i> Peringatan import:
-        </div>
-        <ul style="margin:0; padding-left:1.25rem">
-            @foreach(session('import_errors') as $err)<li>{{ $err }}</li>@endforeach
-        </ul>
+<div class="alert-warning">
+    <div style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px">
+        <i class="fas fa-triangle-exclamation"></i> Peringatan import:
     </div>
+    <ul style="margin:0; padding-left:1.25rem">
+        @foreach(session('import_errors') as $err)<li>{{ $err }}</li>@endforeach
+    </ul>
+</div>
 @endif
 
 {{-- ── 1. UPLOAD HISTORICAL DATA ── --}}
@@ -84,7 +138,7 @@
                     <select name="komoditas" class="form-select" required>
                         <option value="">Pilih Komoditas...</option>
                         @foreach($commodities as $c)
-                            <option value="{{ $c->id }}">{{ $c->name }}</option>
+                        <option value="{{ $c->id }}">{{ $c->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -141,55 +195,55 @@
         </thead>
         <tbody>
             @foreach($predictions as $pred)
-                @php
-                    // accuracy_mape adalah flat field di dokumen (skema Flask)
-                    $mape = $pred->accuracy_mape ?? null;
-                    if ($mape === null)  { $mapeClass = 'mape-muted'; }
-                    elseif ($mape < 5)  { $mapeClass = 'mape-good'; }
-                    elseif ($mape < 10) { $mapeClass = 'mape-warn'; }
-                    else                { $mapeClass = 'mape-bad'; }
+            @php
+            // accuracy_mape adalah flat field di dokumen (skema Flask)
+            $mape = $pred->accuracy_mape ?? null;
+            if ($mape === null) { $mapeClass = 'mape-muted'; }
+            elseif ($mape < 5) { $mapeClass='mape-good' ; }
+                elseif ($mape < 10) { $mapeClass='mape-warn' ; }
+                else { $mapeClass='mape-bad' ; }
                 @endphp
                 <tr>
-                    <td class="date-text">{{ $loop->iteration }}</td>
-                    <td class="commodity-name">{{ $pred->commodity_name }}</td>
-                    <td class="date-text">{{ $pred->created_at ? $pred->created_at->format('d M Y H:i') : 'N/A' }}</td>
-                    {{-- steps = field langsung di dokumen (bukan horizon_days) --}}
-                    <td class="date-text">{{ $pred->steps ?? '-' }} days</td>
-                    <td class="date-text">
-                        {{ $pred->accuracy_mae !== null ? number_format($pred->accuracy_mae, 0) : '—' }}
-                    </td>
-                    <td class="date-text">
-                        {{ $pred->accuracy_rmse !== null ? number_format($pred->accuracy_rmse, 0) : '—' }}
-                    </td>
-                    <td>
-                        @if($mape !== null)
-                            <span class="{{ $mapeClass }}">{{ number_format($mape, 2) }}%</span>
-                        @else
-                            <span class="date-text">—</span>
-                        @endif
-                    </td>
-                    <td>
-                        <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:600; background:#d1fae5; color:#065f46">
-                            <i class="fas fa-circle" style="font-size:6px"></i> {{ $pred->status ?? 'Completed' }}
-                        </span>
-                    </td>
-                    <td class="commodity-name">{{ $pred->commodity_name }}</td>
-                    <td class="date-text">{{ $pred->horizon_days }} Days</td>
-                    <td class="date-text">{{ $mae ? number_format($mae, 2) : '—' }}</td>
-                    <td class="date-text">{{ $rmse ? number_format($rmse, 2) : '—' }}</td>
-                    <td>
-                        <div class="action-group">
-                            <a href="{{ route('prediksi.show', $pred->id) }}" class="btn-action-edit">
-                                <i class="fas fa-eye"></i> Detail
-                            </a>
-                            <a href="{{ route('prediksi.export', $pred->id) }}"
-                               class="btn-action-edit" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0">
-                                <i class="fas fa-download"></i> CSV
-                            </a>
-                        </div>
-                    </td>
+                <td class="date-text">{{ $loop->iteration }}</td>
+                <td class="commodity-name">{{ $pred->commodity_name }}</td>
+                <td class="date-text">{{ $pred->created_at ? $pred->created_at->format('d M Y H:i') : 'N/A' }}</td>
+                {{-- steps = field langsung di dokumen (bukan horizon_days) --}}
+                <td class="date-text">{{ $pred->steps ?? '-' }} days</td>
+                <td class="date-text">
+                    {{ $pred->accuracy_mae !== null ? number_format($pred->accuracy_mae, 0) : '—' }}
+                </td>
+                <td class="date-text">
+                    {{ $pred->accuracy_rmse !== null ? number_format($pred->accuracy_rmse, 0) : '—' }}
+                </td>
+                <td>
+                    @if($mape !== null)
+                    <span class="{{ $mapeClass }}">{{ number_format($mape, 2) }}%</span>
+                    @else
+                    <span class="date-text">—</span>
+                    @endif
+                </td>
+                <td>
+                    <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:600; background:#d1fae5; color:#065f46">
+                        <i class="fas fa-circle" style="font-size:6px"></i> {{ $pred->status ?? 'Completed' }}
+                    </span>
+                </td>
+                <td class="commodity-name">{{ $pred->commodity_name }}</td>
+                <td class="date-text">{{ $pred->horizon_days }} Days</td>
+                <td class="date-text">{{ $pred->accuracy_mae ? number_format($pred->accuracy_mae, 2) : '-' }}</td>
+                <td class="date-text">{{ $pred->accuracy_rmse ? number_format($pred->accuracy_rmse, 2) : '-' }}</td>
+                <td>
+                    <div class="action-group">
+                        <a href="{{ route('prediksi.show', $pred->id) }}" class="btn-action-edit">
+                            <i class="fas fa-eye"></i> Detail
+                        </a>
+                        <a href="{{ route('prediksi.export', $pred->id) }}"
+                            class="btn-action-edit" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0">
+                            <i class="fas fa-download"></i> CSV
+                        </a>
+                    </div>
+                </td>
                 </tr>
-            @endforeach
+                @endforeach
         </tbody>
     </table>
 
