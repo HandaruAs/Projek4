@@ -164,24 +164,29 @@
         </div>
         <form method="POST" action="/admin/prediksi/generate">
             @csrf
-            <div class="param-grid">
-                <div class="form-group-admin">
-                    <label class="form-label-admin">COMMODITY FOCUS</label>
-                    <select class="form-select" name="komoditas">
-                        @foreach($komoditasList as $nama)
-                            <option value="{{ $nama }}" {{ $selectedNama === $nama ? 'selected' : '' }}>
-                                {{ $nama }}
-                            </option>
+            <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end">
+
+                <div style="flex:2; min-width:220px">
+                    <label class="form-label-admin">Commodity <span class="text-danger">*</span></label>
+                    <select name="komoditas" class="form-select" required>
+                        <option value="">Pilih Komoditas...</option>
+                        @foreach($commodities as $c)
+                        <option value="{{ $c->id }}"
+                            {{ old('komoditas', $selectedNama) == $c->id ? 'selected' : '' }}>
+                            {{ $c->name }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group-admin">
-                    <label class="form-label-admin">PREDICTION HORIZON</label>
-                    <select class="form-select" name="steps">
-                        <option value="7">7 Days</option>
-                        <option value="14">14 Days</option>
-                        <option value="30" selected>30 Days</option>
-                        <option value="90">90 Days</option>
+
+                <div style="flex:1; min-width:160px">
+                    <label class="form-label-admin">Days <span class="text-danger">*</span></label>
+                    <select name="steps" class="form-select" required>
+                        <option value="7" {{ old('steps', 30) == 7 ? 'selected' : '' }}>7 Hari</option>
+                        <option value="14" {{ old('steps', 30) == 14 ? 'selected' : '' }}>14 Hari</option>
+                        <option value="30" {{ old('steps', 30) == 30 ? 'selected' : '' }}>30 Hari</option>
+                        <option value="60" {{ old('steps', 30) == 60 ? 'selected' : '' }}>60 Hari</option>
+                        <option value="90" {{ old('steps', 30) == 90 ? 'selected' : '' }}>90 Hari</option>
                     </select>
                 </div>
             </div>
@@ -240,45 +245,40 @@
                     else                { $mapeClass = 'mape-bad'; }
                 @endphp
                 <tr>
-                    <td class="date-text">
-                        {{ \Carbon\Carbon::parse($pred->predicted_at)->format('M d, Y H:i') }}
-                    </td>
-                    <td class="commodity-name">{{ $pred->commodity_name }}</td>
-                    <td class="date-text">{{ $pred->horizon_days }} Days</td>
-                    <td class="date-text">{{ $mae ? number_format($mae, 2) : '—' }}</td>
-                    <td class="date-text">{{ $rmse ? number_format($rmse, 2) : '—' }}</td>
-                    <td>
-                        @if($mape !== null)
-                            <span class="{{ $mapeClass }}">{{ number_format($mape, 2) }}%</span>
-                        @else
-                            <span class="date-text">—</span>
-                        @endif
-                    </td>
-                    <td>
-                        <span style="display:inline-flex; align-items:center; gap:5px;
-                                     padding:3px 10px; border-radius:20px; font-size:11.5px;
-                                     font-weight:600; background:#d1fae5; color:#065f46">
-                            <i class="fas fa-circle" style="font-size:6px"></i> Completed
-                        </span>
-                    </td>
-                    <td>
-                        <div style="display:flex; flex-direction:column; gap:2px">
-                            <a href="/admin/prediksi/{{ urlencode($pred->commodity_name) }}"
-                               class="pred-action-link">View</a>
-                            <a href="/admin/prediksi/export/{{ $pred->id }}"
-                               class="pred-action-link btn-export">Export</a>
-                        </div>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="8">
-                        <div class="empty-pred">
-                            <i class="fas fa-chart-line"></i>
-                            <div class="empty-pred-title">Belum ada prediksi</div>
-                            <div class="empty-pred-sub">Generate prediksi pertama menggunakan form di atas</div>
-                        </div>
-                    </td>
+                <td class="date-text">{{ $predictions->firstItem() + $loop->index }}</td>
+                <td class="commodity-name">{{ $pred->commodity_name }}</td>
+                <td class="date-text">{{ $pred->created_at ? $pred->created_at->format('d M Y H:i') : 'N/A' }}</td>
+                {{-- steps = field langsung di dokumen (bukan horizon_days) --}}
+                <td class="date-text">{{ $pred->steps ?? '-' }} days</td>
+                <td class="date-text">
+                    {{ $pred->accuracy_mae !== null ? number_format($pred->accuracy_mae, 0) : '—' }}
+                </td>
+                <td class="date-text">
+                    {{ $pred->accuracy_rmse !== null ? number_format($pred->accuracy_rmse, 0) : '—' }}
+                </td>
+                <td>
+                    @if($mape !== null)
+                    <span class="{{ $mapeClass }}">{{ number_format($mape, 2) }}%</span>
+                    @else
+                    <span class="date-text">—</span>
+                    @endif
+                </td>
+                <td>
+                    <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:600; background:#d1fae5; color:#065f46">
+                        <i class="fas fa-circle" style="font-size:6px"></i> {{ $pred->status ?? 'Completed' }}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-group">
+                        <a href="{{ route('prediksi.show', $pred->id) }}" class="btn-action-edit">
+                            <i class="fas fa-eye"></i> Detail
+                        </a>
+                        <a href="{{ route('prediksi.export', $pred->id) }}"
+                            class="btn-action-edit" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0">
+                            <i class="fas fa-download"></i> CSV
+                        </a>
+                    </div>
+                </td>
                 </tr>
             @endforelse
         </tbody>
