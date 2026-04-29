@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Services\PrediksiService;
 use App\Models\Prediction;
+use App\Models\PriceHistory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PrediksiController extends Controller
 {
@@ -16,11 +18,40 @@ class PrediksiController extends Controller
         $this->prediksiService = $prediksiService;
     }
 
+    /**
+     * Hanya komoditas dengan ≥ 20 data historis yang layak diprediksi.
+     */
+    private function getEligibleCommodities(): array
+    {
+        try {
+            $results = PriceHistory::raw(function ($collection) {
+                return $collection->aggregate([
+                    ['$group' => [
+                        '_id'   => '$commodity_name',
+                        'count' => ['$sum' => 1],
+                    ]],
+                    ['$match' => ['count' => ['$gte' => 20]]],
+                    ['$sort'  => ['_id' => 1]],
+                    ['$project' => ['_id' => 0, 'name' => '$_id']],
+                ])->toArray();
+            });
+            return array_column($results, 'name');
+        } catch (\Exception $e) {
+            Log::error('getEligibleCommodities: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     // GET /admin/prediksi
     public function index(Request $request)
     {
-        $komoditasList = PrediksiService::getCommodities();
+        $komoditasList = $this->getEligibleCommodities();
         $selectedNama  = $request->get('komoditas', null);
+
+        if ($selectedNama && !in_array($selectedNama, $komoditasList)) {
+            return redirect()->route('prediksi.index')
+                ->with('error', 'Komoditas tidak memiliki cukup data (min 20 titik).');
+        }
 
         $prediksiData = null;
         $chartData    = null;
@@ -48,12 +79,15 @@ class PrediksiController extends Controller
             }
         }
 
-        $predictions = Prediction::orderBy('created_at', 'desc')->paginate(10);
+        // 🔧 HANYA TAMPILKAN PREDIKSI YANG SUDAH MEMILIKI METRIK
+        $predictions = Prediction::whereNotNull('accuracy_mape')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
-        $commodities = collect($komoditasList)->map(fn($nama) => (object)[
+        $commodities = array_map(fn($nama) => (object)[
             'id'   => $nama,
             'name' => $nama,
-        ])->toArray();
+        ], $komoditasList);
 
         return view('admin.prediksi', compact(
             'komoditasList',
@@ -76,9 +110,20 @@ class PrediksiController extends Controller
         $komoditas = $request->komoditas;
         $steps     = (int) ($request->steps ?? 30);
 
+        $eligible = $this->getEligibleCommodities();
+        if (!in_array($komoditas, $eligible)) {
+            return back()->with('error', 'Komoditas tidak memiliki cukup data historis (min 20 data).');
+        }
+
         try {
             $payload = $this->prediksiService->generate($komoditas, $steps);
-            $acc     = $payload['accuracy'] ?? [];
+
+            $acc = $payload['accuracy'] ?? [];
+
+            $warning = null;
+            if (empty($acc['mae'])) {
+                $warning = "Metrik akurasi tidak tersedia. Data historis mungkin kurang dari 60 hari.";
+            }
 
             Prediction::where('commodity_name', $komoditas)
                 ->where('steps', $steps)
@@ -96,10 +141,17 @@ class PrediksiController extends Controller
                 'payload'        => $payload,
             ]);
 
+            // ✅ HANYA WARNING JIKA METRIK KOSONG, SELAIN ITU SUCCESS
+            if ($warning) {
+                return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
+                    ->with('warning', $warning);
+            }
+
             return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
-                ->with('success', "Prediksi {$komoditas} berhasil digenerate dan disimpan.");
+                ->with('success', "Prediksi {$komoditas} berhasil digenerate.");
 
         } catch (\Exception $e) {
+            Log::error("Generate prediksi error: " . $e->getMessage());
             return back()->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
         }
     }
@@ -108,13 +160,12 @@ class PrediksiController extends Controller
     public function export(string $id)
     {
         $prediction = Prediction::find($id);
-
         if (!$prediction) {
             return back()->with('error', 'Data prediksi tidak ditemukan.');
         }
 
         $filename = 'prediksi_'
-            . str_replace(' ', '_', $prediction->commodity_name)
+            . str_replace(['/', '\\'], '_', $prediction->commodity_name)
             . '_' . now()->format('Ymd') . '.csv';
 
         $headers = [
@@ -150,12 +201,10 @@ class PrediksiController extends Controller
     public function show(string $id)
     {
         $prediction = Prediction::find($id);
-
         if (!$prediction) {
             return redirect()->route('prediksi.index')
                 ->with('error', 'Data prediksi tidak ditemukan.');
         }
-
         return view('admin.prediksi-detail', compact('prediction'));
     }
 
@@ -163,13 +212,11 @@ class PrediksiController extends Controller
     public function destroy(string $id)
     {
         $prediction = Prediction::find($id);
-
         if ($prediction) {
             $prediction->delete();
             return redirect()->route('prediksi.index')
                 ->with('success', 'Data prediksi berhasil dihapus.');
         }
-
         return redirect()->route('prediksi.index')
             ->with('error', 'Data prediksi tidak ditemukan.');
     }

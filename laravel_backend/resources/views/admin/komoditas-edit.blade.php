@@ -45,8 +45,9 @@
             <select name="category_id" class="form-select" required>
                 <option value="">-- Select Category --</option>
                 @foreach($categories as $cat)
+                    {{-- PERBAIKAN: bandingkan berdasarkan category_id (ObjectId) --}}
                     <option value="{{ $cat->id }}"
-                        {{ old('category_id', $commodity->category) == $cat->name ? 'selected' : '' }}>
+                        {{ old('category_id', (string) $commodity->category_id) == (string) $cat->id ? 'selected' : '' }}>
                         {{ $cat->name }}
                     </option>
                 @endforeach

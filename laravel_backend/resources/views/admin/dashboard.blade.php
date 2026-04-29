@@ -85,11 +85,16 @@
             @forelse($recentPrices as $item)
             <tr>
                 <td class="commodity-name">{{ $item->commodity_name }}</td>
+                {{-- PERBAIKAN: tangani string, array, dan objek --}}
                 <td class="region-text">
-                    @if(is_array($item->category))
+                    @if(is_string($item->category))
+                        {{ $item->category }}
+                    @elseif(is_array($item->category))
                         {{ implode(', ', $item->category) }}
+                    @elseif(is_object($item->category))
+                        {{ $item->category->name ?? json_encode($item->category) }}
                     @else
-                        {{ $item->category ?? '-' }}
+                        -
                     @endif
                 </td>
                 <td class="price-text">Rp {{ number_format($item->harga_sekarang, 0, ',', '.') }}</td>

@@ -5,28 +5,6 @@
 @section('page-sub', 'Hasil lengkap Holt-Winters Exponential Smoothing')
 
 @section('content')
-
-{{--
-    Skema dokumen MongoDB (identik Flask):
-    - $prediction->commodity_name   → field langsung
-    - $prediction->steps            → field langsung (bukan horizon_days)
-    - $prediction->created_at       → field langsung (bukan predicted_at)
-    - $prediction->accuracy_mae     → flat field langsung
-    - $prediction->accuracy_rmse    → flat field langsung
-    - $prediction->accuracy_mape    → flat field langsung
-    - $prediction->payload          → nested object berisi semua data prediksi
-      - payload.harga_terakhir
-      - payload.satuan
-      - payload.kategori
-      - payload.tanggal_pred
-      - payload.forecast
-      - payload.ci_lower
-      - payload.ci_upper
-      - payload.accuracy.accuracy   → persen akurasi model
-      - payload.accuracy.note
-      - payload.from_cache
---}}
-
 @php
     $payload  = $prediction->payload ?? [];
     $acc      = $payload['accuracy'] ?? [];
@@ -36,7 +14,6 @@
     $ciUpper  = $payload['ci_upper']     ?? null;
 @endphp
 
-{{-- Back Button --}}
 <div class="mb-4">
     <a href="{{ route('prediksi.index') }}" class="btn btn-outline-primary">
         <i class="fas fa-arrow-left me-2"></i>Kembali
@@ -48,7 +25,6 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                {{-- steps: field flat langsung di dokumen --}}
                 <h5>{{ $prediction->steps ?? 'N/A' }} Hari</h5>
                 <small class="text-muted">Horizon</small>
             </div>
@@ -57,8 +33,7 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                {{-- accuracy_mape: flat field langsung di dokumen --}}
-                <h5>{{ number_format($prediction->accuracy_mape ?? 0, 2) }}%</h5>
+                <h5>{{ $prediction->accuracy_mape !== null ? number_format($prediction->accuracy_mape, 2).'%' : '—' }}</h5>
                 <small class="text-muted">MAPE</small>
             </div>
         </div>
@@ -66,8 +41,7 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                {{-- accuracy_mae: flat field langsung di dokumen --}}
-                <h5>{{ number_format($prediction->accuracy_mae ?? 0, 0) }}</h5>
+                <h5>{{ $prediction->accuracy_mae !== null ? number_format($prediction->accuracy_mae, 0) : '—' }}</h5>
                 <small class="text-muted">MAE</small>
             </div>
         </div>
@@ -75,8 +49,7 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                {{-- accuracy_rmse: flat field langsung di dokumen --}}
-                <h5>{{ number_format($prediction->accuracy_rmse ?? 0, 0) }}</h5>
+                <h5>{{ $prediction->accuracy_rmse !== null ? number_format($prediction->accuracy_rmse, 0) : '—' }}</h5>
                 <small class="text-muted">RMSE</small>
             </div>
         </div>
@@ -84,7 +57,6 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                {{-- created_at: field langsung (bukan predicted_at) --}}
                 <h5>{{ $prediction->created_at ? $prediction->created_at->format('d M Y H:i') : 'N/A' }}</h5>
                 <small class="text-muted">Generated</small>
             </div>
@@ -93,7 +65,6 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                {{-- harga_terakhir: dari dalam payload --}}
                 <h5>Rp {{ number_format($payload['harga_terakhir'] ?? 0, 0) }}</h5>
                 <small class="text-muted">Current Price</small>
             </div>
@@ -101,22 +72,20 @@
     </div>
 </div>
 
-{{-- Accuracy & cache badge --}}
+{{-- Accuracy badge --}}
 <div class="mb-4 d-flex align-items-center gap-3 flex-wrap">
     @if(isset($acc['accuracy']) && $acc['accuracy'] !== null)
         @php
             $pct = $acc['accuracy'];
             $badgeColor = $pct >= 90 ? 'success' : ($pct >= 80 ? 'warning' : 'danger');
         @endphp
-        <span class="badge bg-{{ $badgeColor }} fs-6">
-            Akurasi Model: {{ number_format($pct, 1) }}%
-        </span>
+        <span class="badge bg-{{ $badgeColor }} fs-6">Akurasi Model: {{ number_format($pct, 1) }}%</span>
+    @else
+        <span class="badge bg-secondary">Metrik tidak tersedia</span>
     @endif
 
     @if($payload['from_cache'] ?? false)
-        <span class="badge bg-secondary">
-            <i class="fas fa-bolt me-1"></i> Dari Cache
-        </span>
+        <span class="badge bg-secondary"><i class="fas fa-bolt me-1"></i> Dari Cache</span>
     @endif
 
     @if($acc['note'] ?? null)
@@ -142,14 +111,13 @@
 
 {{-- Forecast Table --}}
 <div class="card">
+    <!-- ... (sama seperti sebelumnya) ... -->
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
             Forecast Results — {{ $prediction->commodity_name }}
             <small class="text-muted">({{ $payload['satuan'] ?? 'kg' }})</small>
         </h5>
-        <small class="text-muted">
-            Data terakhir: {{ $payload['tanggal_terakhir'] ?? '—' }}
-        </small>
+        <small class="text-muted">Data terakhir: {{ $payload['tanggal_terakhir'] ?? '—' }}</small>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -170,9 +138,7 @@
                             <tr>
                                 <td>{{ $i + 1 }}</td>
                                 <td>{{ \Carbon\Carbon::parse($tgl)->format('d M Y') }}</td>
-                                <td>
-                                    <strong>Rp {{ number_format($forecast[$i] ?? 0, 0) }}</strong>
-                                </td>
+                                <td><strong>Rp {{ number_format($forecast[$i] ?? 0, 0) }}</strong></td>
                                 <td>
                                     @if(is_array($ciLower) && isset($ciLower[$i]))
                                         Rp {{ number_format($ciLower[$i], 0) }}
@@ -203,9 +169,7 @@
                         @endforeach
                     @else
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                No forecast data available.
-                            </td>
+                            <td colspan="6" class="text-center text-muted py-4">No forecast data available.</td>
                         </tr>
                     @endif
                 </tbody>
