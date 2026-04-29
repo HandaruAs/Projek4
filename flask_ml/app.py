@@ -602,14 +602,14 @@ def api_prediksi(komoditas):
         "kategori": get_category(komoditas),
     }
 
-    col_prediction.insert_one(
-        {
-            "commodity_name": komoditas,
-            "steps": steps,
-            "created_at": datetime.utcnow(),
-            "payload": payload,
-        }
-    )
+    # col_prediction.insert_one(
+    #     {
+    #         "commodity_name": komoditas,
+    #         "steps": steps,
+    #         "created_at": datetime.utcnow(),
+    #         "payload": payload,
+    #     }
+    # )
 
     return jsonify(payload)
 
