@@ -134,11 +134,13 @@
 
                 <div style="flex:2; min-width:220px">
                     <label class="form-label-admin">Commodity <span class="text-danger">*</span></label>
-                    {{-- FIX: name="komoditas" — sinkron validasi controller --}}
                     <select name="komoditas" class="form-select" required>
                         <option value="">Pilih Komoditas...</option>
                         @foreach($commodities as $c)
-                        <option value="{{ $c->id }}">{{ $c->name }}</option>
+                        <option value="{{ $c->id }}"
+                            {{ old('komoditas', $selectedNama) == $c->id ? 'selected' : '' }}>
+                            {{ $c->name }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -146,11 +148,11 @@
                 <div style="flex:1; min-width:160px">
                     <label class="form-label-admin">Days <span class="text-danger">*</span></label>
                     <select name="steps" class="form-select" required>
-                        <option value="7">7 Hari</option>
-                        <option value="14">14 Hari</option>
-                        <option value="30" selected>30 Hari</option>
-                        <option value="60">60 Hari</option>
-                        <option value="90">90 Hari</option>
+                        <option value="7" {{ old('steps', 30) == 7 ? 'selected' : '' }}>7 Hari</option>
+                        <option value="14" {{ old('steps', 30) == 14 ? 'selected' : '' }}>14 Hari</option>
+                        <option value="30" {{ old('steps', 30) == 30 ? 'selected' : '' }}>30 Hari</option>
+                        <option value="60" {{ old('steps', 30) == 60 ? 'selected' : '' }}>60 Hari</option>
+                        <option value="90" {{ old('steps', 30) == 90 ? 'selected' : '' }}>90 Hari</option>
                     </select>
                 </div>
 
@@ -204,7 +206,7 @@
                 else { $mapeClass='mape-bad' ; }
                 @endphp
                 <tr>
-                <td class="date-text">{{ $loop->iteration }}</td>
+                <td class="date-text">{{ $predictions->firstItem() + $loop->index }}</td>
                 <td class="commodity-name">{{ $pred->commodity_name }}</td>
                 <td class="date-text">{{ $pred->created_at ? $pred->created_at->format('d M Y H:i') : 'N/A' }}</td>
                 {{-- steps = field langsung di dokumen (bukan horizon_days) --}}
@@ -227,10 +229,6 @@
                         <i class="fas fa-circle" style="font-size:6px"></i> {{ $pred->status ?? 'Completed' }}
                     </span>
                 </td>
-                <td class="commodity-name">{{ $pred->commodity_name }}</td>
-                <td class="date-text">{{ $pred->horizon_days }} Days</td>
-                <td class="date-text">{{ $pred->accuracy_mae ? number_format($pred->accuracy_mae, 2) : '-' }}</td>
-                <td class="date-text">{{ $pred->accuracy_rmse ? number_format($pred->accuracy_rmse, 2) : '-' }}</td>
                 <td>
                     <div class="action-group">
                         <a href="{{ route('prediksi.show', $pred->id) }}" class="btn-action-edit">
