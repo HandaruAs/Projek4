@@ -17,7 +17,11 @@ class AdminController extends Controller
         $totalKomoditas = Commodity::count();
         $hargaTertinggi = PriceHistory::orderBy('harga_sekarang', 'desc')->first();
         $hargaTerendah  = PriceHistory::orderBy('harga_sekarang', 'asc')->first();
-        $recentPrices   = PriceHistory::orderBy('date', 'desc')->limit(7)->get();
+        $recentPrices = PriceHistory::whereNotNull('category')
+            ->where('category', '!=', '')
+            ->orderBy('date', 'desc')
+            ->limit(7)
+            ->get();
 
         return view('admin.dashboard', compact(
             'totalKomoditas',
@@ -36,7 +40,7 @@ class AdminController extends Controller
 
     public function updateProfile(Request $request)
     {
-         /** @var \App\Models\User $user */
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $request->validate([

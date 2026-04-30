@@ -8,269 +8,453 @@
 @extends('layouts.layout')
 
 @section('title', 'Profil Saya')
+@section('page-title', 'Profil')
+@section('page-sub', 'Kelola informasi akun dan data pribadi Anda')
 
 @section('content')
 
-  {{-- ── BREADCRUMB ─────────────────────────────────── --}}
-  <nav class="u-breadcrumb">
-    <a href="{{ route('user.home') }}">Beranda</a>
-    <span class="u-breadcrumb__sep">/</span>
-    <span class="u-breadcrumb__current">Profil Saya</span>
-  </nav>
-
-  {{-- ── PAGE HEADER ───────────────────────────────── --}}
-  <div class="u-page-header">
-    <div>
-      <h1>Profil Saya</h1>
-      <p>Kelola informasi akun dan data pribadi Anda.</p>
-    </div>
-  </div>
-
-  {{-- ── ALERT SUCCESS ──────────────────────────────── --}}
-  @if(session('success'))
-  <div class="u-alert u-alert--success">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-      <polyline points="22 4 12 14.01 9 11.01"/>
+{{-- ALERT SUCCESS --}}
+@if(session('success'))
+<div class="u-alert u-alert--success" style="margin-bottom: 20px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
     </svg>
     {{ session('success') }}
-  </div>
-  @endif
+</div>
+@endif
 
-  @if(session('error'))
-  <div class="u-alert u-alert--error">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
+{{-- ALERT ERROR --}}
+@if(session('error'))
+<div class="u-alert u-alert--error" style="margin-bottom: 20px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
     {{ session('error') }}
-  </div>
-  @endif
+</div>
+@endif
 
-  {{-- ── PROFIL GRID ─────────────────────────────────── --}}
-  <div class="u-profil-grid">
+{{-- VALIDATION ERRORS --}}
+@if($errors->any())
+<div class="u-alert u-alert--error" style="margin-bottom: 20px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    {{ $errors->first() }}
+</div>
+@endif
 
-    {{-- ── LEFT: AVATAR & INFO ───────────────────────── --}}
+{{-- PROFIL GRID --}}
+<div class="u-profil-grid">
+
+    {{-- LEFT: AVATAR & INFO --}}
     <div class="u-profil-left">
 
-      {{-- Avatar Card --}}
-      <div class="u-avatar-card">
-        <div class="u-avatar-wrap">
-          <div class="u-avatar">
-            {{ strtoupper(substr(session('user')['nama'] ?? 'U', 0, 1)) }}
-          </div>
-          <div class="u-avatar-ring"></div>
+        {{-- Avatar Card --}}
+        <div class="u-avatar-card">
+            <div class="u-avatar-wrap">
+                <div class="u-avatar-circle" id="avatarCircle">
+                    {{ strtoupper(substr($user['nama'] ?? session('user')['nama'] ?? 'U', 0, 1)) }}
+                </div>
+                <div class="u-avatar-ring"></div>
+            </div>
+
+            <div class="u-avatar-name">{{ $user['nama'] ?? session('user')['nama'] ?? 'Nama User' }}</div>
+            <div class="u-avatar-email">{{ $user['email'] ?? session('user')['email'] ?? 'email@contoh.com' }}</div>
+
+            <div class="u-avatar-badge">
+                <div class="u-update-badge__dot" style="background:var(--emerald)"></div>
+                Akun Aktif
+            </div>
+
+            <div class="u-avatar-meta">
+                <div class="u-avatar-meta__item">
+                    <span class="u-avatar-meta__label">Bergabung</span>
+                    <span class="u-avatar-meta__val">
+                        {{ isset($user['created_at'])
+                            ? \Carbon\Carbon::parse($user['created_at'])->format('M Y')
+                            : date('M Y') }}
+                    </span>
+                </div>
+                <div class="u-avatar-meta__divider"></div>
+                <div class="u-avatar-meta__item">
+                    <span class="u-avatar-meta__label">Role</span>
+                    <span class="u-avatar-meta__val">User</span>
+                </div>
+            </div>
         </div>
 
-        <div class="u-avatar-name">{{ session('user')['nama'] ?? 'Nama User' }}</div>
-        <div class="u-avatar-email">{{ session('user')['email'] ?? 'email@contoh.com' }}</div>
-
-        <div class="u-avatar-badge">
-          <div class="u-update-badge__dot" style="background:var(--emerald)"></div>
-          Akun Aktif
+        {{-- Quick Info Card --}}
+        <div class="u-quick-info-card">
+            <div class="u-quick-info-card__title">Informasi Cepat</div>
+            <ul class="u-quick-info-list">
+                <li>
+                    <div class="u-quick-info-list__icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="u-quick-info-list__label">Nama Lengkap</div>
+                        <div class="u-quick-info-list__val">{{ $user['nama'] ?? session('user')['nama'] ?? '—' }}</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="u-quick-info-list__icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="u-quick-info-list__label">Email</div>
+                        <div class="u-quick-info-list__val">{{ $user['email'] ?? session('user')['email'] ?? '—' }}</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="u-quick-info-list__icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.19 1.22 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.27-.54a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="u-quick-info-list__label">No. Telepon</div>
+                        <div class="u-quick-info-list__val">{{ $user['telepon'] ?? '—' }}</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="u-quick-info-list__icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0116 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="u-quick-info-list__label">Alamat</div>
+                        <div class="u-quick-info-list__val">{{ $user['alamat'] ?? '—' }}</div>
+                    </div>
+                </li>
+            </ul>
         </div>
-
-        <div class="u-avatar-meta">
-          <div class="u-avatar-meta__item">
-            <span class="u-avatar-meta__label">Bergabung</span>
-            <span class="u-avatar-meta__val">
-              {{ isset($user['created_at'])
-                  ? \Carbon\Carbon::parse($user['created_at'])->format('M Y')
-                  : date('M Y') }}
-            </span>
-          </div>
-          <div class="u-avatar-meta__divider"></div>
-          <div class="u-avatar-meta__item">
-            <span class="u-avatar-meta__label">Role</span>
-            <span class="u-avatar-meta__val">User</span>
-          </div>
-        </div>
-      </div>
-
-      {{-- Quick Info Card --}}
-      <div class="u-quick-info-card">
-        <div class="u-quick-info-card__title">Informasi Cepat</div>
-        <ul class="u-quick-info-list">
-          <li>
-            <div class="u-quick-info-list__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div>
-              <div class="u-quick-info-list__label">Nama Lengkap</div>
-              <div class="u-quick-info-list__val">{{ $user['nama'] ?? session('user')['nama'] ?? '—' }}</div>
-            </div>
-          </li>
-          <li>
-            <div class="u-quick-info-list__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-            </div>
-            <div>
-              <div class="u-quick-info-list__label">Email</div>
-              <div class="u-quick-info-list__val">{{ $user['email'] ?? session('user')['email'] ?? '—' }}</div>
-            </div>
-          </li>
-          <li>
-            <div class="u-quick-info-list__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.19 1.22 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.27-.54a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-              </svg>
-            </div>
-            <div>
-              <div class="u-quick-info-list__label">No. Telepon</div>
-              <div class="u-quick-info-list__val">{{ $user['telepon'] ?? '—' }}</div>
-            </div>
-          </li>
-          <li>
-            <div class="u-quick-info-list__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0116 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-            </div>
-            <div>
-              <div class="u-quick-info-list__label">Alamat</div>
-              <div class="u-quick-info-list__val">{{ $user['alamat'] ?? '—' }}</div>
-            </div>
-          </li>
-        </ul>
-      </div>
 
     </div>
     {{-- / LEFT --}}
 
-    {{-- ── RIGHT: FORM ───────────────────────────────── --}}
+    {{-- RIGHT: FORM --}}
     <div class="u-profil-right">
 
-      <form method="POST" action="{{ route('user.profil.update') }}">
-        @csrf
-        @method('PUT')
+        <form method="POST" action="{{ route('user.profil.update') }}">
+            @csrf
+            @method('PUT')
 
-        <div class="u-profil-form-card">
-          <div class="u-profil-form-card__header">
-            <div class="u-profil-form-card__title">Data Pribadi</div>
-            <div class="u-profil-form-card__sub">Informasi ini akan ditampilkan di profil Anda</div>
-          </div>
-          <div class="u-profil-form-card__body">
+            <div class="u-profil-form-card">
+                <div class="u-profil-form-card__header">
+                    <div class="u-profil-form-card__title">Data Pribadi</div>
+                    <div class="u-profil-form-card__sub">Informasi ini akan ditampilkan di profil Anda</div>
+                </div>
+                <div class="u-profil-form-card__body">
 
-            {{-- Nama --}}
-            <div class="u-profil-field">
-              <label class="u-profil-field__label" for="nama">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-                Nama Lengkap
-              </label>
-              <input type="text" id="nama" name="nama"
-                     class="u-profil-input @error('nama') is-error @enderror"
-                     value="{{ old('nama', $user['nama'] ?? session('user')['nama'] ?? '') }}"
-                     placeholder="Masukkan nama lengkap"
-                     required>
-              @error('nama')
-                <div class="u-profil-field__error">{{ $message }}</div>
-              @enderror
+                    {{-- Nama --}}
+                    <div class="u-profil-field">
+                        <label class="u-profil-field__label" for="nama">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            Nama Lengkap
+                        </label>
+                        <input type="text" id="nama" name="nama"
+                               class="u-profil-input @error('nama') is-error @enderror"
+                               value="{{ old('nama', $user['nama'] ?? session('user')['nama'] ?? '') }}"
+                               placeholder="Masukkan nama lengkap"
+                               required>
+                        @error('nama')
+                            <div class="u-profil-field__error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- Email --}}
+                    <div class="u-profil-field">
+                        <label class="u-profil-field__label" for="email">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            Alamat Email
+                        </label>
+                        <input type="email" id="email" name="email"
+                               class="u-profil-input @error('email') is-error @enderror"
+                               value="{{ old('email', $user['email'] ?? session('user')['email'] ?? '') }}"
+                               placeholder="nama@email.com"
+                               required>
+                        @error('email')
+                            <div class="u-profil-field__error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- Telepon --}}
+                    <div class="u-profil-field">
+                        <label class="u-profil-field__label" for="telepon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.19 1.22 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.27-.54a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                            </svg>
+                            No. Telepon
+                            <span class="u-profil-field__optional">Opsional</span>
+                        </label>
+                        <input type="tel" id="telepon" name="telepon"
+                               class="u-profil-input @error('telepon') is-error @enderror"
+                               value="{{ old('telepon', $user['telepon'] ?? '') }}"
+                               placeholder="08xx-xxxx-xxxx">
+                        @error('telepon')
+                            <div class="u-profil-field__error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- Alamat --}}
+                    <div class="u-profil-field">
+                        <label class="u-profil-field__label" for="alamat">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0116 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            Alamat Lengkap
+                            <span class="u-profil-field__optional">Opsional</span>
+                        </label>
+                        <textarea id="alamat" name="alamat" rows="3"
+                                  class="u-profil-input u-profil-textarea @error('alamat') is-error @enderror"
+                                  placeholder="Jl. Contoh No. 1, Kota, Provinsi">{{ old('alamat', $user['alamat'] ?? '') }}</textarea>
+                        @error('alamat')
+                            <div class="u-profil-field__error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                </div>
+                <div class="u-profil-form-card__footer">
+                    <button type="submit" class="u-btn-simpan">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Simpan Perubahan
+                    </button>
+                    <span class="u-profil-form-card__hint">
+                        Terakhir diperbarui:
+                        {{ isset($user['updated_at'])
+                            ? \Carbon\Carbon::parse($user['updated_at'])->diffForHumans()
+                            : 'belum pernah' }}
+                    </span>
+                </div>
             </div>
 
-            {{-- Email --}}
-            <div class="u-profil-field">
-              <label class="u-profil-field__label" for="email">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-                Alamat Email
-              </label>
-              <input type="email" id="email" name="email"
-                     class="u-profil-input @error('email') is-error @enderror"
-                     value="{{ old('email', $user['email'] ?? session('user')['email'] ?? '') }}"
-                     placeholder="nama@email.com"
-                     required>
-              @error('email')
-                <div class="u-profil-field__error">{{ $message }}</div>
-              @enderror
+        </form>
+
+        {{-- Form Change Password --}}
+        <form method="POST" action="{{ route('user.profil.password') }}" style="margin-top:16px">
+            @csrf
+            @method('PUT')
+
+            <div class="u-profil-form-card">
+                <div class="u-profil-form-card__header">
+                    <div class="u-profil-form-card__title">Ganti Password</div>
+                    <div class="u-profil-form-card__sub">Pastikan password Anda kuat dan aman</div>
+                </div>
+                <div class="u-profil-form-card__body">
+
+                    {{-- Password Lama --}}
+                    <div class="u-profil-field">
+                        <label class="u-profil-field__label" for="current_password">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0110 0v4"/>
+                            </svg>
+                            Password Saat Ini
+                        </label>
+                        <div class="u-profil-input-wrap">
+                            <input type="password" id="current_password" name="current_password"
+                                   class="u-profil-input @error('current_password') is-error @enderror"
+                                   placeholder="••••••••">
+                            <button type="button" class="u-profil-eye" onclick="togglePassword('current_password')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        @error('current_password')
+                            <div class="u-profil-field__error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- Password Baru --}}
+                    <div class="u-profil-field">
+                        <label class="u-profil-field__label" for="password">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0110 0v4"/>
+                            </svg>
+                            Password Baru
+                        </label>
+                        <div class="u-profil-input-wrap">
+                            <input type="password" id="password" name="password"
+                                   class="u-profil-input @error('password') is-error @enderror"
+                                   placeholder="••••••••">
+                            <button type="button" class="u-profil-eye" onclick="togglePassword('password')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="passwordStrength" class="u-strength-wrap" style="display:none">
+                            <div class="u-strength-bar"><div class="u-strength-bar__fill" id="strengthFill"></div></div>
+                            <span id="strengthText" class="u-strength-label">Lemah</span>
+                        </div>
+                        @error('password')
+                            <div class="u-profil-field__error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- Konfirmasi Password --}}
+                    <div class="u-profil-field">
+                        <label class="u-profil-field__label" for="password_confirmation">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0110 0v4"/>
+                                <line x1="12" y1="15" x2="12" y2="17"/>
+                            </svg>
+                            Konfirmasi Password Baru
+                        </label>
+                        <div class="u-profil-input-wrap">
+                            <input type="password" id="password_confirmation" name="password_confirmation"
+                                   class="u-profil-input"
+                                   placeholder="••••••••">
+                            <button type="button" class="u-profil-eye" onclick="togglePassword('password_confirmation')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="matchMsg" class="u-profil-field__match" style="display:none"></div>
+                    </div>
+
+                    <div class="u-pass-tips">
+                        <div class="u-pass-tips__title">Tips Password Kuat:</div>
+                        <ul>
+                            <li>Minimal 8 karakter</li>
+                            <li>Mengandung huruf besar dan kecil</li>
+                            <li>Mengandung angka</li>
+                            <li>Mengandung simbol (@$!%*?&)</li>
+                        </ul>
+                    </div>
+
+                </div>
+                <div class="u-profil-form-card__footer">
+                    <button type="submit" class="u-btn-simpan u-btn-simpan--rose">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0110 0v4"/>
+                        </svg>
+                        Update Password
+                    </button>
+                </div>
             </div>
-
-            {{-- Telepon --}}
-            <div class="u-profil-row">
-              <div class="u-profil-field">
-                <label class="u-profil-field__label" for="telepon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.19 1.22 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.27-.54a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-                  </svg>
-                  No. Telepon
-                  <span class="u-profil-field__optional">Opsional</span>
-                </label>
-                <input type="tel" id="telepon" name="telepon"
-                       class="u-profil-input @error('telepon') is-error @enderror"
-                       value="{{ old('telepon', $user['telepon'] ?? '') }}"
-                       placeholder="08xx-xxxx-xxxx">
-                @error('telepon')
-                  <div class="u-profil-field__error">{{ $message }}</div>
-                @enderror
-              </div>
-            </div>
-
-            {{-- Alamat --}}
-            <div class="u-profil-field">
-              <label class="u-profil-field__label" for="alamat">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0116 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-                Alamat Lengkap
-                <span class="u-profil-field__optional">Opsional</span>
-              </label>
-              <textarea id="alamat" name="alamat" rows="3"
-                        class="u-profil-input u-profil-textarea @error('alamat') is-error @enderror"
-                        placeholder="Jl. Contoh No. 1, Kota, Provinsi">{{ old('alamat', $user['alamat'] ?? '') }}</textarea>
-              @error('alamat')
-                <div class="u-profil-field__error">{{ $message }}</div>
-              @enderror
-            </div>
-
-          </div>
-          <div class="u-profil-form-card__footer">
-            <button type="submit" class="u-btn-simpan">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/>
-                <polyline points="7 3 7 8 15 8"/>
-              </svg>
-              Simpan Perubahan
-            </button>
-            <span class="u-profil-form-card__hint">
-              Terakhir diperbarui:
-              {{ isset($user['updated_at'])
-                  ? \Carbon\Carbon::parse($user['updated_at'])->diffForHumans()
-                  : 'belum pernah' }}
-            </span>
-          </div>
-        </div>
-
-      </form>
+        </form>
 
     </div>
     {{-- / RIGHT --}}
 
-  </div>
-  {{-- / profil grid --}}
+</div>
+
+<script>
+// Toggle password visibility
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (field.type === 'password') {
+        field.type = 'text';
+    } else {
+        field.type = 'password';
+    }
+}
+
+// Password strength checker
+const passwordInput = document.getElementById('password');
+const strengthDiv = document.getElementById('passwordStrength');
+const strengthFill = document.getElementById('strengthFill');
+const strengthText = document.getElementById('strengthText');
+
+if (passwordInput) {
+    passwordInput.addEventListener('input', function() {
+        const val = this.value;
+        if (val.length === 0) {
+            strengthDiv.style.display = 'none';
+            return;
+        }
+        strengthDiv.style.display = 'flex';
+
+        let strength = 0;
+        if (val.length >= 8) strength++;
+        if (val.match(/[a-z]/) && val.match(/[A-Z]/)) strength++;
+        if (val.match(/[0-9]/)) strength++;
+        if (val.match(/[^a-zA-Z0-9]/)) strength++;
+
+        let width = '25%';
+        let color = '#ef4444';
+        let text = 'Lemah';
+
+        if (strength >= 4) {
+            width = '100%';
+            color = '#10b981';
+            text = 'Kuat';
+        } else if (strength === 3) {
+            width = '75%';
+            color = '#f59e0b';
+            text = 'Sedang';
+        } else if (strength === 2) {
+            width = '50%';
+            color = '#f59e0b';
+            text = 'Sedang';
+        } else if (strength === 1) {
+            width = '25%';
+            color = '#ef4444';
+            text = 'Lemah';
+        }
+
+        strengthFill.style.width = width;
+        strengthFill.style.background = color;
+        strengthText.textContent = text;
+        strengthText.style.color = color;
+    });
+}
+
+// Password match checker
+const confirmInput = document.getElementById('password_confirmation');
+const matchMsg = document.getElementById('matchMsg');
+
+if (passwordInput && confirmInput) {
+    function checkMatch() {
+        if (confirmInput.value.length === 0) {
+            matchMsg.style.display = 'none';
+            return;
+        }
+        matchMsg.style.display = 'block';
+        if (passwordInput.value === confirmInput.value) {
+            matchMsg.innerHTML = '✓ Password cocok';
+            matchMsg.className = 'u-profil-field__match u-profil-field__match--ok';
+        } else {
+            matchMsg.innerHTML = '✗ Password tidak cocok';
+            matchMsg.className = 'u-profil-field__match u-profil-field__match--err';
+        }
+    }
+    passwordInput.addEventListener('input', checkMatch);
+    confirmInput.addEventListener('input', checkMatch);
+}
+</script>
 
 @endsection

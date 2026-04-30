@@ -2718,3 +2718,403 @@ html.dark .stat-change.down {
   background: rgba(244,63,94,.12);
   color: #fb7185;
 }
+/* ═══════════════════════════════════════════════════
+   ADMIN — PROFIL PAGE (tambahan untuk avatar circle)
+═══════════════════════════════════════════════════ */
+
+/* Avatar circle style */
+.u-avatar-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: white;
+    font-size: 28px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* Avatar wrap position relative untuk ring */
+.u-avatar-wrap {
+    position: relative;
+    margin-bottom: 4px;
+}
+
+/* Ring animation */
+.u-avatar-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid #bfdbfe;
+    animation: uRingPulse 2.5s ease infinite;
+}
+
+@keyframes uRingPulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+}
+
+/* Badge dot */
+.u-update-badge__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Field hint text */
+.u-profil-field__hint {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 4px;
+    display: block;
+}
+
+/* Eye button for password */
+.u-profil-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: color .15s;
+    border-radius: 4px;
+}
+
+.u-profil-eye:hover {
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+.u-profil-eye svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* Input wrap for password eye */
+.u-profil-input-wrap {
+    position: relative;
+}
+
+.u-profil-input-wrap .u-profil-input {
+    padding-right: 44px;
+}
+
+/* Strength bar */
+.u-strength-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.u-strength-bar {
+    flex: 1;
+    height: 5px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.u-strength-bar__fill {
+    height: 100%;
+    border-radius: 10px;
+    width: 0%;
+    transition: width .3s ease, background .3s ease;
+}
+
+.u-strength-label {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    min-width: 36px;
+}
+
+/* Match message */
+.u-profil-field__match {
+    font-size: 11.5px;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+.u-profil-field__match--ok {
+    color: #10b981;
+}
+
+.u-profil-field__match--err {
+    color: #f43f5e;
+}
+
+/* Password tips card */
+.u-pass-tips {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+}
+
+.u-pass-tips__title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 8px;
+}
+
+.u-pass-tips ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.u-pass-tips ul li {
+    font-size: 12px;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.u-pass-tips ul li::before {
+    content: '•';
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* Dark mode adjustments for password section */
+html.dark .u-pass-tips {
+    background: var(--surface-2);
+    border-color: var(--border);
+}
+
+html.dark .u-pass-tips ul li {
+    color: var(--text-3);
+}
+
+html.dark .u-pass-tips ul li::before {
+    color: var(--accent);
+}
+
+html.dark .u-profil-eye:hover {
+    background: var(--accent-light);
+}
+/* ═══════════════════════════════════════════════════
+   ADMIN — PROFIL PAGE (tambahan untuk avatar circle)
+═══════════════════════════════════════════════════ */
+
+/* Avatar circle style */
+.u-avatar-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: white;
+    font-size: 28px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* Avatar wrap position relative untuk ring */
+.u-avatar-wrap {
+    position: relative;
+    margin-bottom: 4px;
+}
+
+/* Ring animation */
+.u-avatar-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid #bfdbfe;
+    animation: uRingPulse 2.5s ease infinite;
+}
+
+@keyframes uRingPulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+}
+
+/* Badge dot */
+.u-update-badge__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Field hint text */
+.u-profil-field__hint {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 4px;
+    display: block;
+}
+
+/* Eye button for password */
+.u-profil-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: color .15s;
+    border-radius: 4px;
+}
+
+.u-profil-eye:hover {
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+.u-profil-eye svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* Input wrap for password eye */
+.u-profil-input-wrap {
+    position: relative;
+}
+
+.u-profil-input-wrap .u-profil-input {
+    padding-right: 44px;
+}
+
+/* Strength bar */
+.u-strength-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.u-strength-bar {
+    flex: 1;
+    height: 5px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.u-strength-bar__fill {
+    height: 100%;
+    border-radius: 10px;
+    width: 0%;
+    transition: width .3s ease, background .3s ease;
+}
+
+.u-strength-label {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    min-width: 36px;
+}
+
+/* Match message */
+.u-profil-field__match {
+    font-size: 11.5px;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+.u-profil-field__match--ok {
+    color: #10b981;
+}
+
+.u-profil-field__match--err {
+    color: #f43f5e;
+}
+
+/* Password tips card */
+.u-pass-tips {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+}
+
+.u-pass-tips__title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 8px;
+}
+
+.u-pass-tips ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.u-pass-tips ul li {
+    font-size: 12px;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.u-pass-tips ul li::before {
+    content: '•';
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* Dark mode adjustments for password section */
+html.dark .u-pass-tips {
+    background: var(--surface-2);
+    border-color: var(--border);
+}
+
+html.dark .u-pass-tips ul li {
+    color: var(--text-3);
+}
+
+html.dark .u-pass-tips ul li::before {
+    color: var(--accent);
+}
+
+html.dark .u-profil-eye:hover {
+    background: var(--accent-light);
+}
