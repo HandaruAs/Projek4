@@ -5,184 +5,105 @@
 @section('page-sub', 'Generate commodity price predictions using machine learning models.')
 
 @push('styles')
-<style>
-    .alert-box {
-        margin-bottom: 1rem;
-        padding: .75rem 1rem;
-        border-radius: 10px;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .alert-success {
-        background: #d1fae5;
-        color: #065f46;
-        border: 1px solid #a7f3d0;
-    }
-    .alert-error {
-        background: #fef2f2;
-        color: #991b1b;
-        border: 1px solid #fecaca;
-    }
-    .alert-warning {
-        margin-bottom: 1rem;
-        padding: .75rem 1rem;
-        background: #fffbeb;
-        color: #92400e;
-        border: 1px solid #fde68a;
-        border-radius: 10px;
-        font-size: 13px;
-    }
-    .alert-warning-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-        margin-bottom: 6px;
-    }
-    .alert-warning ul {
-        margin: 0;
-        padding-left: 1.25rem;
-    }
+<link rel="stylesheet" href="{{ asset('css/modal-warning.css') }}">
+@endpush
 
-    .section-card { margin-bottom: 1.5rem; }
-    .section-icon { color: var(--accent); margin-right: 8px; }
-
-    .upload-form-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        align-items: flex-end;
-        padding: 1.5rem;
-    }
-    .upload-field { flex: 1; min-width: 260px; }
-    .upload-hint {
-        font-size: 11.5px;
-        color: var(--text-muted);
-        margin-top: 4px;
-        display: block;
-    }
-    .upload-hint i { font-size: 10px; }
-    .file-input { padding: 6px 10px; cursor: pointer; }
-
-    .generate-form-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        align-items: flex-end;
-        padding: 1.5rem;
-    }
-    .generate-field-lg { flex: 2; min-width: 220px; }
-    .generate-field-sm { flex: 1; min-width: 160px; }
-    .btn-success { background: var(--success, #10b981); }
-
-    .pred-count {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--text-muted);
-        margin-left: 6px;
-    }
-
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 11.5px;
-        font-weight: 600;
-        background: #d1fae5;
-        color: #065f46;
-    }
-    .status-badge i { font-size: 6px; }
-
-    .btn-export {
-        background: #f0fdf4;
-        color: #16a34a;
-        border-color: #bbf7d0;
-    }
-
-    .mape-good  { font-weight: 600; color: #16a34a; }
-    .mape-warn  { font-weight: 600; color: #d97706; }
-    .mape-bad   { font-weight: 600; color: #dc2626; }
-    .mape-muted { font-weight: 600; color: var(--text-muted); }
-
-    .empty-pred {
-        text-align: center;
-        padding: 3rem;
-        color: var(--text-muted);
-    }
-    .empty-pred i {
-        font-size: 2.5rem;
-        display: block;
-        margin-bottom: 1rem;
-        opacity: .35;
-    }
-    .empty-pred-title { font-weight: 600; margin-bottom: 4px; }
-    .empty-pred-sub   { font-size: 13px; }
-</style>
+@push('scripts')
+<script src="{{ asset('js/modal-warning.js') }}"></script>
 @endpush
 
 @section('content')
 
-{{-- TWO PANEL ROW --}}
-<div class="prediksi-panels">
+{{-- Banner sukses tetap muncul jika tidak ada warning --}}
+@if(session('success'))
+<div class="alert-box alert-success"><i class="fas fa-circle-check"></i> {{ session('success') }}</div>
+@endif
 
-    {{-- PANEL 1: Import Historical Data --}}
-    <div class="panel-card">
-        <div class="panel-step-badge">1</div>
-        <div class="panel-header">
-            <div class="panel-title">Import Historical Data</div>
-            <div class="panel-sub">Upload latest price records</div>
+@if(session('error'))
+<div class="alert-box alert-error"><i class="fas fa-circle-xmark"></i> {{ session('error') }}</div>
+@endif
+
+{{-- Warning sebagai popup modal --}}
+@if(session('warning'))
+<div id="warningModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Perhatian</div>
+        <div class="modal-message">{{ session('warning') }}</div>
+        <button class="btn-close-modal" onclick="document.getElementById('warningModal').remove()">Mengerti</button>
+    </div>
+</div>
+@endif
+
+{{-- Import error tetap menggunakan banner --}}
+@if(session('import_errors') && count(session('import_errors')) > 0)
+<div class="alert-warning">
+    <div style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px">
+        <i class="fas fa-triangle-exclamation"></i> Peringatan import:
+    </div>
+    <ul style="margin:0; padding-left:1.25rem">
+        @foreach(session('import_errors') as $err)<li>{{ $err }}</li>@endforeach
+    </ul>
+</div>
+@endif
+
+{{-- ── UPLOAD HISTORICAL DATA ── --}}
+<div class="table-card" style="margin-bottom:1.5rem">
+    <div class="table-header">
+        <div>
+            <div class="table-title"><i class="fas fa-upload"></i> Upload Historical Data</div>
+            <div class="table-subtitle">Import data harga historis dari file CSV atau Excel.</div>
         </div>
         <form method="POST" action="/admin/prediksi/upload" enctype="multipart/form-data">
             @csrf
-            <div class="upload-zone" id="uploadZone">
-                <i class="fas fa-file-arrow-up upload-zone-icon"></i>
-                <p class="upload-zone-text">Drop Excel or CSV file</p>
-                <input type="file" id="fileInput" name="file" accept=".xlsx,.csv" hidden>
-                <button type="button" class="btn-secondary" onclick="document.getElementById('fileInput').click()">
-                    Browse Files
-                </button>
-            </div>
-            <div class="panel-footer-row">
-                <a href="#" class="template-link"><i class="fas fa-download"></i> Template</a>
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-check-circle"></i> Validate & Upload
-                </button>
+            <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end">
+                <div style="flex:1; min-width:260px">
+                    <label class="form-label-admin">CSV/Excel File <span class="text-danger">*</span></label>
+                    <input type="file" name="file" accept=".csv,.xlsx,.xls" class="form-input-admin" required>
+                    <span style="font-size:11.5px; color:var(--text-muted); margin-top:4px; display:block">
+                        Format kolom: tanggal,komoditas,satuan,harga_lama,harga_sekarang,selisih,persen
+                    </span>
+                </div>
+                <div><button type="submit" class="btn-primary"><i class="fas fa-upload"></i> Upload</button></div>
             </div>
         </form>
     </div>
 
-    {{-- PANEL 2: Model Parameters --}}
-    <div class="panel-card">
-        <div class="panel-step-badge">2</div>
-        <div class="panel-header">
-            <div class="panel-title">Model Parameters</div>
-            <div class="panel-sub">Configure Holt-Winters forecasting settings</div>
+{{-- ── GENERATE PREDICTION ── --}}
+<div class="table-card" style="margin-bottom:1.5rem">
+    <div class="table-header">
+        <div>
+            <div class="table-title"><i class="fas fa-wand-magic-sparkles"></i> Generate Prediction</div>
+            <div class="table-subtitle">Pilih komoditas dan horizon prediksi, lalu jalankan model Holt-Winters.</div>
         </div>
         <form method="POST" action="/admin/prediksi/generate">
             @csrf
-            <div class="param-grid">
-                <div class="form-group-admin">
-                    <label class="form-label-admin">COMMODITY FOCUS</label>
-                    <select class="form-select" name="komoditas">
-                        @foreach($komoditasList as $nama)
-                            <option value="{{ $nama }}" {{ $selectedNama === $nama ? 'selected' : '' }}>
-                                {{ $nama }}
-                            </option>
+            <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end">
+                <div style="flex:2; min-width:220px">
+                    <label class="form-label-admin">Commodity <span class="text-danger">*</span></label>
+                    <select name="komoditas" class="form-select" required>
+                        <option value="">Pilih Komoditas...</option>
+                        @foreach($commodities as $c)
+                        <option value="{{ $c->id }}" {{ old('komoditas', $selectedNama) == $c->id ? 'selected' : '' }}>
+                            {{ $c->name }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group-admin">
-                    <label class="form-label-admin">PREDICTION HORIZON</label>
-                    <select class="form-select" name="steps">
-                        <option value="7">7 Days</option>
-                        <option value="14">14 Days</option>
-                        <option value="30" selected>30 Days</option>
-                        <option value="90">90 Days</option>
+                <div style="flex:1; min-width:160px">
+                    <label class="form-label-admin">Days <span class="text-danger">*</span></label>
+                    <select name="steps" class="form-select" required>
+                        <option value="7" {{ old('steps', 30) == 7 ? 'selected' : '' }}>7 Hari</option>
+                        <option value="14" {{ old('steps', 30) == 14 ? 'selected' : '' }}>14 Hari</option>
+                        <option value="30" {{ old('steps', 30) == 30 ? 'selected' : '' }}>30 Hari</option>
+                        <option value="60" {{ old('steps', 30) == 60 ? 'selected' : '' }}>60 Hari</option>
+                        <option value="90" {{ old('steps', 30) == 90 ? 'selected' : '' }}>90 Hari</option>
                     </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn-primary" style="background:var(--success,#10b981)">
+                        <i class="fas fa-wand-magic-sparkles"></i> Run Holt-Winters
+                    </button>
                 </div>
             </div>
             <button type="submit" class="btn-run-model">
@@ -193,23 +114,15 @@
 
 </div>
 
-{{-- FLASH MESSAGES --}}
-@if(session('success'))
-    <div class="alert-box alert-success">
-        <i class="fas fa-check-circle"></i> {{ session('success') }}
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert-box alert-error">
-        <i class="fas fa-times-circle"></i> {{ session('error') }}
-    </div>
-@endif
-
-{{-- PREDICTION HISTORY TABLE --}}
+{{-- ── PREDICTION HISTORY ── --}}
 <div class="table-card">
     <div class="table-header">
         <div>
-            <div class="table-title">Prediction History</div>
+            <div class="table-title">
+                <i class="fas fa-clock-rotate-left"></i> Prediction History
+                <span style="font-size:13px; font-weight:500; color:var(--text-muted); margin-left:6px">({{ $predictions->total() }})</span>
+            </div>
+            <div class="table-subtitle">Riwayat semua prediksi yang telah di-generate.</div>
         </div>
     </div>
 
@@ -227,60 +140,58 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($predictions as $pred)
-                @php
-                    $metrics  = $pred->metrics ?? [];
-                    $mape     = $metrics['mape'] ?? null;
-                    $mae      = $metrics['mae']  ?? null;
-                    $rmse     = $metrics['rmse'] ?? null;
-
-                    if ($mape === null)  { $mapeClass = 'mape-muted'; }
-                    elseif ($mape < 5)  { $mapeClass = 'mape-good'; }
-                    elseif ($mape < 10) { $mapeClass = 'mape-warn'; }
-                    else                { $mapeClass = 'mape-bad'; }
-                @endphp
-                <tr>
-                    <td class="date-text">
-                        {{ \Carbon\Carbon::parse($pred->predicted_at)->format('M d, Y H:i') }}
-                    </td>
-                    <td class="commodity-name">{{ $pred->commodity_name }}</td>
-                    <td class="date-text">{{ $pred->horizon_days }} Days</td>
-                    <td class="date-text">{{ $mae ? number_format($mae, 2) : '—' }}</td>
-                    <td class="date-text">{{ $rmse ? number_format($rmse, 2) : '—' }}</td>
-                    <td>
-                        @if($mape !== null)
-                            <span class="{{ $mapeClass }}">{{ number_format($mape, 2) }}%</span>
-                        @else
-                            <span class="date-text">—</span>
-                        @endif
-                    </td>
-                    <td>
-                        <span style="display:inline-flex; align-items:center; gap:5px;
-                                     padding:3px 10px; border-radius:20px; font-size:11.5px;
-                                     font-weight:600; background:#d1fae5; color:#065f46">
-                            <i class="fas fa-circle" style="font-size:6px"></i> Completed
-                        </span>
-                    </td>
-                    <td>
-                        <div style="display:flex; flex-direction:column; gap:2px">
-                            <a href="/admin/prediksi/{{ urlencode($pred->commodity_name) }}"
-                               class="pred-action-link">View</a>
-                            <a href="/admin/prediksi/export/{{ $pred->id }}"
-                               class="pred-action-link btn-export">Export</a>
-                        </div>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="8">
-                        <div class="empty-pred">
-                            <i class="fas fa-chart-line"></i>
-                            <div class="empty-pred-title">Belum ada prediksi</div>
-                            <div class="empty-pred-sub">Generate prediksi pertama menggunakan form di atas</div>
-                        </div>
-                    </td>
-                </tr>
-            @endforelse
+            @foreach($predictions as $pred)
+            @php
+                $mape = $pred->accuracy_mape ?? null;
+                if ($mape === null) { $mapeClass = 'mape-muted'; }
+                elseif ($mape < 5) { $mapeClass = 'mape-good'; }
+                elseif ($mape < 10) { $mapeClass = 'mape-warn'; }
+                else { $mapeClass = 'mape-bad'; }
+            @endphp
+            <tr>
+                <td class="date-text">{{ $predictions->firstItem() + $loop->index }}</td>
+                <td class="commodity-name">{{ $pred->commodity_name }}</td>
+                <td class="date-text">{{ $pred->created_at ? $pred->created_at->format('d M Y H:i') : 'N/A' }}</td>
+                <td class="date-text">{{ $pred->steps ?? '-' }} days</td>
+                <td class="date-text">
+                    @if($pred->accuracy_mae !== null)
+                        {{ number_format($pred->accuracy_mae, 0) }}
+                    @else
+                        <span style="cursor:help; border-bottom:1px dotted var(--text-muted)" title="Data historis tidak mencukupi">—</span>
+                    @endif
+                </td>
+                <td class="date-text">
+                    @if($pred->accuracy_rmse !== null)
+                        {{ number_format($pred->accuracy_rmse, 0) }}
+                    @else
+                        <span style="cursor:help; border-bottom:1px dotted var(--text-muted)" title="Data historis tidak mencukupi">—</span>
+                    @endif
+                </td>
+                <td>
+                    @if($mape !== null)
+                        <span class="{{ $mapeClass }}">{{ number_format($mape, 2) }}%</span>
+                    @else
+                        <span style="cursor:help; border-bottom:1px dotted var(--text-muted)" title="Data historis tidak mencukupi">—</span>
+                    @endif
+                </td>
+                <td>
+                    <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:600; background:#d1fae5; color:#065f46">
+                        <i class="fas fa-circle" style="font-size:6px"></i> {{ $pred->status ?? 'Completed' }}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-group">
+                        <a href="{{ route('prediksi.show', $pred->id) }}" class="btn-action-edit">
+                            <i class="fas fa-eye"></i> Detail
+                        </a>
+                        <a href="{{ route('prediksi.export', $pred->id) }}"
+                           class="btn-action-edit" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0">
+                            <i class="fas fa-download"></i> CSV
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            @endforeach
         </tbody>
     </table>
 

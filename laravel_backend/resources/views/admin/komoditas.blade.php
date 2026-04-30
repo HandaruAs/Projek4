@@ -96,9 +96,18 @@
 
                 <td class="commodity-name">{{ $item->name }}</td>
 
+                {{-- PERBAIKAN: tangani category sebagai string, array, atau objek --}}
                 <td>
                     @if(!empty($item->category))
-                        <span class="region-text">{{ $item->category }}</span>
+                        @if(is_string($item->category))
+                            <span class="region-text">{{ $item->category }}</span>
+                        @elseif(is_array($item->category))
+                            <span class="region-text">{{ $item->category['name'] ?? 'Unknown' }}</span>
+                        @elseif(is_object($item->category))
+                            <span class="region-text">{{ $item->category->name ?? 'Unknown' }}</span>
+                        @else
+                            <span class="date-text">—</span>
+                        @endif
                     @else
                         <span class="date-text">—</span>
                     @endif

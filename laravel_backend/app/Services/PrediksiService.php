@@ -12,8 +12,8 @@ class PrediksiService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.flask.url', env('FLASK_API_URL', 'http://127.0.0.1:5001'));
-        $this->apiKey  = config('services.flask.key', env('FLASK_API_KEY', ''));
+        $this->baseUrl = config('services.flask.url');
+        $this->apiKey  = config('services.flask.key');
     }
 
     private function headers(): array
@@ -21,10 +21,7 @@ class PrediksiService
         return ['X-API-Key' => $this->apiKey];
     }
 
-    /**
-     * Ambil daftar komoditas dari Flask.
-     * Return: array of string ['Beras Premium', 'Beras Medium', ...]
-     */
+    // Ambil daftar komoditas dari Flask
     public static function getCommodities(): array
     {
         $instance = new self();
@@ -32,44 +29,25 @@ class PrediksiService
             $res = Http::withHeaders($instance->headers())
                 ->timeout(10)
                 ->get("{$instance->baseUrl}/api/external/komoditas");
-
-            if (!$res->successful()) {
-                Log::warning('PrediksiService::getCommodities - status ' . $res->status());
-                return [];
-            }
-
-            $data = $res->json();
-
-            // Normalisasi: apapun format Flask, return array of string
-            return collect($data)->map(function ($item) {
-                if (is_string($item)) return $item;
-                if (is_array($item))  return $item['name'] ?? $item['nama'] ?? array_values($item)[0] ?? '';
-                return (string) $item;
-            })->filter()->values()->toArray();
-
+            return $res->successful ? $res->json : [];
         } catch (\Exception $e) {
             Log::error('PrediksiService::getCommodities - ' . $e->getMessage());
             return [];
         }
     }
 
-    /**
-     * Generate prediksi dari Flask.
-     * Parameter: nama komoditas (string), bukan ObjectId.
-     */
+    // Generate prediksi dari Flask
     public function generate(string $komoditas, int $steps = 30): array
     {
         try {
             $res = Http::withHeaders($this->headers())
                 ->timeout(60)
-                ->get(
-                    "{$this->baseUrl}/api/external/prediksi/" . rawurlencode($komoditas),
-                    ['steps' => $steps]
-                );
+                ->get("{$this->baseUrl}/api/external/prediksi/" . rawurlencode($komoditas), [
+                    'steps' => $steps,
+                ]);
 
-            if (!$res->successful()) {
-                $error = $res->json('error', 'Flask error ' . $res->status());
-                throw new \Exception($error);
+            if (!$res->successful) {
+                throw new \Exception($res->json('error', 'Flask error'));
             }
 
             return $res->json();
@@ -80,9 +58,7 @@ class PrediksiService
         }
     }
 
-    /**
-     * Ambil rekomendasi dari Flask.
-     */
+    // Ambil rekomendasi dari Flask
     public function rekomendasi(string $komoditas, float $konsumsi = 1.0): array
     {
         try {
@@ -94,8 +70,7 @@ class PrediksiService
                 ]);
 
             if (!$res->successful()) {
-                $error = $res->json('error', 'Flask error ' . $res->status());
-                throw new \Exception($error);
+                throw new \Exception($res->json('error', 'Flask error'));
             }
 
             return $res->json();
