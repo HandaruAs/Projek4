@@ -2314,25 +2314,32 @@ html.dark {
   --rose:           #fb7185;
   --rose-light:     rgba(251,113,133,.12);
 
-  --bg:         #0f172a;
-  --surface:    #1e293b;
-  --surface-2:  #162032;
-  --border:     #2a3a50;
+  /* 🔵 Samakan bg dengan nuansa sidebar */
+  --bg:         #0b1120;   /* sama dengan --sidebar-bg light */
+  --surface:    #101827;   /* sedikit lebih terang dari bg */
+  --surface-2:  #0d1520;   /* lebih gelap dari surface */
+  --border:     #1e2d42;
 
-  --text-1:  #f1f5f9;
-  --text-2:  #94a3b8;
-  --text-3:  #4b6580;
+  /* 🩶 Teks abu-abu, bukan putih */
+  --text-1:  #cbd5e1;   /* abu terang (bukan putih) */
+  --text-2:  #64748b;   /* abu medium */
+  --text-3:  #334155;   /* abu gelap */
 
-  --shadow-xs: 0 1px 3px rgba(0,0,0,.3);
-  --shadow-sm: 0 2px 10px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.2);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.2);
-  --shadow:    0 4px 22px rgba(0,0,0,.45);
+  --shadow-xs: 0 1px 3px rgba(0,0,0,.4);
+  --shadow-sm: 0 2px 10px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.3);
+  --shadow:    0 4px 22px rgba(0,0,0,.55);
 }
-
 /* Topbar dark */
 html.dark .topbar {
   background: rgba(30,41,59,.92);
   border-bottom-color: var(--border);
+}
+
+html.dark .region-text {
+  background: #1a1f3c;
+  color: #cbd5e1;
+  border: 1px solid #2a3158;
 }
 
 /* Stat cards dark — hapus gradient putih hover */
@@ -2621,3 +2628,93 @@ html.dark .skel {
   background: var(--accent-light);
 }
 #dm-toggle .dm-icon { font-size: 14px; line-height: 1; }
+
+/* Badge kategori & perubahan */
+html.dark .region-text,
+html.dark .badge-gray,
+html.dark .stat-change.neutral,
+html.dark .u-tren-badge--flat {
+  background: #1a1f3c;
+  color: #94a3b8;
+  border: 1px solid #2a3158;
+}
+
+/* Input search & date di filter bar */
+html.dark .search-box,
+html.dark input[type="date"],
+html.dark input[type="text"],
+html.dark input[type="search"] {
+  background: #161b35;
+  border-color: #2a3158;
+  color: #cbd5e1;
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+}
+
+/* Tombol Lihat Semua */
+html.dark .view-all {
+  background: #1a1f3c;
+  border-color: #2a3158;
+  color: #a5b4fc;
+}
+html.dark .view-all:hover {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+}
+
+/* Table rows dark */
+html.dark tbody tr:hover {
+  background: rgba(99,102,241,.06);
+}
+html.dark .date-text {
+  color: #4b6580;
+}
+/* Stat cards dark */
+html.dark .stat-card,
+html.dark .u-stat-card {
+  background: #101827;
+  border-color: #1e2d42;
+}
+
+html.dark .stat-label {
+  color: #64748b;
+}
+
+html.dark .stat-value {
+  color: #cbd5e1;
+}
+
+/* Icon button di pojok kanan stat card */
+html.dark .stat-icon,
+html.dark .u-stat-icon {
+  background: #1a1f3c;
+  border: 1px solid #2a3158;
+}
+
+html.dark .icon-orange {
+  background: rgba(249,115,22,.12);
+  color: #fb923c;
+}
+
+html.dark .icon-green {
+  background: rgba(16,185,129,.12);
+  color: #34d399;
+}
+
+html.dark .icon-blue {
+  background: rgba(59,130,246,.12);
+  color: #60a5fa;
+}
+
+/* Badge update terbaru & vs bulan lalu */
+html.dark .stat-change.up {
+  background: rgba(16,185,129,.12);
+  color: #34d399;
+}
+
+html.dark .stat-change.down {
+  background: rgba(244,63,94,.12);
+  color: #fb7185;
+}

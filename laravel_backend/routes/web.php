@@ -68,6 +68,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
     Route::put('/profile', [AdminController::class, 'updateProfile'])->name('profile.update');
 
+    // routes/web.php — di dalam group admin
+
+// API Status
+Route::get('/api-status',       [AdminApiStatusController::class, 'index'])->name('admin.api-status');
+Route::get('/api-status/check', [AdminApiStatusController::class, 'check'])->name('admin.api-status.check');
+
 }); // ← TUTUP ADMIN GROUP
 
 
