@@ -102,7 +102,7 @@ def format_context_ringkasan(ringkasan):
         lines.append(
             f"• {item['_id']} ({item.get('category', '-')})\n"
             f"  Harga: Rp {item.get('harga_terbaru', 0):,}/{item.get('satuan', 'kg')}\n"
-            f"  Perubahan: {status} Rp {abs(item.get('selisih', 0)):,} ({item.get('persen', 0):.2f}%)\n"
+            f"  Perubahan: {status} Rp {abs(item.get('selisih') or 0):,} ({float(item.get('persen') or 0):.2f}%)\n"
             f"  Update: {tanggal}\n"
         )
 
@@ -125,7 +125,7 @@ def format_context_tren(data_7_hari):
         lines.append(
             f"• {item.get('commodity_name', '-')} | "
             f"Rp {item.get('harga_sekarang', 0):,} | "
-            f"{item.get('persen', 0):.2f}% | {tanggal}"
+            f"{float(item.get('persen') or 0):.2f}% | {tanggal}"
         )
 
     return "\n".join(lines)

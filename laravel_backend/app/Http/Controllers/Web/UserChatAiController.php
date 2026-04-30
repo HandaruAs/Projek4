@@ -14,7 +14,7 @@ class UserChatAiController extends Controller
 
     public function __construct()
     {
-        $this->flaskUrl = env('FLASK_ML_URL', 'http://127.0.0.1:5001');
+        $this->flaskUrl = env('FLASK_ML_URL', 'http://127.0.0.1:5000');
     }
 
     // ── Halaman Chat AI ──────────────────────────────────────────

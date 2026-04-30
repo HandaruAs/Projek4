@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\PrediksiService;
+use App\Models\Prediction;
+use App\Models\PriceHistory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PrediksiController extends Controller
 {
@@ -15,22 +18,40 @@ class PrediksiController extends Controller
         $this->prediksiService = $prediksiService;
     }
 
+    /**
+     * Hanya komoditas dengan ≥ 20 data historis yang layak diprediksi.
+     */
+    private function getEligibleCommodities(): array
+    {
+        try {
+            $results = PriceHistory::raw(function ($collection) {
+                return $collection->aggregate([
+                    ['$group' => [
+                        '_id'   => '$commodity_name',
+                        'count' => ['$sum' => 1],
+                    ]],
+                    ['$match' => ['count' => ['$gte' => 20]]],
+                    ['$sort'  => ['_id' => 1]],
+                    ['$project' => ['_id' => 0, 'name' => '$_id']],
+                ])->toArray();
+            });
+            return array_column($results, 'name');
+        } catch (\Exception $e) {
+            Log::error('getEligibleCommodities: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     // GET /admin/prediksi
     public function index(Request $request)
     {
-        $rawList = PrediksiService::getCommodities();
+        $komoditasList = $this->getEligibleCommodities();
+        $selectedNama  = $request->get('komoditas', null);
 
-        // FIX: Normalisasi komoditasList — pastikan selalu array of string,
-        // apapun format yang dikembalikan Flask (array of string atau array of array)
-        $komoditasList = collect($rawList)->map(function ($item) {
-            if (is_array($item)) {
-                return $item['name'] ?? $item['nama'] ?? (string) array_values($item)[0];
-            }
-            return (string) $item;
-        })->filter()->values()->toArray();
-
-        $firstKomoditas = $komoditasList[0] ?? null;
-        $selectedNama   = $request->get('komoditas', $firstKomoditas);
+        if ($selectedNama && !in_array($selectedNama, $komoditasList)) {
+            return redirect()->route('prediksi.index')
+                ->with('error', 'Komoditas tidak memiliki cukup data (min 20 titik).');
+        }
 
         $prediksiData = null;
         $chartData    = null;
@@ -58,16 +79,15 @@ class PrediksiController extends Controller
             }
         }
 
-        // Ambil prediction history dari MongoDB
-        $predictions = \App\Models\Prediction::orderBy('predicted_at', 'desc')
+        // 🔧 HANYA TAMPILKAN PREDIKSI YANG SUDAH MEMILIKI METRIK
+        $predictions = Prediction::whereNotNull('accuracy_mape')
+            ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        // Konversi ke format object untuk view
-        $commodities = collect($komoditasList)->map(fn($nama) => (object)[
+        $commodities = array_map(fn($nama) => (object)[
             'id'   => $nama,
             'name' => $nama,
-        ])->toArray();
-
+        ], $komoditasList);
 
         return view('admin.prediksi', compact(
             'komoditasList',
@@ -90,56 +110,49 @@ class PrediksiController extends Controller
         $komoditas = $request->komoditas;
         $steps     = (int) ($request->steps ?? 30);
 
+        $eligible = $this->getEligibleCommodities();
+        if (!in_array($komoditas, $eligible)) {
+            return back()->with('error', 'Komoditas tidak memiliki cukup data historis (min 20 data).');
+        }
+
         try {
-            $data = $this->prediksiService->generate($komoditas, $steps);
+            $payload = $this->prediksiService->generate($komoditas, $steps);
 
-            $results  = [];
-            $tanggal  = $data['tanggal_pred'] ?? [];
-            $forecast = $data['forecast']     ?? [];
-            $ciLower  = $data['ci_lower']     ?? [];
-            $ciUpper  = $data['ci_upper']     ?? [];
+            $acc = $payload['accuracy'] ?? [];
 
-            foreach ($tanggal as $i => $tgl) {
-                $results[] = [
-                    'date'            => $tgl,
-                    'predicted_price' => $forecast[$i] ?? 0,
-                    'lower'           => $ciLower[$i]  ?? null,
-                    'upper'           => $ciUpper[$i]  ?? null,
-                ];
+            $warning = null;
+            if (empty($acc['mae'])) {
+                $warning = "Metrik akurasi tidak tersedia. Data historis mungkin kurang dari 60 hari.";
             }
 
-            $acc     = $data['accuracy'] ?? [];
-            $metrics = [
-                'mae'      => $acc['mae']      ?? null,
-                'rmse'     => $acc['rmse']     ?? null,
-                'mape'     => $acc['mape']     ?? null,
-                'accuracy' => $acc['accuracy'] ?? null,
-            ];
-
-            \App\Models\Prediction::where('commodity_name', $komoditas)
-                ->where('horizon_days', $steps)
+            Prediction::where('commodity_name', $komoditas)
+                ->where('steps', $steps)
                 ->delete();
 
             \App\Models\Prediction::create([
                 'commodity_id'   => $komoditas,
                 'commodity_name' => $komoditas,
-                'predicted_at'   => now(),
-                'horizon_days'   => $steps,
-                'current_price'  => $data['harga_terakhir'] ?? 0,
-                'satuan'         => $data['satuan']   ?? 'kg',
-                'kategori'       => $data['kategori'] ?? '',
-                'tanggal_pred'   => $tanggal,
-                'forecast'       => $forecast,
-                'ci_lower'       => $ciLower,
-                'ci_upper'       => $ciUpper,
-                'results'        => $results,
-                'metrics'        => $metrics,
+                'steps'          => $steps,
+                'created_at'     => now(),
+                'created_by'     => auth()->user()->name ?? 'laravel_web',
+                'status'         => 'completed',
+                'accuracy_mae'   => $acc['mae']  ?? null,
+                'accuracy_rmse'  => $acc['rmse'] ?? null,
+                'accuracy_mape'  => $acc['mape'] ?? null,
+                'payload'        => $payload,
             ]);
 
+            // ✅ HANYA WARNING JIKA METRIK KOSONG, SELAIN ITU SUCCESS
+            if ($warning) {
+                return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
+                    ->with('warning', $warning);
+            }
+
             return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
-                ->with('success', "Prediksi {$komoditas} berhasil digenerate dan disimpan.");
+                ->with('success', "Prediksi {$komoditas} berhasil digenerate.");
 
         } catch (\Exception $e) {
+            Log::error("Generate prediksi error: " . $e->getMessage());
             return back()->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
         }
     }
@@ -147,14 +160,14 @@ class PrediksiController extends Controller
     // GET /admin/prediksi/export/{id}
     public function export(string $id)
     {
-        $prediction = \App\Models\Prediction::find($id);
-
+        $prediction = Prediction::find($id);
         if (!$prediction) {
             return back()->with('error', 'Data prediksi tidak ditemukan.');
         }
 
-        $filename = 'prediksi_' . str_replace(' ', '_', $prediction->commodity_name)
-                  . '_' . now()->format('Ymd') . '.csv';
+        $filename = 'prediksi_'
+            . str_replace(['/', '\\'], '_', $prediction->commodity_name)
+            . '_' . now()->format('Ymd') . '.csv';
 
         $headers = [
             'Content-Type'        => 'text/csv',
@@ -187,40 +200,23 @@ class PrediksiController extends Controller
     // GET /admin/prediksi/{id}
     public function show(string $id, Request $request)
     {
-        $komoditas = urldecode($id);
-        $steps     = (int) $request->get('steps', 30);
-
-        try {
-            $prediksiData = $this->prediksiService->generate($komoditas, $steps);
-
-            $forecast  = $prediksiData['forecast']       ?? [];
-            $tanggal   = $prediksiData['tanggal_pred']   ?? [];
-            $ciLower   = $prediksiData['ci_lower']       ?? [];
-            $ciUpper   = $prediksiData['ci_upper']       ?? [];
-            $hargaKini = $prediksiData['harga_terakhir'] ?? 0;
-
-            $chartData = [
-                'pred_tanggal' => array_slice($tanggal, 0, 14),
-                'pred_harga'   => array_slice($forecast, 0, 14),
-                'ci_lower'     => array_slice($ciLower, 0, 14),
-                'ci_upper'     => array_slice($ciUpper, 0, 14),
-                'harga_kini'   => $hargaKini,
-            ];
-        } catch (\Exception $e) {
-            $prediksiData = ['error' => $e->getMessage()];
-            $chartData    = null;
+        $prediction = Prediction::find($id);
+        if (!$prediction) {
+            return redirect()->route('prediksi.index')
+                ->with('error', 'Data prediksi tidak ditemukan.');
         }
-
-        return view('admin.prediksi-detail', compact(
-            'komoditas',
-            'prediksiData',
-            'chartData'
-        ));
+        return view('admin.prediksi-detail', compact('prediction'));
     }
 
     // DELETE /admin/prediksi/{id}
     public function destroy(string $id)
     {
+        $prediction = Prediction::find($id);
+        if ($prediction) {
+            $prediction->delete();
+            return redirect()->route('prediksi.index')
+                ->with('success', 'Data prediksi berhasil dihapus.');
+        }
         return redirect()->route('prediksi.index')
             ->with('info', 'Data prediksi dikelola langsung oleh Flask ML.');
     }
