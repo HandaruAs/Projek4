@@ -67,7 +67,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Profile
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
     Route::put('/profile', [AdminController::class, 'updateProfile'])->name('profile.update');
-    Route::put('/profile/password', [AdminController::class, 'updatePassword'])->name('profile.password'); 
+    Route::put('/profile/password', [AdminController::class, 'updatePassword'])->name('profile.password');
 
     // routes/web.php — di dalam group admin
 
