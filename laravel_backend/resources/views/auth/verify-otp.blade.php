@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verifikasi OTP — SIMOPANG</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ asset('css/auth-base.css') }}" rel="stylesheet">
     <link href="{{ asset('css/verify-otp.css') }}" rel="stylesheet">
 </head>
 <body>
@@ -15,14 +16,20 @@
         <span class="brand-name">SIMOPANG</span>
     </a>
     <div class="navbar-links">
-        <a href="{{ route('forgot.password') }}"><i class="fas fa-arrow-left"></i>Kembali</a>
+        <a href="/" class="btn-back">
+            <i class="fas fa-house"></i>
+            <span class="back-text">Beranda</span>
+        </a>
+        <a href="{{ route('forgot.password') }}">
+            <i class="fas fa-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
     </div>
 </nav>
 
 <div class="page-wrapper">
     <div class="auth-card">
 
-        {{-- LEFT --}}
         <div class="card-left">
             <div class="left-illustration">
                 <div class="hex-bg"></div>
@@ -36,11 +43,13 @@
                 </div>
                 <div class="scan-line"></div>
             </div>
+
             <div class="left-title">Cek Emailmu</div>
             <div class="left-desc">
                 Kode OTP 6 digit telah dikirim ke<br>
                 email yang kamu daftarkan.
             </div>
+
             <div class="left-steps">
                 <div class="step done">
                     <div class="step-num"><i class="fas fa-check"></i></div>
@@ -59,9 +68,7 @@
             </div>
         </div>
 
-        {{-- RIGHT --}}
         <div class="card-right">
-
             <div class="page-icon">
                 <i class="fas fa-mobile-screen-button"></i>
             </div>
@@ -76,15 +83,13 @@
 
             @if(session('error'))
             <div class="alert-error">
-                <i class="fas fa-circle-exclamation"></i>
-                {{ session('error') }}
+                <i class="fas fa-circle-exclamation"></i> {{ session('error') }}
             </div>
             @endif
 
             @if ($errors->any())
             <div class="alert-error">
-                <i class="fas fa-circle-exclamation"></i>
-                {{ $errors->first() }}
+                <i class="fas fa-circle-exclamation"></i> {{ $errors->first() }}
             </div>
             @endif
 
@@ -93,7 +98,6 @@
                 <input type="hidden" name="email" value="{{ session('email') }}">
                 <input type="hidden" name="otp" id="otp-hidden">
 
-                {{-- OTP Input Boxes --}}
                 <div class="otp-inputs">
                     <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autofocus>
                     <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
@@ -108,7 +112,6 @@
                     <span id="btn-text">Verifikasi Kode</span>
                     <i class="fas fa-shield-check" id="btn-icon"></i>
                 </button>
-
             </form>
 
             <div class="resend-wrap">
@@ -122,20 +125,16 @@
                 </form>
             </div>
 
-            <div class="powered-by">
-                Powered by <span>SIMOPANG</span> Core
-            </div>
-
+            <div class="powered-by">Powered by <span>SIMOPANG</span> Core</div>
         </div>
+
     </div>
 </div>
 
-<footer class="footer">
-    © 2024 SIMOPANG. Hak Cipta Dilindungi Undang-Undang.
-</footer>
+<footer class="footer">© 2024 SIMOPANG. Hak Cipta Dilindungi Undang-Undang.</footer>
 
 <script>
-    /* ── OTP Input Logic ── */
+    /* OTP Input Logic */
     const inputs = document.querySelectorAll('.otp-input');
     const hidden = document.getElementById('otp-hidden');
     const btn    = document.getElementById('btn-submit');
@@ -155,9 +154,8 @@
             paste.split('').forEach((char, idx) => {
                 if (inputs[idx]) { inputs[idx].value = char; inputs[idx].classList.add('filled'); }
             });
-            if (inputs[Math.min(paste.length, inputs.length - 1)]) {
-                inputs[Math.min(paste.length, inputs.length - 1)].focus();
-            }
+            const focusIdx = Math.min(paste.length, inputs.length - 1);
+            if (inputs[focusIdx]) inputs[focusIdx].focus();
             syncOTP();
         });
         input.addEventListener('focus', function() { this.select(); });
@@ -170,7 +168,7 @@
         btn.disabled = otp.length < 6;
     }
 
-    /* ── Countdown Timer (5 min OTP expiry) ── */
+    /* Countdown Timer (5 min) */
     let seconds = 300;
     const timerEl = document.getElementById('timer');
     const countdown = setInterval(() => {
@@ -186,7 +184,7 @@
         }
     }, 1000);
 
-    /* ── Resend Cooldown (60s) ── */
+    /* Resend Cooldown (60s) */
     let resendSec = 60;
     const resendEl  = document.getElementById('resend-timer');
     const resendBtn = document.getElementById('resend-btn');
@@ -200,7 +198,7 @@
         }
     }, 1000);
 
-    /* ── Submit loading state ── */
+    /* Submit loading state */
     document.getElementById('otp-form').addEventListener('submit', function() {
         const text = document.getElementById('btn-text');
         const icon = document.getElementById('btn-icon');

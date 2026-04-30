@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>@yield('title', 'Dashboard') — SIMOPANG</title>
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  @php
+    use Illuminate\Support\Facades\Auth;
+
+    $user     = Auth::user();
+    $role     = $user->role ?? 'user';
+    $isAdmin  = $role === 'admin';
+
+    $namaUser  = $user->name ?? ($isAdmin ? 'Admin' : 'User');
+    $emailUser = $user->email ?? '';
+    $initials  = strtoupper(substr($namaUser, 0, 1));
+
+    // ✅ Avatar URL
+    $avatarUrl = ($user && $user->avatar)
+        ? asset('storage/' . $user->avatar)
+        : null;
+  @endphp
+
+  <link rel="stylesheet" href="{{ asset('css/simopang.css') }}">
+  @stack('styles')
+</head>
+<body>
+
+{{-- ═══════════ SIDEBAR ═══════════ --}}
+<aside class="sidebar" id="appSidebar">
+
+  <div class="sidebar-logo">
+    <div class="logo-badge">
+      <div class="logo-icon">
+        <i class="fas fa-chart-line"></i>
+      </div>
+      <div>
+        <div class="logo-title">SIMOPANG {{ $isAdmin ? 'Admin' : '' }}</div>
+        <div class="logo-sub">Monitoring & Prediksi</div>
+      </div>
+    </div>
+  </div>
+
+  @if($isAdmin)
+  {{-- ADMIN --}}
+  <nav class="nav-section">
+    <a href="/admin/dashboard" class="nav-item {{ Request::is('admin/dashboard') ? 'active' : '' }}">
+      <i class="fas fa-gauge-high"></i> Overview
+    </a>
+    <a href="/admin/komoditas" class="nav-item {{ Request::is('admin/komoditas*') ? 'active' : '' }}">
+      <i class="fas fa-boxes-stacked"></i> Kelola Komoditas
+    </a>
+    <a href="/admin/harga" class="nav-item {{ Request::is('admin/harga*') ? 'active' : '' }}">
+      <i class="fas fa-tags"></i> Data Harga
+    </a>
+    <a href="/admin/prediksi" class="nav-item {{ Request::is('admin/prediksi*') ? 'active' : '' }}">
+      <i class="fas fa-wand-magic-sparkles"></i> Generate Prediksi
+    </a>
+  </nav>
+
+  <nav class="nav-section bordered">
+    <div class="nav-label">System</div>
+    <a href="/admin/profile" class="nav-item {{ Request::is('admin/profile*') ? 'active' : '' }}">
+      <i class="fas fa-circle-user"></i> Profile
+    </a>
+    <a href="#" class="nav-item nav-item--logout" onclick="confirmLogout(); return false;">
+      <i class="fas fa-right-from-bracket"></i> Logout
+    </a>
+  </nav>
+
+  @else
+  {{-- USER --}}
+  <nav class="nav-section">
+    <div class="nav-label">Menu</div>
+
+    <a href="{{ route('user.home') }}"
+       class="nav-item {{ request()->routeIs('user.home') ? 'active' : '' }}">
+      <i class="fas fa-gauge-high"></i> Dashboard
+    </a>
+
+    <a href="{{ route('user.harga') }}"
+       class="nav-item {{ request()->routeIs('user.harga') ? 'active' : '' }}">
+      <i class="fas fa-tags"></i> Data Harga
+    </a>
+
+    <a href="{{ route('user.prediksi') }}"
+       class="nav-item {{ request()->routeIs('user.prediksi') ? 'active' : '' }}">
+      <i class="fas fa-chart-line"></i> Prediksi
+    </a>
+
+    <a href="{{ route('user.simulasi') }}"
+       class="nav-item {{ request()->routeIs('user.simulasi') ? 'active' : '' }}">
+      <i class="fas fa-calculator"></i> Simulasi
+    </a>
+
+    <a href="{{ route('user.chatai') }}"
+       class="nav-item {{ request()->routeIs('user.chatai') ? 'active' : '' }}">
+      <i class="fas fa-robot"></i> Tanya AI
+    </a>
+  </nav>
+
+  <nav class="nav-section bordered">
+    <div class="nav-label">Akun</div>
+
+    <a href="{{ route('user.profil') }}"
+       class="nav-item {{ request()->routeIs('user.profil') ? 'active' : '' }}">
+      <i class="fas fa-circle-user"></i> Profil
+    </a>
+
+    <a href="#" class="nav-item nav-item--logout" onclick="confirmLogout(); return false;">
+      <i class="fas fa-right-from-bracket"></i> Keluar
+    </a>
+  </nav>
+  @endif
+
+  {{-- FOOTER --}}
+  <div class="sidebar-footer">
+    <div class="avatar">
+      @if($avatarUrl)
+        <img src="{{ $avatarUrl }}" alt="{{ $namaUser }}"
+             style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+      @else
+        {{ $initials }}
+      @endif
+    </div>
+    <div>
+      <div class="footer-name">{{ $namaUser }}</div>
+      <div class="footer-email">{{ $emailUser }}</div>
+    </div>
+  </div>
+
+</aside>
+
+{{-- MAIN --}}
+<div class="main" id="appMain">
+
+<header class="topbar">
+  <div>
+    <div class="topbar-title">@yield('page-title', config('app.name'))</div>
+    <div class="topbar-sub">@yield('page-sub')</div>
+  </div>
+
+  <div class="topbar-right">
+
+    @if($isAdmin)
+    <a href="/admin/profile">
+    @else
+    <a href="{{ route('user.profil') }}">
+    @endif
+
+      <div class="topbar-user">
+        <div class="topbar-avatar">
+          @if($avatarUrl)
+            <img src="{{ $avatarUrl }}"
+                 alt="{{ $namaUser }}"
+                 style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+          @else
+            {{ $initials }}
+          @endif
+        </div>
+        <div class="topbar-user-info">
+          <div class="topbar-user-name">{{ $namaUser }}</div>
+          <div class="topbar-user-role">{{ $isAdmin ? 'Administrator' : 'Pengguna' }}</div>
+        </div>
+      </div>
+    </a>
+
+  </div>
+</header>
+
+<main class="content">
+  @yield('content')
+</main>
+
+</div>
+
+{{-- LOGOUT --}}
+<form id="logout-form" method="POST" action="{{ route('logout') }}" style="display:none">
+  @csrf
+</form>
+
+<script>
+function confirmLogout() {
+  document.getElementById('logout-form').submit();
+}
+</script>
+@stack('scripts')  
+</body>
+</html>

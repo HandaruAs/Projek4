@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar — SIMOPANG</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ asset('css/auth-base.css') }}" rel="stylesheet">
     <link href="{{ asset('css/register-user.css') }}" rel="stylesheet">
 </head>
 <body>
@@ -15,15 +16,18 @@
         <span class="brand-name">SIMOPANG</span>
     </a>
     <div class="navbar-links">
-        <a href="#"><i class="fas fa-circle-question" style="margin-right:5px"></i>Bantuan</a>
-        <a href="#"><i class="fas fa-book" style="margin-right:5px"></i>Dokumentasi</a>
+        <a href="/" class="btn-back">
+            <i class="fas fa-house"></i>
+            <span class="back-text">Beranda</span>
+        </a>
+        <a href="#"><i class="fas fa-circle-question"></i><span>Bantuan</span></a>
+        <a href="#"><i class="fas fa-book"></i><span>Dokumentasi</span></a>
     </div>
 </nav>
 
 <div class="register-wrapper">
     <div class="register-card">
 
-        {{-- ══════════════ LEFT PANEL (User) ══════════════ --}}
         <div class="register-left">
             <div class="step-indicator">
                 <div class="step-dot done"></div>
@@ -35,26 +39,16 @@
 
             <div class="illustration-card">
                 <div class="secure-label">Akun Pengguna</div>
-
-                {{-- Avatar user --}}
                 <div class="user-avatar-wrap">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="user-avatar-badge">
-                        <i class="fas fa-check"></i>
-                    </div>
+                    <div class="user-avatar"><i class="fas fa-user"></i></div>
+                    <div class="user-avatar-badge"><i class="fas fa-check"></i></div>
                 </div>
-
-                {{-- Icon row: fitur yang bisa diakses user --}}
                 <div class="icon-row">
                     <div class="icon-item active"><i class="fas fa-magnifying-glass-chart"></i></div>
                     <div class="icon-item active"><i class="fas fa-tags"></i></div>
                     <div class="icon-item"><i class="fas fa-bell"></i></div>
                     <div class="icon-item"><i class="fas fa-star"></i></div>
                 </div>
-
-                <div class="fake-field"><div class="fake-field-dot"></div><div class="fake-field-line"></div></div>
                 <div class="fake-field"><div class="fake-field-dot"></div><div class="fake-field-line"></div></div>
                 <div class="fake-field"><div class="fake-field-dot"></div><div class="fake-field-line short"></div></div>
                 <div class="fake-btn-wrap">
@@ -66,7 +60,6 @@
             <div class="left-title">Bergabung Sekarang</div>
             <div class="left-desc">Pantau harga komoditas dan prediksi pasar secara real-time dengan akun SIMOPANG Anda.</div>
 
-            {{-- Fitur-fitur user --}}
             <div class="user-features">
                 <div class="user-feature-item">
                     <div class="user-feature-icon"><i class="fas fa-chart-line"></i></div>
@@ -85,7 +78,6 @@
             <div class="left-badge"><div class="pulse-dot"></div>Akses Gratis</div>
         </div>
 
-        {{-- ══════════════ RIGHT PANEL (Form) ══════════════ --}}
         <div class="register-right">
             <div class="form-tag"><i class="fas fa-user-plus" style="font-size:10px"></i> Registrasi Pengguna</div>
             <div class="form-heading">Buat Akun Baru</div>
@@ -149,10 +141,10 @@
 
                     <div class="pass-hints" id="passHints">
                         <div class="hint-item" id="hint-length"><i class="fas fa-circle-dot"></i> Minimal 6 karakter</div>
-                        <div class="hint-item" id="hint-upper"><i class="fas fa-circle-dot"></i> Mengandung huruf besar (A-Z)</div>
-                        <div class="hint-item" id="hint-lower"><i class="fas fa-circle-dot"></i> Mengandung huruf kecil (a-z)</div>
-                        <div class="hint-item" id="hint-number"><i class="fas fa-circle-dot"></i> Mengandung angka (0-9)</div>
-                        <div class="hint-item" id="hint-special"><i class="fas fa-circle-dot"></i> Mengandung karakter spesial (!@#$%^&*()-+)</div>
+                        <div class="hint-item" id="hint-upper"><i class="fas fa-circle-dot"></i> Huruf besar (A-Z)</div>
+                        <div class="hint-item" id="hint-lower"><i class="fas fa-circle-dot"></i> Huruf kecil (a-z)</div>
+                        <div class="hint-item" id="hint-number"><i class="fas fa-circle-dot"></i> Angka (0-9)</div>
+                        <div class="hint-item" id="hint-special"><i class="fas fa-circle-dot"></i> Karakter spesial</div>
                     </div>
 
                     @error('password')
@@ -205,18 +197,11 @@
         const text  = document.getElementById('strengthText');
         const hints = document.getElementById('passHints');
 
-        if (!val) {
-            wrap.style.display  = 'none';
-            hints.style.display = 'none';
-            return;
-        }
+        if (!val) { wrap.style.display = 'none'; hints.style.display = 'none'; return; }
         wrap.style.display  = 'flex';
         hints.style.display = 'flex';
 
-        const setHint = (id, ok) => {
-            const el = document.getElementById(id);
-            el.classList.toggle('hint-ok', ok);
-        };
+        const setHint = (id, ok) => document.getElementById(id).classList.toggle('hint-ok', ok);
         setHint('hint-length',  val.length >= 6);
         setHint('hint-upper',   /[A-Z]/.test(val));
         setHint('hint-lower',   /[a-z]/.test(val));

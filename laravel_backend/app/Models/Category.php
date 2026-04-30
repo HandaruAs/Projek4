@@ -8,19 +8,10 @@ class Category extends Model
 {
     protected $connection = 'mongodb';
     protected $collection = 'categories';
-
-    /**
-     * Kategori komoditas pangan di Jember.
-     * Contoh: "Beras & Serealia", "Sayuran", "Bumbu", "Minyak & Lemak"
-     *
-     * Struktur dokumen MongoDB:
-     * {
-     *   _id: ObjectId,
-     *   name: "Beras & Serealia",   // unique index
-     *   created_at: ...,
-     *   updated_at: ...
-     * }
-     */
+    protected $primaryKey = '_id';
+    public $incrementing  = false;
+    protected $keyType    = 'string';
+        
     protected $fillable = [
         'name',
     ];

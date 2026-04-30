@@ -1,4 +1,4 @@
-@extends('admin.layouts')
+@extends('layouts.layout')
 
 @section('title', 'Kelola Komoditas')
 @section('page-title', 'Kelola Komoditas')
@@ -6,15 +6,21 @@
 
 @section('content')
 
+@if(session('success'))
+<div class="alert-success">
+    <i class="fas fa-circle-check"></i> {{ session('success') }}
+</div>
+@endif
+
 {{-- STAT CARDS --}}
 <div class="stats-grid">
     <div class="stat-card">
         <div>
             <div class="stat-label">Total Commodities</div>
-            <div class="stat-value">34</div>
+            <div class="stat-value">{{ $totalKomoditas }}</div>
             <div class="stat-change up">
-                <i class="fas fa-arrow-trend-up"></i> +2
-                <span class="stat-change-sub">this month</span>
+                <i class="fas fa-boxes-stacked"></i>
+                <span class="stat-change-sub">registered</span>
             </div>
         </div>
         <div class="stat-icon icon-orange"><i class="fas fa-boxes-stacked"></i></div>
@@ -22,7 +28,7 @@
     <div class="stat-card">
         <div>
             <div class="stat-label">Active Commodities</div>
-            <div class="stat-value">31</div>
+            <div class="stat-value">{{ $activeKomoditas }}</div>
             <div class="stat-change up">
                 <i class="fas fa-circle-check"></i>
                 <span class="stat-change-sub">have price data</span>
@@ -33,7 +39,7 @@
     <div class="stat-card">
         <div>
             <div class="stat-label">Total Categories</div>
-            <div class="stat-value">6</div>
+            <div class="stat-value">{{ $totalCategories }}</div>
             <div class="stat-change neutral">
                 <i class="fas fa-minus"></i>
                 <span class="stat-change-sub">no changes</span>
@@ -44,180 +50,108 @@
 </div>
 
 {{-- FILTER + ADD --}}
-<div class="filter-bar">
-    <div class="search-box" style="flex:1">
-        <i class="fas fa-magnifying-glass"></i>
-        <input type="text" placeholder="Search commodity name...">
-    </div>
-    <span class="filter-label">Category:</span>
-    <select class="form-select" style="width:160px">
-        <option>All Categories</option>
-        <option>Bahan Pokok</option>
-        <option>Sayuran</option>
-        <option>Daging & Ikan</option>
-        <option>Bumbu</option>
-    </select>
-    <a href="/admin/komoditas/create" class="btn-primary">
-        <i class="fas fa-plus"></i> Add Commodity
-    </a>
-</div>
+<form method="GET" action="/admin/komoditas">
+    <x-filter-bar
+        placeholder="Search commodity name..."
+        :categories="$categoryList"
+        search-id="searchInput"
+        category-id="categoryFilter">
+        <a href="/admin/komoditas/create" class="btn-primary" style="white-space:nowrap">
+            <i class="fas fa-plus"></i> Add Commodity
+        </a>
+    </x-filter-bar>
+</form>
 
 {{-- TABLE --}}
 <div class="table-card">
     <div class="table-header">
         <div>
             <div class="table-title">Commodity List</div>
-            <div class="table-subtitle">All commodities registered in the SIMOPANG system.</div>
+            <div class="table-subtitle">
+                All commodities registered in the SIMOPANG system.
+                @if(request('search') || request('category'))
+                    —
+                    <a href="/admin/komoditas"
+                       style="font-size:11.5px; color:var(--accent); margin-left:4px">
+                        <i class="fas fa-xmark"></i> Clear filter
+                    </a>
+                @endif
+            </div>
         </div>
     </div>
 
-    <table>
+    <table id="commodityTable">
         <thead>
             <tr>
                 <th>#</th>
                 <th>Commodity Name</th>
                 <th>Category</th>
-                <th>Price Unit</th>
-                <th>Stock Unit</th>
-                <th>Description</th>
-                <th>Status</th>
                 <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            {{--
-                @foreach($commodities as $index => $item)
-                <tr>
-                    <td class="date-text">{{ $index + 1 }}</td>
-                    <td class="commodity-name">{{ $item->name }}</td>
-                    <td class="region-text">{{ $item->category->name }}</td>
-                    <td class="region-text">{{ $item->unit }}</td>
-                    <td class="region-text">{{ $item->stok_unit }}</td>
-                    <td class="region-text">{{ $item->description ?? '-' }}</td>
-                    <td>
-                        <span class="badge {{ $item->priceHistories->count() > 0 ? 'badge-green' : 'badge-gray' }}">
-                            {{ $item->priceHistories->count() > 0 ? 'Active' : 'Inactive' }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="action-group">
-                            <a href="/admin/komoditas/{{ $item->id }}/edit" class="btn-action-edit">
-                                <i class="fas fa-pen"></i> Edit
-                            </a>
-                            <button class="btn-action-delete">
+            @forelse($commodities as $index => $item)
+            <tr>
+                <td class="date-text">{{ $commodities->firstItem() + $index }}</td>
+
+                <td class="commodity-name">{{ $item->name }}</td>
+
+                {{-- PERBAIKAN: tangani category sebagai string, array, atau objek --}}
+                <td>
+                    @if(!empty($item->category))
+                        @if(is_string($item->category))
+                            <span class="region-text">{{ $item->category }}</span>
+                        @elseif(is_array($item->category))
+                            <span class="region-text">{{ $item->category['name'] ?? 'Unknown' }}</span>
+                        @elseif(is_object($item->category))
+                            <span class="region-text">{{ $item->category->name ?? 'Unknown' }}</span>
+                        @else
+                            <span class="date-text">—</span>
+                        @endif
+                    @else
+                        <span class="date-text">—</span>
+                    @endif
+                </td>
+
+                <td>
+                    <div class="action-group">
+                        <a href="/admin/komoditas/{{ $item->id }}/edit" class="btn-action-edit">
+                            <i class="fas fa-pen"></i> Edit
+                        </a>
+                        <form method="POST" action="/admin/komoditas/{{ $item->id }}"
+                              onsubmit="return confirm('Hapus komoditas ini?')"
+                              style="display:inline; margin:0">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-action-delete">
                                 <i class="fas fa-trash"></i>
                             </button>
-                        </div>
-                    </td>
-                </tr>
-                @endforeach
-            --}}
-            <tr>
-                <td class="date-text">1</td>
-                <td class="commodity-name">Beras Premium</td>
-                <td class="region-text">Bahan Pokok</td>
-                <td class="region-text">kg</td>
-                <td class="region-text">ton</td>
-                <td class="region-text">Beras kualitas premium</td>
-                <td><span class="badge badge-green">Active</span></td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/komoditas/1/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        </form>
                     </div>
                 </td>
             </tr>
+            @empty
             <tr>
-                <td class="date-text">2</td>
-                <td class="commodity-name">Cabai Merah Keriting</td>
-                <td class="region-text">Sayuran</td>
-                <td class="region-text">kg</td>
-                <td class="region-text">kg</td>
-                <td class="region-text">Cabai merah jenis keriting</td>
-                <td><span class="badge badge-green">Active</span></td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/komoditas/2/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                <td colspan="4" style="text-align:center; padding:2.5rem; color:var(--text-muted)">
+                    <i class="fas fa-box-open"
+                       style="font-size:1.5rem; display:block; margin-bottom:.5rem; opacity:.4"></i>
+                    @if(request('search') || request('category'))
+                        Tidak ada komoditas yang cocok dengan filter.
+                    @else
+                        Belum ada data komoditas.
+                    @endif
                 </td>
             </tr>
-            <tr>
-                <td class="date-text">3</td>
-                <td class="commodity-name">Minyak Goreng Curah</td>
-                <td class="region-text">Bahan Pokok</td>
-                <td class="region-text">liter</td>
-                <td class="region-text">drum</td>
-                <td class="region-text">Minyak goreng tanpa kemasan</td>
-                <td><span class="badge badge-green">Active</span></td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/komoditas/3/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="date-text">4</td>
-                <td class="commodity-name">Bawang Merah</td>
-                <td class="region-text">Bumbu</td>
-                <td class="region-text">kg</td>
-                <td class="region-text">kg</td>
-                <td class="region-text">-</td>
-                <td><span class="badge badge-green">Active</span></td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/komoditas/4/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="date-text">5</td>
-                <td class="commodity-name">Daging Ayam Ras</td>
-                <td class="region-text">Daging & Ikan</td>
-                <td class="region-text">kg</td>
-                <td class="region-text">kg</td>
-                <td class="region-text">Ayam broiler segar</td>
-                <td><span class="badge badge-orange">Inactive</span></td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/komoditas/5/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
+            @endforelse
         </tbody>
     </table>
 
     <div class="table-footer">
-        <span class="table-footer-text">Showing 5 of 34 commodities</span>
-        <div class="pagination">
-            <button class="page-btn active">1</button>
-            <button class="page-btn">2</button>
-            <button class="page-btn">3</button>
-            <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
-        </div>
+        <span class="table-footer-text">
+            Showing {{ $commodities->firstItem() }}–{{ $commodities->lastItem() }}
+            of {{ $commodities->total() }} commodities
+        </span>
+        <x-pagination :paginator="$commodities" />
     </div>
 </div>
 

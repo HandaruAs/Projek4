@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password — SIMOPANG</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ asset('css/auth-base.css') }}" rel="stylesheet">
     <link href="{{ asset('css/reset-password.css') }}" rel="stylesheet">
 </head>
 <body>
@@ -15,14 +16,23 @@
         <span class="brand-name">SIMOPANG</span>
     </a>
     <div class="navbar-links">
-        <a href="{{ route('login') }}"><i class="fas fa-arrow-left"></i>Ke Login</a>
+        <a href="/" class="btn-back">
+            <i class="fas fa-house"></i>
+            <span class="back-text">Beranda</span>
+        </a>
     </div>
+    <div class="navbar-links">
+        <a href="{{ route('login') }}">
+            <i class="fas fa-arrow-left"></i>
+            <span>Ke Login</span>
+        </a>
+    </div>
+        
 </nav>
 
 <div class="page-wrapper">
     <div class="auth-card">
 
-        {{-- LEFT --}}
         <div class="card-left">
             <div class="left-illustration">
                 <div class="lock-wrap">
@@ -34,17 +44,21 @@
                 </div>
                 <div class="bar-row">
                     <div class="bar-item">
-                        <div class="bar-label">Keamanan</div>
-                        <div class="bar-track"><div class="bar-fill" style="width:0%" id="sec-bar"></div></div>
+                        <div class="bar-label">Keamanan Password</div>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:0%" id="sec-bar"></div>
+                        </div>
                         <div class="bar-val" id="sec-val">—</div>
                     </div>
                 </div>
             </div>
+
             <div class="left-title">Buat Password Baru</div>
             <div class="left-desc">
                 Langkah terakhir! Buat password yang<br>
                 kuat untuk melindungi akunmu.
             </div>
+
             <div class="left-steps">
                 <div class="step done">
                     <div class="step-num"><i class="fas fa-check"></i></div>
@@ -63,9 +77,7 @@
             </div>
         </div>
 
-        {{-- RIGHT --}}
         <div class="card-right">
-
             <div class="page-icon">
                 <i class="fas fa-key"></i>
             </div>
@@ -80,15 +92,13 @@
 
             @if(session('error'))
             <div class="alert-error">
-                <i class="fas fa-circle-exclamation"></i>
-                {{ session('error') }}
+                <i class="fas fa-circle-exclamation"></i> {{ session('error') }}
             </div>
             @endif
 
             @if ($errors->any())
             <div class="alert-error">
-                <i class="fas fa-circle-exclamation"></i>
-                {{ $errors->first() }}
+                <i class="fas fa-circle-exclamation"></i> {{ $errors->first() }}
             </div>
             @endif
 
@@ -101,27 +111,24 @@
                     <div class="input-wrapper">
                         <i class="fas fa-lock input-icon"></i>
                         <input
-                            type="password"
-                            id="password"
-                            name="password"
+                            type="password" id="password" name="password"
                             class="form-input"
                             placeholder="Minimal 8 karakter"
-                            required
-                            minlength="8"
+                            required minlength="8"
                             oninput="checkStrength(this.value)"
                         >
                         <button type="button" class="toggle-password" onclick="toggleVis('password','eye1')">
                             <i class="fas fa-eye" id="eye1"></i>
                         </button>
                     </div>
-                    {{-- Strength meter --}}
+
                     <div class="strength-wrap" id="strength-wrap" style="display:none">
                         <div class="strength-bar">
                             <div class="strength-fill" id="strength-fill"></div>
                         </div>
                         <span class="strength-label" id="strength-label"></span>
                     </div>
-                    {{-- Requirements --}}
+
                     <ul class="req-list" id="req-list">
                         <li id="req-len"><i class="fas fa-circle-xmark"></i> Minimal 8 karakter</li>
                         <li id="req-upper"><i class="fas fa-circle-xmark"></i> Huruf kapital</li>
@@ -133,11 +140,9 @@
                 <div class="form-group">
                     <label class="form-label" for="password_confirmation">Konfirmasi Password</label>
                     <div class="input-wrapper">
-                        <i class="fas fa-lock-open input-icon" id="confirm-icon-left"></i>
+                        <i class="fas fa-lock input-icon" id="confirm-icon-left"></i>
                         <input
-                            type="password"
-                            id="password_confirmation"
-                            name="password_confirmation"
+                            type="password" id="password_confirmation" name="password_confirmation"
                             class="form-input"
                             placeholder="Ulangi password baru"
                             required
@@ -159,45 +164,33 @@
                     <span id="btn-text">Simpan Password Baru</span>
                     <i class="fas fa-shield-check" id="btn-icon"></i>
                 </button>
-
             </form>
 
-            <div class="powered-by">
-                Powered by <span>SIMOPANG</span> Core
-            </div>
-
+            <div class="powered-by">Powered by <span>SIMOPANG</span> Core</div>
         </div>
+
     </div>
 </div>
 
-<footer class="footer">
-    © 2024 SIMOPANG. Hak Cipta Dilindungi Undang-Undang.
-</footer>
+<footer class="footer">© 2024 SIMOPANG. Hak Cipta Dilindungi Undang-Undang.</footer>
 
 <script>
-    /* ── Toggle visibility ── */
     function toggleVis(id, eyeId) {
         const input = document.getElementById(id);
         const eye   = document.getElementById(eyeId);
-        if (input.type === 'password') {
-            input.type    = 'text';
-            eye.className = 'fas fa-eye-slash';
-        } else {
-            input.type    = 'password';
-            eye.className = 'fas fa-eye';
-        }
+        input.type    = input.type === 'password' ? 'text' : 'password';
+        eye.className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
     }
 
-    /* ── Strength checker ── */
     function checkStrength(val) {
-        const wrap  = document.getElementById('strength-wrap');
-        const fill  = document.getElementById('strength-fill');
-        const label = document.getElementById('strength-label');
-        const bar   = document.getElementById('sec-bar');
-        const secVal = document.getElementById('sec-val');
+        const wrap     = document.getElementById('strength-wrap');
+        const fill     = document.getElementById('strength-fill');
+        const label    = document.getElementById('strength-label');
+        const bar      = document.getElementById('sec-bar');
+        const secVal   = document.getElementById('sec-val');
         const lockIcon = document.getElementById('lock-icon');
 
-        if (val.length === 0) { wrap.style.display = 'none'; return; }
+        if (!val.length) { wrap.style.display = 'none'; return; }
         wrap.style.display = 'flex';
 
         const checks = {
@@ -207,7 +200,6 @@
             sym:   /[^A-Za-z0-9]/.test(val),
         };
 
-        // Update requirement list
         setReq('req-len',   checks.len);
         setReq('req-upper', checks.upper);
         setReq('req-num',   checks.num);
@@ -215,24 +207,23 @@
 
         const score = Object.values(checks).filter(Boolean).length;
         const levels = [
-            { pct: '25%', cls: 'weak',   lbl: 'Lemah',   color: '#ef4444' },
-            { pct: '50%', cls: 'fair',   lbl: 'Cukup',   color: '#f59e0b' },
-            { pct: '75%', cls: 'good',   lbl: 'Bagus',   color: '#3b82f6' },
-            { pct: '100%',cls: 'strong', lbl: 'Kuat 🔒', color: '#22c55e' },
+            { pct:'25%',  lbl:'Lemah',   color:'#ef4444' },
+            { pct:'50%',  lbl:'Cukup',   color:'#f59e0b' },
+            { pct:'75%',  lbl:'Bagus',   color:'#3b82f6' },
+            { pct:'100%', lbl:'Kuat 🔒', color:'#22c55e' },
         ];
         const lvl = levels[score - 1] || levels[0];
-        fill.style.width = lvl.pct;
+
+        fill.style.width      = lvl.pct;
         fill.style.background = lvl.color;
-        label.textContent = lvl.lbl;
-        label.style.color = lvl.color;
+        label.textContent     = lvl.lbl;
+        label.style.color     = lvl.color;
 
-        // Left panel bar
-        bar.style.width = lvl.pct;
-        bar.style.background = lvl.color;
-        secVal.textContent = lvl.lbl;
-        secVal.style.color = lvl.color;
+        bar.style.width       = lvl.pct;
+        bar.style.background  = lvl.color;
+        secVal.textContent    = lvl.lbl;
+        secVal.style.color    = lvl.color;
 
-        // Lock icon
         lockIcon.className = score === 4 ? 'fas fa-lock' : 'fas fa-lock-open';
 
         checkMatch();
@@ -244,10 +235,9 @@
         el.querySelector('i').className = ok ? 'fas fa-circle-check' : 'fas fa-circle-xmark';
     }
 
-    /* ── Match checker ── */
     function checkMatch() {
-        const p1 = document.getElementById('password').value;
-        const p2 = document.getElementById('password_confirmation').value;
+        const p1  = document.getElementById('password').value;
+        const p2  = document.getElementById('password_confirmation').value;
         const ok  = document.getElementById('match-ok');
         const err = document.getElementById('match-err');
         if (!p2) { ok.style.display = 'none'; err.style.display = 'none'; return; }
@@ -255,7 +245,6 @@
         else           { ok.style.display = 'none'; err.style.display = 'flex'; }
     }
 
-    /* ── Submit ── */
     document.getElementById('reset-form').addEventListener('submit', function(e) {
         const p1 = document.getElementById('password').value;
         const p2 = document.getElementById('password_confirmation').value;

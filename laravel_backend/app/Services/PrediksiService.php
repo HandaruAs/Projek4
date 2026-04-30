@@ -2,92 +2,82 @@
 
 namespace App\Services;
 
-use App\Models\Prediksi;
-use App\Models\Harga;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class PrediksiService
 {
-    public function getPrediksi(int $komoditasId, int $daerahId): array
+    private string $baseUrl;
+    private string $apiKey;
+
+    public function __construct()
     {
-        return Cache::remember("prediksi.{$komoditasId}.{$daerahId}", 1800, function () use ($komoditasId, $daerahId) {
-            $rows = Prediksi::where('komoditas_id', $komoditasId)
-                ->where('daerah_id', $daerahId)
-                ->where('tanggal_prediksi', '>=', now()->toDateString())
-                ->orderBy('tanggal_prediksi')
-                ->limit(7)
-                ->get();
+        $this->baseUrl = config('services.flask.url');
+        $this->apiKey  = config('services.flask.key');
+    }
 
-            $hargaBase = Harga::where('komoditas_id', $komoditasId)
-                ->where('daerah_id', $daerahId)
-                ->orderByDesc('tanggal')
-                ->value('harga') ?? 0;
+    private function headers(): array
+    {
+        return ['X-API-Key' => $this->apiKey];
+    }
 
-            // Fallback ke estimasi linear jika data prediksi belum ada
-            if ($rows->isEmpty()) {
-                return $this->estimasiLinear($komoditasId, $daerahId);
+    // Ambil daftar komoditas dari Flask
+    public static function getCommodities(): array
+    {
+        $instance = new self();
+        try {
+            $res = Http::withHeaders($instance->headers())
+                ->timeout(10)
+                ->get("{$instance->baseUrl}/api/external/komoditas");
+            return $res->successful ? $res->json : [];
+        } catch (\Exception $e) {
+            Log::error('PrediksiService::getCommodities - ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Generate prediksi dari Flask
+    public function generate(string $komoditas, int $steps = 30): array
+    {
+        try {
+            $res = Http::withHeaders($this->headers())
+                ->timeout(60)
+                ->get("{$this->baseUrl}/api/external/prediksi/" . rawurlencode($komoditas), [
+                    'steps' => $steps,
+                ]);
+
+            if (!$res->successful) {
+                throw new \Exception($res->json('error', 'Flask error'));
             }
 
-            $besok    = $rows->get(0);
-            $tigaHari = $rows->get(2) ?? $rows->last();
-            $tujuhHari = $rows->get(6) ?? $rows->last();
+            return $res->json();
 
-            return [
-                'besok'  => $this->formatPrediksi($besok?->harga_prediksi,    $hargaBase),
-                '3hari'  => $this->formatPrediksi($tigaHari?->harga_prediksi,  $hargaBase),
-                '7hari'  => $this->formatPrediksi($tujuhHari?->harga_prediksi, $hargaBase),
-                'tren'   => $this->getTren($hargaBase, $tujuhHari?->harga_prediksi),
-            ];
-        });
-    }
-
-    private function formatPrediksi(?float $hargaPrediksi, float $hargaBase): array
-    {
-        if (!$hargaPrediksi || $hargaBase === 0.0) {
-            return ['harga' => 'Rp —', 'persentase' => '—'];
+        } catch (\Exception $e) {
+            Log::error('PrediksiService::generate - ' . $e->getMessage());
+            throw new \Exception('Gagal ambil prediksi dari Flask: ' . $e->getMessage());
         }
-
-        $selisih    = $hargaPrediksi - $hargaBase;
-        $persentase = round(($selisih / $hargaBase) * 100, 1);
-
-        return [
-            'harga'      => 'Rp ' . number_format($hargaPrediksi, 0, ',', '.'),
-            'persentase' => ($persentase >= 0 ? '+' : '') . $persentase . '%',
-            'raw'        => $hargaPrediksi,
-        ];
     }
 
-    private function getTren(float $hargaBase, ?float $hargaPrediksi): string
+    // Ambil rekomendasi dari Flask
+    public function rekomendasi(string $komoditas, float $konsumsi = 1.0): array
     {
-        if (!$hargaPrediksi) return 'Data Tidak Tersedia';
-        return $hargaPrediksi > $hargaBase ? 'Tren Naik Terdeteksi' : 'Tren Turun Terdeteksi';
-    }
+        try {
+            $res = Http::withHeaders($this->headers())
+                ->timeout(60)
+                ->post("{$this->baseUrl}/api/external/rekomendasi", [
+                    'komoditas' => $komoditas,
+                    'konsumsi'  => $konsumsi,
+                ]);
 
-    private function estimasiLinear(int $komoditasId, int $daerahId): array
-    {
-        $data = Harga::where('komoditas_id', $komoditasId)
-            ->where('daerah_id', $daerahId)
-            ->orderByDesc('tanggal')
-            ->limit(7)
-            ->pluck('harga');
+            if (!$res->successful()) {
+                throw new \Exception($res->json('error', 'Flask error'));
+            }
 
-        if ($data->count() < 2) {
-            return [
-                'besok'  => ['harga' => 'Rp —', 'persentase' => '—'],
-                '3hari'  => ['harga' => 'Rp —', 'persentase' => '—'],
-                '7hari'  => ['harga' => 'Rp —', 'persentase' => '—'],
-                'tren'   => 'Data Tidak Tersedia',
-            ];
+            return $res->json();
+
+        } catch (\Exception $e) {
+            Log::error('PrediksiService::rekomendasi - ' . $e->getMessage());
+            throw new \Exception('Gagal ambil rekomendasi dari Flask: ' . $e->getMessage());
         }
-
-        $hargaBase          = $data->first();
-        $rataPerubahan      = ($data->first() - $data->last()) / max($data->count() - 1, 1);
-
-        return [
-            'besok'  => $this->formatPrediksi($hargaBase + $rataPerubahan * 1, $hargaBase),
-            '3hari'  => $this->formatPrediksi($hargaBase + $rataPerubahan * 3, $hargaBase),
-            '7hari'  => $this->formatPrediksi($hargaBase + $rataPerubahan * 7, $hargaBase),
-            'tren'   => $this->getTren($hargaBase, $hargaBase + $rataPerubahan * 7),
-        ];
     }
 }

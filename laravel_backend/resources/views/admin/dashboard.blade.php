@@ -1,4 +1,4 @@
-@extends('admin.layouts')
+@extends('layouts.layout')
 
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard Overview')
@@ -12,12 +12,12 @@
     <div class="stat-card">
         <div>
             <div class="stat-label">Harga Tertinggi</div>
-            <div class="stat-value">Rp 45.000</div>
-            {{-- Dinamis: {{ 'Rp ' . number_format($hargaTertinggi->price, 0, ',', '.') }} --}}
+            <div class="stat-value">
+                Rp {{ $hargaTertinggi ? number_format($hargaTertinggi->harga_sekarang, 0, ',', '.') : '-' }}
+            </div>
             <div class="stat-change up">
                 <i class="fas fa-arrow-trend-up"></i>
-                <span class="stat-change-sub">Cabai Merah Keriting</span>
-                {{-- Dinamis: {{ $hargaTertinggi->commodity->name ?? '-' }} --}}
+                <span class="stat-change-sub">{{ $hargaTertinggi->commodity_name ?? '-' }}</span>
             </div>
         </div>
         <div class="stat-icon icon-orange"><i class="fas fa-arrow-trend-up"></i></div>
@@ -26,9 +26,9 @@
     <div class="stat-card">
         <div>
             <div class="stat-label">Total Komoditas</div>
-            <div class="stat-value">34</div>
+            <div class="stat-value">{{ $totalKomoditas }}</div>
             <div class="stat-change up">
-                <i class="fas fa-arrow-trend-up"></i> +2%
+                <i class="fas fa-boxes-stacked"></i>
                 <span class="stat-change-sub">active commodities</span>
             </div>
         </div>
@@ -40,12 +40,12 @@
     <div class="stat-card">
         <div>
             <div class="stat-label">Harga Terendah</div>
-            <div class="stat-value">Rp 13.200</div>
-            {{-- Dinamis: {{ 'Rp ' . number_format($hargaTerendah->price, 0, ',', '.') }} --}}
+            <div class="stat-value">
+                Rp {{ $hargaTerendah ? number_format($hargaTerendah->harga_sekarang, 0, ',', '.') : '-' }}
+            </div>
             <div class="stat-change neutral">
                 <i class="fas fa-minus"></i>
-                <span class="stat-change-sub">Minyak Goreng Curah</span>
-                {{-- Dinamis: {{ $hargaTerendah->commodity->name ?? '-' }} --}}
+                <span class="stat-change-sub">{{ $hargaTerendah->commodity_name ?? '-' }}</span>
             </div>
         </div>
         <div class="stat-icon icon-blue"><i class="fas fa-arrow-trend-down"></i></div>
@@ -74,42 +74,51 @@
         <thead>
             <tr>
                 <th>Commodity</th>
-                <th>Region</th>
+                <th>Category</th>
                 <th>Price (IDR)</th>
+                <th>Change</th>
                 <th>Date</th>
                 <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            {{--
-                Jika sudah terhubung ke database:
-                @foreach($recentPrices as $item)
-                <tr>
-                    <td class="commodity-name">{{ $item->commodity->name }}</td>
-                    <td class="region-text">{{ $item->market->name }}</td>
-                    <td class="price-text">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
-                    <td class="date-text">{{ \Carbon\Carbon::parse($item->date)->format('M d, Y') }}</td>
-                    <td>
-                        <div class="action-group">
-                            <a href="/admin/harga/{{ $item->id }}/edit" class="btn-action-edit">
-                                <i class="fas fa-pen"></i> Edit
-                            </a>
-                            <button class="btn-action-delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                @endforeach
-            --}}
+            @forelse($recentPrices as $item)
             <tr>
-                <td class="commodity-name">Beras Premium</td>
-                <td class="region-text">Jakarta Selatan</td>
-                <td class="price-text">Rp 14,500</td>
-                <td class="date-text">Oct 24, 2023</td>
+                <td class="commodity-name">{{ $item->commodity_name }}</td>
+                {{-- PERBAIKAN: tangani string, array, dan objek --}}
+                <td class="region-text">
+                    @if(is_string($item->category))
+                        {{ $item->category }}
+                    @elseif(is_array($item->category))
+                        {{ implode(', ', $item->category) }}
+                    @elseif(is_object($item->category))
+                        {{ $item->category->name ?? json_encode($item->category) }}
+                    @else
+                        -
+                    @endif
+                </td>
+                <td class="price-text">Rp {{ number_format($item->harga_sekarang, 0, ',', '.') }}</td>
+                <td>
+                    @if($item->selisih > 0)
+                        <span class="stat-change up" style="font-size:12px">
+                            <i class="fas fa-arrow-up"></i> {{ number_format($item->persen, 2) }}%
+                        </span>
+                    @elseif($item->selisih < 0)
+                        <span class="stat-change down" style="font-size:12px">
+                            <i class="fas fa-arrow-down"></i> {{ number_format(abs($item->persen), 2) }}%
+                        </span>
+                    @else
+                        <span class="stat-change neutral" style="font-size:12px">
+                            <i class="fas fa-minus"></i> 0%
+                        </span>
+                    @endif
+                </td>
+                <td class="date-text">
+                    {{ \Carbon\Carbon::parse($item->date)->format('M d, Y') }}
+                </td>
                 <td>
                     <div class="action-group">
-                        <a href="/admin/harga/1/edit" class="btn-action-edit">
+                        <a href="/admin/harga/{{ $item->id }}/edit" class="btn-action-edit">
                             <i class="fas fa-pen"></i> Edit
                         </a>
                         <button class="btn-action-delete">
@@ -118,107 +127,18 @@
                     </div>
                 </td>
             </tr>
+            @empty
             <tr>
-                <td class="commodity-name">Cabai Merah Keriting</td>
-                <td class="region-text">Bandung</td>
-                <td class="price-text">Rp 45,000</td>
-                <td class="date-text">Oct 24, 2023</td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/harga/2/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                <td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-muted);">
+                    Belum ada data harga.
                 </td>
             </tr>
-            <tr>
-                <td class="commodity-name">Minyak Goreng Curah</td>
-                <td class="region-text">Surabaya</td>
-                <td class="price-text">Rp 13,200</td>
-                <td class="date-text">Oct 23, 2023</td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/harga/3/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="commodity-name">Bawang Merah</td>
-                <td class="region-text">Medan</td>
-                <td class="price-text">Rp 32,400</td>
-                <td class="date-text">Oct 23, 2023</td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/harga/4/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="commodity-name">Daging Ayam Ras</td>
-                <td class="region-text">Makassar</td>
-                <td class="price-text">Rp 38,000</td>
-                <td class="date-text">Oct 22, 2023</td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/harga/5/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="commodity-name">Gula Pasir Lokal</td>
-                <td class="region-text">Semarang</td>
-                <td class="price-text">Rp 16,500</td>
-                <td class="date-text">Oct 22, 2023</td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/harga/6/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="commodity-name">Telur Ayam Ras</td>
-                <td class="region-text">Yogyakarta</td>
-                <td class="price-text">Rp 27,800</td>
-                <td class="date-text">Oct 21, 2023</td>
-                <td>
-                    <div class="action-group">
-                        <a href="/admin/harga/7/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
+            @endforelse
         </tbody>
     </table>
 
     <div class="table-footer">
-        <span class="table-footer-text">Showing top 7 of 12,450 records</span>
+        <span class="table-footer-text">Showing top 7 latest records</span>
         <div class="pagination">
             <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
             <button class="page-btn"><i class="fas fa-chevron-right"></i></button>

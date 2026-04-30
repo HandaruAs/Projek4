@@ -6,23 +6,19 @@ use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\KomoditasController;
 use App\Http\Controllers\Web\HargaController;
 use App\Http\Controllers\Web\PrediksiController;
-use App\Http\Controllers\Web\SettingsController;
+use App\Http\Controllers\Web\AdminController;
+use App\Http\Controllers\Web\UserController;
+use App\Http\Controllers\Web\UserHargaController;
+use App\Http\Controllers\Web\UserPrediksiController;
+use App\Http\Controllers\Web\UserSimulasiController;
+use App\Http\Controllers\Web\UserChatAiController;
+use App\Http\Controllers\Web\UserProfilController;
 
+// Landing Page
+Route::get('/', function () {
+    return view('landing');
+})->name('landing');
 
-Route::get('/', fn () => view('tentang'))->name('home');
-
-
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-Route::prefix('dashboard')->name('dashboard.')->group(function () {
-    Route::post('/filter',    [DashboardController::class, 'filter'])->name('filter');
-    Route::get('/chart-data', [DashboardController::class, 'chartData'])->name('chart-data');
-    Route::get('/export-pdf', [DashboardController::class, 'exportPdf'])->name('export-pdf');
-});
-
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::view('/dashboard', 'admin.dashboard')->name('dashboard');
-});
 // ── AUTH ROUTES ──────────────────────────────────────────────
 Route::get('/register',        [AuthController::class, 'showRegisterUser'])->name('register');
 Route::post('/register',       [AuthController::class, 'registerUser']);
@@ -34,59 +30,66 @@ Route::get('/login',           [AuthController::class, 'showLogin'])->name('logi
 Route::post('/login',          [AuthController::class, 'login']);
 Route::post('/logout',         [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot.password');
+Route::get('/forgot-password',  [AuthController::class, 'showForgotPassword'])->name('forgot.password');
 Route::post('/forgot-password', [AuthController::class, 'sendOtp']);
 
-Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
+Route::get('/verify-otp',  [AuthController::class, 'showVerifyOtp'])->name('verify.otp');
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
-Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('reset.password');
+Route::get('/reset-password',  [AuthController::class, 'showResetPassword'])->name('reset.password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+
 // ── ADMIN ROUTES ─────────────────────────────────────────────
-// [+] Tambah middleware 'role:admin' — semua route admin wajib login & punya role admin
-Route::middleware(['role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
-    Route::get('/admin/dashboard', [App\Http\Controllers\Web\AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-    Route::prefix('admin')->group(function () {
+    // Komoditas
+    Route::get('/komoditas',           [KomoditasController::class, 'index'])->name('komoditas.index');
+    Route::get('/komoditas/create',    [KomoditasController::class, 'create'])->name('komoditas.create');
+    Route::post('/komoditas',          [KomoditasController::class, 'store'])->name('komoditas.store');
+    Route::get('/komoditas/{id}/edit', [KomoditasController::class, 'edit'])->name('komoditas.edit');
+    Route::put('/komoditas/{id}',      [KomoditasController::class, 'update'])->name('komoditas.update');
+    Route::delete('/komoditas/{id}',   [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
 
-        // Komoditas
-        Route::get('/komoditas',           [KomoditasController::class, 'index'])->name('komoditas.index');
-        Route::get('/komoditas/create',    [KomoditasController::class, 'create'])->name('komoditas.create');
-        Route::post('/komoditas',          [KomoditasController::class, 'store'])->name('komoditas.store');
-        Route::get('/komoditas/{id}/edit', [KomoditasController::class, 'edit'])->name('komoditas.edit');
-        Route::put('/komoditas/{id}',      [KomoditasController::class, 'update'])->name('komoditas.update');
-        Route::delete('/komoditas/{id}',   [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
+    // Harga
+    Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
 
-        // Data Harga
-        Route::get('/harga',               [HargaController::class, 'index'])->name('harga.index');
-        Route::get('/harga/create',        [HargaController::class, 'create'])->name('harga.create');
-        Route::post('/harga',              [HargaController::class, 'store'])->name('harga.store');
-        Route::get('/harga/{id}/edit',     [HargaController::class, 'edit'])->name('harga.edit');
-        Route::put('/harga/{id}',          [HargaController::class, 'update'])->name('harga.update');
-        Route::delete('/harga/{id}',       [HargaController::class, 'destroy'])->name('harga.destroy');
+    // Prediksi
+    Route::get('/prediksi',              [PrediksiController::class, 'index'])->name('prediksi.index');
+    Route::post('/prediksi/generate',    [PrediksiController::class, 'generate'])->name('prediksi.generate');
+    Route::post('/prediksi/upload',      [PrediksiController::class, 'upload'])->name('prediksi.upload');
+    Route::get('/prediksi/export/{id}',  [PrediksiController::class, 'export'])->name('prediksi.export');
+    Route::get('/prediksi/{id}',         [PrediksiController::class, 'show'])->name('prediksi.show');
+    Route::delete('/prediksi/{id}',      [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
 
-        // Generate Prediksi
-        Route::get('/prediksi',            [PrediksiController::class, 'index'])->name('prediksi.index');
-        Route::post('/prediksi/generate',  [PrediksiController::class, 'generate'])->name('prediksi.generate');
-        Route::get('/prediksi/{id}',       [PrediksiController::class, 'show'])->name('prediksi.show');
-        Route::delete('/prediksi/{id}',    [PrediksiController::class, 'destroy'])->name('prediksi.destroy');
+    // Profile
+    Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
+    Route::put('/profile', [AdminController::class, 'updateProfile'])->name('profile.update');
 
-        // Settings
-        Route::get('/settings',            [SettingsController::class, 'index'])->name('settings');
-        Route::put('/settings/profile',    [SettingsController::class, 'updateProfile'])->name('settings.profile');
-        Route::put('/settings/password',   [SettingsController::class, 'updatePassword'])->name('settings.password');
-
-    });
-
-}); // [+] tutup middleware admin
+}); // ← TUTUP ADMIN GROUP
 
 
 // ── USER ROUTES ───────────────────────────────────────────────
-// [+] Tambah middleware 'role:user' — hanya user biasa yang boleh akses
-Route::middleware(['role:user'])->group(function () {
+Route::middleware(['auth', 'role:user'])->group(function () {
 
-    Route::get('/dashboard', [App\Http\Controllers\Web\UserController::class, 'dashboard'])->name('user.dashboard');
+    Route::get('/home',     [UserController::class, 'home'])->name('user.home');
+    Route::get('/harga',    [UserHargaController::class, 'harga'])->name('user.harga');
+    Route::get('/prediksi', [UserPrediksiController::class, 'prediksi'])->name('user.prediksi');
+    Route::get('/simulasi', [UserSimulasiController::class, 'simulasi'])->name('user.simulasi');
 
-}); // [+] tutup middleware user
+    // Chat AI
+    Route::get('/chatai',                [UserChatAiController::class, 'index'])->name('user.chatai');
+    Route::get('/chatai/komoditas',      [UserChatAiController::class, 'komoditas'])->name('user.chatai.komoditas');
+    Route::post('/chatai/rekomendasi',   [UserChatAiController::class, 'rekomendasi'])->name('user.chatai.rekomendasi');
+    Route::post('/chatai/followup',      [UserChatAiController::class, 'followup'])->name('user.chatai.followup');
+
+    // Profil
+    Route::get('/user/profil',           [UserProfilController::class, 'index'])->name('user.profil');
+    Route::put('/user/profil',           [UserProfilController::class, 'update'])->name('user.profil.update');
+    Route::put('/user/profil/password',  [UserProfilController::class, 'password'])->name('user.profil.password');
+
+    Route::get('/download-pdf', [UserController::class, 'downloadPdf'])->name('user.downloadPdf');
+
+}); 

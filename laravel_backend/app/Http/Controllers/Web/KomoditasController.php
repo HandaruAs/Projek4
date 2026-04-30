@@ -1,100 +1,89 @@
 <?php
-
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Commodity;
+use App\Models\Category;
+use App\Models\PriceHistory;
 use Illuminate\Http\Request;
 
 class KomoditasController extends Controller
 {
-    private function checkAdmin()
+    public function index(Request $request)
     {
-        $user = session('user');
-        if (!$user) return redirect('/login');
-        if ($user->role !== 'admin') return redirect('/dashboard');
-        return $user;
+        $totalKomoditas = Commodity::count();
+
+        // ✅ Fix count & collect: gunakan pluck() sebagai alternatif distinct
+        $distinctCategories = Commodity::pluck('category')->filter()->unique();
+        $totalCategories    = $distinctCategories->count();
+
+        $activeKomoditas = Commodity::whereHas('priceHistories')->count();
+
+        $query = Commodity::orderBy('name');
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        $commodities  = $query->paginate(10)->withQueryString();
+        $categoryList = Commodity::pluck('category')->filter()->unique()->sort()->values();
+
+        return view('admin.komoditas', compact(
+            'commodities', 'totalKomoditas',
+            'totalCategories', 'activeKomoditas', 'categoryList'
+        ));
     }
 
-    /** GET /admin/komoditas */
-    public function index()
-    {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-
-        // $komoditas = Commodity::with('category')->orderBy('name')->paginate(15);
-
-        return view('admin.komoditas', compact('user'));
-    }
-
-    /** GET /admin/komoditas/create */
     public function create()
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-
-        // $categories = Category::all();
-
-        return view('admin.komoditas-create', compact('user'));
+        $categories = Category::orderBy('name')->get();
+        return view('admin.komoditas-create', compact('categories'));
     }
 
-    /** POST /admin/komoditas */
     public function store(Request $request)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-
         $request->validate([
             'name'        => 'required|string|max:255',
             'category_id' => 'required',
-            'unit'        => 'required|string|max:50',
-            'stok_unit'   => 'required|string|max:50',
-            'description' => 'nullable|string',
         ]);
-
-        // Commodity::create($request->all());
-
+        $category = Category::findOrFail($request->category_id);
+        Commodity::create([
+            'name'     => $request->name,
+            'category' => $category->name,
+        ]);
         return redirect('/admin/komoditas')->with('success', 'Komoditas berhasil ditambahkan.');
     }
 
-    /** GET /admin/komoditas/{id}/edit */
     public function edit(string $id)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-
-        // $komoditas  = Commodity::findOrFail($id);
-        // $categories = Category::all();
-
-        return view('admin.komoditas-edit', compact('user'));
+        $commodity  = Commodity::findOrFail($id);
+        $categories = Category::orderBy('name')->get();
+        return view('admin.komoditas-edit', compact('commodity', 'categories'));
     }
 
-    /** PUT /admin/komoditas/{id} */
     public function update(Request $request, string $id)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-
         $request->validate([
             'name'        => 'required|string|max:255',
             'category_id' => 'required',
-            'unit'        => 'required|string|max:50',
-            'stok_unit'   => 'required|string|max:50',
-            'description' => 'nullable|string',
         ]);
-
-        // Commodity::findOrFail($id)->update($request->all());
-
+        $category = Category::findOrFail($request->category_id);
+        Commodity::findOrFail($id)->update([
+            'name'     => $request->name,
+            'category' => $category->name,
+        ]);
         return redirect('/admin/komoditas')->with('success', 'Komoditas berhasil diperbarui.');
     }
 
-    /** DELETE /admin/komoditas/{id} */
     public function destroy(string $id)
     {
-        $user = $this->checkAdmin();
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-
-        // Commodity::findOrFail($id)->delete();
-
+        // ✅ Fix ObjectId: hindari new ObjectId(), gunakan string $id langsung
+        // MongoDB Laravel driver otomatis cast string ke ObjectId
+        PriceHistory::where('commodity_id', $id)->delete();
+        Commodity::findOrFail($id)->delete();
         return redirect('/admin/komoditas')->with('success', 'Komoditas berhasil dihapus.');
     }
 }
