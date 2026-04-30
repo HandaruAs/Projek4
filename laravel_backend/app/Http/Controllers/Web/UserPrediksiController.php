@@ -3,30 +3,30 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Prediction;
 use App\Services\PrediksiService;
 use Illuminate\Http\Request;
 
 class UserPrediksiController extends Controller
 {
-    private PrediksiService $prediksiService;
-
-    public function __construct(PrediksiService $prediksiService)
-    {
-        $this->prediksiService = $prediksiService;
-    }
-
+    // GET /prediksi
+    // User hanya MELIHAT hasil prediksi yang sudah di-generate oleh admin.
+    // Tidak ada generate dari sisi user.
     public function prediksi(Request $request)
     {
-        // 1. Ambil daftar komoditas dari Flask
-        $komoditasList = PrediksiService::getCommodities();
+        // 1. Ambil daftar komoditas yang sudah pernah di-generate admin
+        //    (diambil dari MongoDB predictions, bukan dari Flask langsung)
+        $prediksiList = Prediction::orderBy('created_at', 'desc')
+            ->get(['commodity_name', 'steps', 'created_at', 'accuracy_mape',
+                   'accuracy_mae', 'accuracy_rmse', 'status', '_id']);
 
-        // 2. Tentukan komoditas yang dipilih
-        $selectedNama = $request->get('komoditas');
-        if (!$selectedNama && count($komoditasList) > 0) {
-            $selectedNama = $komoditasList[0];
-        }
+        // Daftar unik komoditas untuk dropdown
+        $komoditasList = $prediksiList->pluck('commodity_name')->unique()->values()->toArray();
 
-        $prediksiData     = null;
+        // 2. Komoditas yang dipilih
+        $selectedNama = $request->get('komoditas', $komoditasList[0] ?? null);
+
+        $prediction       = null;
         $chartData        = null;
         $prediksiMingguan = [];
         $estimasiHarga    = null;
@@ -34,20 +34,24 @@ class UserPrediksiController extends Controller
         $kepercayaan      = null;
 
         if ($selectedNama) {
-            try {
-                $data = $this->prediksiService->generate($selectedNama, 30);
+            // Ambil prediksi terbaru dari MongoDB untuk komoditas ini
+            $prediction = Prediction::where('commodity_name', $selectedNama)
+                ->orderBy('created_at', 'desc')
+                ->first();
 
-                $forecast    = $data['forecast']    ?? [];
-                $tanggal     = $data['tanggal_pred'] ?? [];
-                $ciLower     = $data['ci_lower']    ?? [];
-                $ciUpper     = $data['ci_upper']    ?? [];
-                $hargaKini   = $data['harga_terakhir'] ?? 0;
-                $accuracy    = $data['accuracy']['accuracy'] ?? null;
+            if ($prediction) {
+                $payload   = $prediction->payload ?? [];
+                $forecast  = $payload['forecast']       ?? [];
+                $tanggal   = $payload['tanggal_pred']   ?? [];
+                $ciLower   = $payload['ci_lower']       ?? [];
+                $ciUpper   = $payload['ci_upper']       ?? [];
+                $hargaKini = $payload['harga_terakhir'] ?? 0;
+                $accuracy  = $payload['accuracy']['accuracy'] ?? null;
 
                 // Estimasi harga hari ke-30
                 $estimasiHarga = !empty($forecast) ? end($forecast) : null;
 
-                // Tren persen
+                // Tren persen vs harga saat ini
                 $trenPersen = ($hargaKini > 0 && $estimasiHarga)
                     ? round(($estimasiHarga - $hargaKini) / $hargaKini * 100, 1)
                     : null;
@@ -58,25 +62,20 @@ class UserPrediksiController extends Controller
                 $chartData = [
                     'pred_tanggal' => array_slice($tanggal, 0, 14),
                     'pred_harga'   => array_slice($forecast, 0, 14),
-                    'ci_lower'     => array_slice($ciLower, 0, 14),
-                    'ci_upper'     => array_slice($ciUpper, 0, 14),
+                    'ci_lower'     => array_slice(is_array($ciLower) ? $ciLower : [], 0, 14),
+                    'ci_upper'     => array_slice(is_array($ciUpper) ? $ciUpper : [], 0, 14),
                     'harga_kini'   => $hargaKini,
                 ];
 
                 // Tabel mingguan
                 $prediksiMingguan = $this->buildWeeklyTable($tanggal, $forecast, $hargaKini);
-
-                $prediksiData = $data;
-
-            } catch (\Exception $e) {
-                $prediksiData = ['error' => $e->getMessage()];
             }
         }
 
         return view('user.prediksi', compact(
             'komoditasList',
             'selectedNama',
-            'prediksiData',
+            'prediction',
             'chartData',
             'prediksiMingguan',
             'estimasiHarga',
@@ -87,18 +86,20 @@ class UserPrediksiController extends Controller
 
     private function buildWeeklyTable(array $tanggal, array $forecast, float $hargaKini): array
     {
-        $weeks   = [];
-        $chunks  = array_chunk(array_map(null, $tanggal, $forecast), 7);
+        $weeks  = [];
+        $chunks = array_chunk(array_map(null, $tanggal, $forecast), 7);
 
         foreach ($chunks as $i => $chunk) {
-            $chunk   = array_filter($chunk);
-            $prices  = array_column($chunk, 1);
-            $dates   = array_column($chunk, 0);
+            $chunk  = array_filter($chunk);
+            $prices = array_column($chunk, 1);
+            $dates  = array_column($chunk, 0);
 
             if (empty($prices)) continue;
 
-            $avg       = array_sum($prices) / count($prices);
-            $deltaPct  = $hargaKini > 0 ? round(($avg - $hargaKini) / $hargaKini * 100, 1) : 0;
+            $avg      = array_sum($prices) / count($prices);
+            $deltaPct = $hargaKini > 0
+                ? round(($avg - $hargaKini) / $hargaKini * 100, 1)
+                : 0;
 
             $weeks[] = [
                 'minggu'    => 'W' . ($i + 1),

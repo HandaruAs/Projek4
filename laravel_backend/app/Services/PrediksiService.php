@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
@@ -29,7 +28,8 @@ class PrediksiService
             $res = Http::withHeaders($instance->headers())
                 ->timeout(10)
                 ->get("{$instance->baseUrl}/api/external/komoditas");
-            return $res->successful ? $res->json : [];
+
+            return $res->successful() ? $res->json() : [];
         } catch (\Exception $e) {
             Log::error('PrediksiService::getCommodities - ' . $e->getMessage());
             return [];
@@ -46,12 +46,11 @@ class PrediksiService
                     'steps' => $steps,
                 ]);
 
-            if (!$res->successful) {
+            if (!$res->successful()) {
                 throw new \Exception($res->json('error', 'Flask error'));
             }
 
             return $res->json();
-
         } catch (\Exception $e) {
             Log::error('PrediksiService::generate - ' . $e->getMessage());
             throw new \Exception('Gagal ambil prediksi dari Flask: ' . $e->getMessage());
@@ -74,7 +73,6 @@ class PrediksiService
             }
 
             return $res->json();
-
         } catch (\Exception $e) {
             Log::error('PrediksiService::rekomendasi - ' . $e->getMessage());
             throw new \Exception('Gagal ambil rekomendasi dari Flask: ' . $e->getMessage());
