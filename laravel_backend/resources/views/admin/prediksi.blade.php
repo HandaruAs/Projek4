@@ -2,7 +2,7 @@
 
 @section('title', 'Generate Prediksi')
 @section('page-title', 'Generate Prediksi')
-@section('page-sub', 'Generate commodity price predictions using machine learning models.')
+@section('page-sub', 'Upload data historis & jalankan model Holt-Winters')
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/modal-warning.css') }}">
@@ -54,7 +54,9 @@
             <div class="table-title"><i class="fas fa-upload"></i> Upload Historical Data</div>
             <div class="table-subtitle">Import data harga historis dari file CSV atau Excel.</div>
         </div>
-        <form method="POST" action="/admin/prediksi/upload" enctype="multipart/form-data">
+    </div>
+    <div style="padding:1.5rem">
+        <form method="POST" action="{{ route('prediksi.upload') }}" enctype="multipart/form-data">
             @csrf
             <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end">
                 <div style="flex:1; min-width:260px">
@@ -68,6 +70,7 @@
             </div>
         </form>
     </div>
+</div>
 
 {{-- ── GENERATE PREDICTION ── --}}
 <div class="table-card" style="margin-bottom:1.5rem">
@@ -76,7 +79,9 @@
             <div class="table-title"><i class="fas fa-wand-magic-sparkles"></i> Generate Prediction</div>
             <div class="table-subtitle">Pilih komoditas dan horizon prediksi, lalu jalankan model Holt-Winters.</div>
         </div>
-        <form method="POST" action="/admin/prediksi/generate">
+    </div>
+    <div style="padding:1.5rem">
+        <form method="POST" action="{{ route('prediksi.generate') }}">
             @csrf
             <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end">
                 <div style="flex:2; min-width:220px">
@@ -106,12 +111,8 @@
                     </button>
                 </div>
             </div>
-            <button type="submit" class="btn-run-model">
-                <i class="fas fa-wand-magic-sparkles"></i> Run Prediction Model
-            </button>
         </form>
     </div>
-
 </div>
 
 {{-- ── PREDICTION HISTORY ── --}}
@@ -126,17 +127,19 @@
         </div>
     </div>
 
+    @if($predictions->count() > 0)
     <table>
         <thead>
             <tr>
-                <th>Date/Time</th>
-                <th>Commodity</th>
-                <th>Horizon</th>
+                <th>#</th>
+                <th>Komoditas</th>
+                <th>Generated</th>
+                <th>Days</th>
                 <th>MAE</th>
                 <th>RMSE</th>
                 <th>MAPE</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -197,12 +200,18 @@
 
     <div class="table-footer">
         <span class="table-footer-text">
-            Showing {{ $predictions->count() }} of {{ $predictions->total() }} results
+            Showing {{ $predictions->firstItem() }}–{{ $predictions->lastItem() }} of {{ $predictions->total() }} predictions
         </span>
-        <div class="pagination">
-            {{ $predictions->links() }}
-        </div>
+        <x-pagination :paginator="$predictions" />
     </div>
+
+    @else
+    <div class="empty-pred">
+        <i class="fas fa-chart-line"></i>
+        <div style="font-weight:600; margin-bottom:4px">Belum ada prediksi</div>
+        <div style="font-size:13px">Generate prediksi pertama menggunakan form di atas.</div>
+    </div>
+    @endif
 </div>
 
 @endsection

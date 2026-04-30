@@ -20,7 +20,6 @@
     $emailUser = $user->email ?? '';
     $initials  = strtoupper(substr($namaUser, 0, 1));
 
-    // ✅ Avatar URL
     $avatarUrl = ($user && $user->avatar)
         ? asset('storage/' . $user->avatar)
         : null;
@@ -61,7 +60,6 @@
     <a href="/admin/prediksi" class="nav-item {{ Request::is('admin/prediksi*') ? 'active' : '' }}">
       <i class="fas fa-wand-magic-sparkles"></i> Generate Prediksi
     </a>
-    {{-- ── API Status Monitor (admin only) ── --}}
     <a href="/admin/api-status" class="nav-item {{ Request::is('admin/api-status*') ? 'active' : '' }}">
       <i class="fas fa-circle-nodes"></i> API Status
     </a>
@@ -81,41 +79,28 @@
   {{-- USER --}}
   <nav class="nav-section">
     <div class="nav-label">Menu</div>
-
-    <a href="{{ route('user.home') }}"
-       class="nav-item {{ request()->routeIs('user.home') ? 'active' : '' }}">
+    <a href="{{ route('user.home') }}" class="nav-item {{ request()->routeIs('user.home') ? 'active' : '' }}">
       <i class="fas fa-gauge-high"></i> Dashboard
     </a>
-
-    <a href="{{ route('user.harga') }}"
-       class="nav-item {{ request()->routeIs('user.harga') ? 'active' : '' }}">
+    <a href="{{ route('user.harga') }}" class="nav-item {{ request()->routeIs('user.harga') ? 'active' : '' }}">
       <i class="fas fa-tags"></i> Data Harga
     </a>
-
-    <a href="{{ route('user.prediksi') }}"
-       class="nav-item {{ request()->routeIs('user.prediksi') ? 'active' : '' }}">
+    <a href="{{ route('user.prediksi') }}" class="nav-item {{ request()->routeIs('user.prediksi') ? 'active' : '' }}">
       <i class="fas fa-chart-line"></i> Prediksi
     </a>
-
-    <a href="{{ route('user.simulasi') }}"
-       class="nav-item {{ request()->routeIs('user.simulasi') ? 'active' : '' }}">
+    <a href="{{ route('user.simulasi') }}" class="nav-item {{ request()->routeIs('user.simulasi') ? 'active' : '' }}">
       <i class="fas fa-calculator"></i> Simulasi
     </a>
-
-    <a href="{{ route('user.chatai') }}"
-       class="nav-item {{ request()->routeIs('user.chatai') ? 'active' : '' }}">
+    <a href="{{ route('user.chatai') }}" class="nav-item {{ request()->routeIs('user.chatai') ? 'active' : '' }}">
       <i class="fas fa-robot"></i> Tanya AI
     </a>
   </nav>
 
   <nav class="nav-section bordered">
     <div class="nav-label">Akun</div>
-
-    <a href="{{ route('user.profil') }}"
-       class="nav-item {{ request()->routeIs('user.profil') ? 'active' : '' }}">
+    <a href="{{ route('user.profil') }}" class="nav-item {{ request()->routeIs('user.profil') ? 'active' : '' }}">
       <i class="fas fa-circle-user"></i> Profil
     </a>
-
     <a href="#" class="nav-item nav-item--logout" onclick="confirmLogout(); return false;">
       <i class="fas fa-right-from-bracket"></i> Keluar
     </a>
@@ -143,50 +128,46 @@
 {{-- MAIN --}}
 <div class="main" id="appMain">
 
-<header class="topbar">
-  <div>
-    <div class="topbar-title">@yield('page-title', config('app.name'))</div>
-    <div class="topbar-sub">@yield('page-sub')</div>
-  </div>
+  <header class="topbar">
+    <div>
+      <div class="topbar-title">@yield('page-title', config('app.name'))</div>
+      <div class="topbar-sub">@yield('page-sub')</div>
+    </div>
 
-  <div class="topbar-right">
-    {{-- ── Dark Mode Toggle ── --}}
-  <button id="dm-toggle" onclick="dmToggle()" title="Toggle Dark Mode">
-    <span class="dm-icon" id="dm-icon">🌙</span>
-    <span id="dm-label">Dark</span>
-  </button>
+    <div class="topbar-right">
+      <button id="dm-toggle" onclick="dmToggle()" title="Toggle Dark Mode">
+        <span class="dm-icon" id="dm-icon">🌙</span>
+        <span id="dm-label">Dark</span>
+      </button>
 
-  <div class="topbar-divider"></div>
+      <div class="topbar-divider"></div>
 
-    @if($isAdmin)
-    <a href="/admin/profile">
-    @else
-    <a href="{{ route('user.profil') }}">
-    @endif
-
-      <div class="topbar-user">
-        <div class="topbar-avatar">
-          @if($avatarUrl)
-            <img src="{{ $avatarUrl }}"
-                 alt="{{ $namaUser }}"
-                 style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
-          @else
-            {{ $initials }}
-          @endif
+      @if($isAdmin)
+      <a href="/admin/profile">
+      @else
+      <a href="{{ route('user.profil') }}">
+      @endif
+        <div class="topbar-user">
+          <div class="topbar-avatar">
+            @if($avatarUrl)
+              <img src="{{ $avatarUrl }}" alt="{{ $namaUser }}"
+                   style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+            @else
+              {{ $initials }}
+            @endif
+          </div>
+          <div class="topbar-user-info">
+            <div class="topbar-user-name">{{ $namaUser }}</div>
+            <div class="topbar-user-role">{{ $isAdmin ? 'Administrator' : 'Pengguna' }}</div>
+          </div>
         </div>
-        <div class="topbar-user-info">
-          <div class="topbar-user-name">{{ $namaUser }}</div>
-          <div class="topbar-user-role">{{ $isAdmin ? 'Administrator' : 'Pengguna' }}</div>
-        </div>
-      </div>
-    </a>
+      </a>
+    </div>
+  </header>
 
-  </div>
-</header>
-
-<main class="content">
-  @yield('content')
-</main>
+  <main class="content">
+    @yield('content')
+  </main>
 
 </div>
 
@@ -196,13 +177,15 @@
 </form>
 
 {{-- MODAL KONFIRMASI LOGOUT --}}
-<div class="modal-overlay" id="logoutModal">
+<div class="modal-overlay" id="logoutModal" style="display:none"> {{-- ← fix: display:none --}}
   <div class="modal-backdrop" onclick="closeLogout()"></div>
   <div class="modal-box">
     <div class="modal-icon modal-icon--rose">
       <i class="fas fa-right-from-bracket"></i>
     </div>
-    <div class="modal-title">{{ $isAdmin ? 'Keluar dari Admin Panel?' : 'Keluar dari SIMOPANG?' }}</div>
+    <div class="modal-title">
+      {{ $isAdmin ? 'Keluar dari Admin Panel?' : 'Keluar dari SIMOPANG?' }}
+    </div>
     <div class="modal-desc">
       Sesi kamu akan diakhiri dan kamu perlu login kembali untuk mengakses aplikasi.
     </div>
@@ -218,13 +201,18 @@
 </div>
 
 <script>
+// ── Logout Modal ──
 function confirmLogout() {
-  document.getElementById('logoutModal').classList.add('show');
+  const modal = document.getElementById('logoutModal');
+  modal.style.display = 'flex'; // ← tampilkan dulu baru add class
+  modal.classList.add('show');
   document.body.style.overflow = 'hidden';
 }
 
 function closeLogout() {
-  document.getElementById('logoutModal').classList.remove('show');
+  const modal = document.getElementById('logoutModal');
+  modal.classList.remove('show');
+  modal.style.display = 'none'; // ← sembunyikan saat ditutup
   document.body.style.overflow = '';
 }
 
@@ -236,7 +224,7 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeLogout();
 });
 
-/* ── Dark Mode ── */
+// ── Dark Mode ──
 (function () {
   const KEY = 'simopang_dark';
   const root = document.documentElement;
@@ -248,7 +236,8 @@ document.addEventListener('keydown', function(e) {
     if (icon)  icon.textContent  = on ? '☀️' : '🌙';
     if (label) label.textContent = on ? 'Light' : 'Dark';
   }
- const saved = localStorage.getItem(KEY);
+
+  const saved = localStorage.getItem(KEY);
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   applyDark(saved !== null ? saved === '1' : prefersDark);
 
@@ -261,7 +250,6 @@ document.addEventListener('keydown', function(e) {
     if (label) label.textContent = isDark ? 'Light' : 'Dark';
   };
 })();
-
 </script>
 
 @stack('scripts')
