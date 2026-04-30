@@ -1161,11 +1161,11 @@ def auto_seed_admin():
         print("  Akun admin dibuat otomatis!")
         print(f"  Username : {username}")
         print(f"  Password : {password}")
-        print(f"  URL      : http://localhost:5000/login")
+        print(f"  URL      : http://localhost:5001/login")
         print("=" * 50 + "\n")
     else:
         print("  Akun admin sudah ada di database.")
 
 if __name__ == "__main__":
     auto_seed_admin()
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

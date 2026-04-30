@@ -1896,3 +1896,1225 @@ table.u-table  { width: 100%; border-collapse: collapse; }
   text-align: center;
   margin-top: 6px;
 }
+/* ═══════════════════════════════════════════════════
+   USER — PREDIKSI PAGE CHART INTERAKTIF
+═══════════════════════════════════════════════════ */
+
+/* Tombol Reset View */
+.u-btn-reset-zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--surface);
+  color: var(--text-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .2s;
+}
+.u-btn-reset-zoom:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+.u-btn-reset-zoom svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Hint geser di atas grafik */
+.u-chart-drag-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  padding: 0 4px;
+  transition: opacity .5s ease;
+}
+.u-chart-drag-hint svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* Canvas chart wrapper */
+.u-chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+  padding: 8px 4px 4px;
+}
+
+/* Cursor grab pada canvas */
+#prediksiChart {
+  cursor: grab;
+}
+#prediksiChart:active {
+  cursor: grabbing;
+}
+
+/* Animasi spin untuk tombol loading */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsif filter bar saat ada banyak tombol */
+@media (max-width: 768px) {
+  .u-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .u-btn-filter,
+  .u-btn-reset-zoom {
+    width: 100%;
+    justify-content: center;
+  }
+  .u-pred-stat-row {
+    grid-template-columns: 1fr;
+  }
+}/* ═══════════════════════════════════════════════════════════
+   PREDIKSI PAGE - BAR CHART STYLE
+   Khusus untuk halaman prediksi harga komoditas
+═══════════════════════════════════════════════════════════ */
+
+/* ── LEGEND BAR CHART ─────────────────────────────────── */
+.u-pred-legend__bar {
+    display: block;
+    width: 24px;
+    height: 12px;
+    border-radius: 4px;
+}
+.u-pred-legend__bar--historis {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+.u-pred-legend__bar--prediksi {
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+}
+.u-pred-legend__line {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: #ef4444;
+    border-radius: 2px;
+}
+
+/* ── CHART INFO ───────────────────────────────────────── */
+.u-chart-info {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+.u-chart-info__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #64748b;
+}
+.u-chart-info__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.u-chart-info__line {
+    width: 20px;
+    height: 2px;
+    background: #ef4444;
+    border-radius: 2px;
+}
+
+/* ── TABLE RANGE STYLE ────────────────────────────────── */
+.u-range-min, .u-range-max {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+}
+.u-range-min {
+    color: #10b981;
+}
+.u-range-max {
+    color: #f59e0b;
+}
+.u-range-sep {
+    margin: 0 6px;
+    color: #94a3b8;
+}
+
+/* ── TREND BADGE ──────────────────────────────────────── */
+.u-trend-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.u-trend-up {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    color: #16a34a;
+}
+.u-trend-down {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    color: #ef4444;
+}
+.u-trend-stable {
+    background: linear-gradient(135deg, #eff6ff, #e0e7ff);
+    color: #3b82f6;
+}
+
+/* ── EMPTY STATE ──────────────────────────────────────── */
+.u-empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+/* ── CANVAS WRAPPER ───────────────────────────────────── */
+.u-chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 400px;
+    padding: 8px 0;
+}
+#prediksiChart {
+    cursor: grab;
+    max-width: 100%;
+    height: auto;
+}
+#prediksiChart:active {
+    cursor: grabbing;
+}
+
+/* ── RESET ZOOM BUTTON ────────────────────────────────── */
+.u-btn-reset-zoom {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: white;
+    color: #64748b;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.u-btn-reset-zoom:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: #eff6ff;
+    transform: translateY(-2px);
+}
+.u-btn-reset-zoom svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ── STAT CARD IMPROVEMENTS ───────────────────────────── */
+.u-pred-stat-card__note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 8px;
+}
+.u-pred-stat-card__note svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* ── ANIMATION SPIN ───────────────────────────────────── */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── RESPONSIVE ───────────────────────────────────────── */
+@media (max-width: 768px) {
+    .u-chart-info {
+        gap: 12px;
+    }
+    .u-chart-info__item {
+        font-size: 10px;
+    }
+    .u-range-min, .u-range-max {
+        font-size: 10px;
+    }
+    .u-btn-reset-zoom {
+        width: 100%;
+        justify-content: center;
+    }
+    .u-filter-bar {
+        flex-wrap: wrap;
+    }
+}
+/* ═══════════════════════════════════════════════════════════
+   API STATUS MONITOR PAGE
+   Styling untuk halaman admin/api-status
+═══════════════════════════════════════════════════════════ */
+
+/* ── Skeleton Loading Animation ── */
+.skel {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.skel-circle {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ── Status Badge untuk API Status ── */
+.badge-online,
+.badge-offline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 999px;
+}
+
+.badge-online {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.badge-offline {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* ── Pulse Dot untuk Status ── */
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.dot-online {
+    background: #16a34a;
+    animation: pulse-g 1.8s infinite;
+}
+
+.dot-offline {
+    background: #dc2626;
+}
+
+@keyframes pulse-g {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(22, 163, 74, 0);
+    }
+}
+
+/* ── Latency Color Classes ── */
+.lat-fast {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.lat-medium {
+    color: #d97706;
+    font-weight: 600;
+}
+
+.lat-slow {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* ── Spin Animation untuk Refresh Icon ── */
+.spin {
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ── Endpoint Text (Monospace) ── */
+.ep-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+/* ── API Status Table Specific ── */
+.api-status-table tbody td {
+    vertical-align: middle;
+}
+
+/* ── Responsive untuk Halaman API Status ── */
+@media (max-width: 768px) {
+    .api-status-table thead th,
+    .api-status-table tbody td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    
+    .badge-online,
+    .badge-offline {
+        padding: 2px 8px;
+        font-size: 10px;
+    }
+    
+    .ep-text {
+        font-size: 10px;
+    }
+}
+/* ═══════════════════════════════════════════════════
+   DARK MODE — tambahkan di paling bawah simopang.css
+═══════════════════════════════════════════════════ */
+
+html.dark {
+  --sidebar-bg:     #060d1a;
+  --sidebar-hover:  rgba(255,255,255,.07);
+  --sidebar-active: rgba(59,130,246,.22);
+
+  --accent:         #60a5fa;
+  --accent-dark:    #3b82f6;
+  --accent-light:   rgba(59,130,246,.12);
+  --accent-glow:    rgba(96,165,250,.2);
+  --emerald:        #34d399;
+  --em-light:       rgba(52,211,153,.12);
+  --amber:          #fbbf24;
+  --am-light:       rgba(251,191,36,.12);
+  --rose:           #fb7185;
+  --rose-light:     rgba(251,113,133,.12);
+
+  /* 🔵 Samakan bg dengan nuansa sidebar */
+  --bg:         #0b1120;   /* sama dengan --sidebar-bg light */
+  --surface:    #101827;   /* sedikit lebih terang dari bg */
+  --surface-2:  #0d1520;   /* lebih gelap dari surface */
+  --border:     #1e2d42;
+
+  /* 🩶 Teks abu-abu, bukan putih */
+  --text-1:  #cbd5e1;   /* abu terang (bukan putih) */
+  --text-2:  #64748b;   /* abu medium */
+  --text-3:  #334155;   /* abu gelap */
+
+  --shadow-xs: 0 1px 3px rgba(0,0,0,.4);
+  --shadow-sm: 0 2px 10px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.3);
+  --shadow:    0 4px 22px rgba(0,0,0,.55);
+}
+/* Topbar dark */
+html.dark .topbar {
+  background: rgba(30,41,59,.92);
+  border-bottom-color: var(--border);
+}
+
+html.dark .region-text {
+  background: #1a1f3c;
+  color: #cbd5e1;
+  border: 1px solid #2a3158;
+}
+
+/* Stat cards dark — hapus gradient putih hover */
+html.dark tbody tr:hover {
+  background: rgba(255,255,255,.03);
+}
+
+/* Table header dark */
+html.dark thead th {
+  background: #162032;
+}
+
+/* Table footer dark */
+html.dark .table-footer,
+html.dark .u-table-footer {
+  background: #162032;
+}
+
+/* Search box dark */
+html.dark .search-box {
+  background: var(--surface-2);
+}
+html.dark .search-box:focus-within {
+  background: var(--surface);
+}
+
+/* Filter bar dark */
+html.dark .filter-bar,
+html.dark .u-filter-bar {
+  background: var(--surface);
+}
+
+/* Modal dark */
+html.dark .modal-box {
+  background: var(--surface);
+}
+html.dark .modal-btn--cancel {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+html.dark .modal-btn--cancel:hover {
+  background: var(--bg);
+}
+
+/* View-all link dark */
+html.dark .view-all {
+  background: linear-gradient(135deg, rgba(59,130,246,.15), rgba(99,102,241,.15));
+  border-color: rgba(99,102,241,.3);
+  color: #a5b4fc;
+}
+html.dark .view-all:hover {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+}
+
+/* Btn secondary dark */
+html.dark .btn-secondary {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+html.dark .btn-secondary:hover {
+  background: rgba(99,102,241,.12);
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+/* Btn refresh dark */
+html.dark .btn-refresh {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+
+/* Badge gray dark */
+html.dark .badge-gray {
+  background: rgba(255,255,255,.06);
+  color: var(--text-3);
+}
+
+/* Upload zone dark */
+html.dark .upload-zone {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+html.dark .upload-zone:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* Form inputs dark */
+html.dark .form-input-admin,
+html.dark .form-textarea,
+html.dark .form-select,
+html.dark .u-filter-select,
+html.dark .u-form-select,
+html.dark .u-profil-input,
+html.dark .u-form-input {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-1);
+}
+html.dark .form-input-admin:focus,
+html.dark .form-textarea:focus,
+html.dark .form-select:focus,
+html.dark .u-filter-select:focus,
+html.dark .u-form-select:focus,
+html.dark .u-profil-input:focus {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+
+/* Last updated chip dark */
+html.dark .last-updated {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-3);
+}
+
+/* Period buttons dark */
+html.dark .u-period-btn {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+html.dark .u-period-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Pred item dark */
+html.dark .u-pred-item {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+/* Info bar dark */
+html.dark .u-info-bar__icon {
+  background: var(--accent-light);
+  border-color: rgba(59,130,246,.25);
+}
+
+/* Quick info card dark */
+html.dark .u-quick-info-list__icon {
+  background: var(--accent-light);
+  border-color: rgba(59,130,246,.25);
+}
+
+/* Profile tabs dark */
+html.dark .u-profil-tabs {
+  background: var(--surface);
+  border-color: var(--border);
+}
+html.dark .u-profil-tab {
+  color: var(--text-3);
+}
+html.dark .u-profil-tab:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+html.dark .u-profil-tab.active {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+/* Profile form card dark */
+html.dark .u-profil-form-card__header,
+html.dark .u-profil-form-card__footer,
+html.dark .u-input-card__header {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+/* Pass tips dark */
+html.dark .u-pass-tips {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+/* Action btn dark */
+html.dark .action-btn {
+  border-color: var(--border);
+  color: var(--text-3);
+  background: transparent;
+}
+
+/* Input unit dark */
+html.dark .u-input-unit,
+html.dark .u-input-unit-wrap {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+/* Btn CSV / Print dark */
+html.dark .u-btn-csv,
+html.dark .u-btn-print,
+html.dark .u-btn-api {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+
+/* Btn reset zoom dark */
+html.dark .u-btn-reset-zoom {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+html.dark .u-btn-reset-zoom:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* AI Chat sidebar dark sudah oke (sudah --sidebar-bg) */
+/* AI Chat main area dark */
+html.dark .ai-chat-main {
+  background: var(--surface);
+  border-color: var(--border);
+}
+html.dark .ai-chat-header {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+html.dark .ai-chat-input-wrap {
+  background: var(--surface);
+  border-color: var(--border);
+}
+html.dark .ai-chat-input-box {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+html.dark .ai-chat-input-box:focus-within {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+html.dark .ai-msg--bot .ai-msg__bubble {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-1);
+}
+html.dark .ai-qr-btn {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-1);
+}
+html.dark .ai-qr-btn:hover {
+  background: var(--accent-light);
+  border-color: rgba(99,102,241,.4);
+  color: var(--accent);
+}
+html.dark .ai-chat-header__model {
+  background: rgba(99,102,241,.15);
+  border-color: rgba(99,102,241,.3);
+  color: #a5b4fc;
+}
+
+/* Skeleton dark */
+html.dark .skel {
+  background: linear-gradient(90deg, #1e293b 25%, #2a3a50 50%, #1e293b 75%);
+  background-size: 200% 100%;
+}
+
+/* Dark mode toggle button */
+#dm-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+#dm-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+#dm-toggle .dm-icon { font-size: 14px; line-height: 1; }
+
+/* Badge kategori & perubahan */
+html.dark .region-text,
+html.dark .badge-gray,
+html.dark .stat-change.neutral,
+html.dark .u-tren-badge--flat {
+  background: #1a1f3c;
+  color: #94a3b8;
+  border: 1px solid #2a3158;
+}
+
+/* Input search & date di filter bar */
+html.dark .search-box,
+html.dark input[type="date"],
+html.dark input[type="text"],
+html.dark input[type="search"] {
+  background: #161b35;
+  border-color: #2a3158;
+  color: #cbd5e1;
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+}
+
+/* Tombol Lihat Semua */
+html.dark .view-all {
+  background: #1a1f3c;
+  border-color: #2a3158;
+  color: #a5b4fc;
+}
+html.dark .view-all:hover {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+}
+
+/* Table rows dark */
+html.dark tbody tr:hover {
+  background: rgba(99,102,241,.06);
+}
+html.dark .date-text {
+  color: #4b6580;
+}
+/* Stat cards dark */
+html.dark .stat-card,
+html.dark .u-stat-card {
+  background: #101827;
+  border-color: #1e2d42;
+}
+
+html.dark .stat-label {
+  color: #64748b;
+}
+
+html.dark .stat-value {
+  color: #cbd5e1;
+}
+
+/* Icon button di pojok kanan stat card */
+html.dark .stat-icon,
+html.dark .u-stat-icon {
+  background: #1a1f3c;
+  border: 1px solid #2a3158;
+}
+
+html.dark .icon-orange {
+  background: rgba(249,115,22,.12);
+  color: #fb923c;
+}
+
+html.dark .icon-green {
+  background: rgba(16,185,129,.12);
+  color: #34d399;
+}
+
+html.dark .icon-blue {
+  background: rgba(59,130,246,.12);
+  color: #60a5fa;
+}
+
+/* Badge update terbaru & vs bulan lalu */
+html.dark .stat-change.up {
+  background: rgba(16,185,129,.12);
+  color: #34d399;
+}
+
+html.dark .stat-change.down {
+  background: rgba(244,63,94,.12);
+  color: #fb7185;
+}
+/* ═══════════════════════════════════════════════════
+   ADMIN — PROFIL PAGE (tambahan untuk avatar circle)
+═══════════════════════════════════════════════════ */
+
+/* Avatar circle style */
+.u-avatar-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: white;
+    font-size: 28px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* Avatar wrap position relative untuk ring */
+.u-avatar-wrap {
+    position: relative;
+    margin-bottom: 4px;
+}
+
+/* Ring animation */
+.u-avatar-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid #bfdbfe;
+    animation: uRingPulse 2.5s ease infinite;
+}
+
+@keyframes uRingPulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+}
+
+/* Badge dot */
+.u-update-badge__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Field hint text */
+.u-profil-field__hint {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 4px;
+    display: block;
+}
+
+/* Eye button for password */
+.u-profil-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: color .15s;
+    border-radius: 4px;
+}
+
+.u-profil-eye:hover {
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+.u-profil-eye svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* Input wrap for password eye */
+.u-profil-input-wrap {
+    position: relative;
+}
+
+.u-profil-input-wrap .u-profil-input {
+    padding-right: 44px;
+}
+
+/* Strength bar */
+.u-strength-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.u-strength-bar {
+    flex: 1;
+    height: 5px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.u-strength-bar__fill {
+    height: 100%;
+    border-radius: 10px;
+    width: 0%;
+    transition: width .3s ease, background .3s ease;
+}
+
+.u-strength-label {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    min-width: 36px;
+}
+
+/* Match message */
+.u-profil-field__match {
+    font-size: 11.5px;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+.u-profil-field__match--ok {
+    color: #10b981;
+}
+
+.u-profil-field__match--err {
+    color: #f43f5e;
+}
+
+/* Password tips card */
+.u-pass-tips {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+}
+
+.u-pass-tips__title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 8px;
+}
+
+.u-pass-tips ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.u-pass-tips ul li {
+    font-size: 12px;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.u-pass-tips ul li::before {
+    content: '•';
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* Dark mode adjustments for password section */
+html.dark .u-pass-tips {
+    background: var(--surface-2);
+    border-color: var(--border);
+}
+
+html.dark .u-pass-tips ul li {
+    color: var(--text-3);
+}
+
+html.dark .u-pass-tips ul li::before {
+    color: var(--accent);
+}
+
+html.dark .u-profil-eye:hover {
+    background: var(--accent-light);
+}
+/* ═══════════════════════════════════════════════════
+   ADMIN — PROFIL PAGE (tambahan untuk avatar circle)
+═══════════════════════════════════════════════════ */
+
+/* Avatar circle style */
+.u-avatar-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: white;
+    font-size: 28px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* Avatar wrap position relative untuk ring */
+.u-avatar-wrap {
+    position: relative;
+    margin-bottom: 4px;
+}
+
+/* Ring animation */
+.u-avatar-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid #bfdbfe;
+    animation: uRingPulse 2.5s ease infinite;
+}
+
+@keyframes uRingPulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+}
+
+/* Badge dot */
+.u-update-badge__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Field hint text */
+.u-profil-field__hint {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 4px;
+    display: block;
+}
+
+/* Eye button for password */
+.u-profil-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: color .15s;
+    border-radius: 4px;
+}
+
+.u-profil-eye:hover {
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+.u-profil-eye svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* Input wrap for password eye */
+.u-profil-input-wrap {
+    position: relative;
+}
+
+.u-profil-input-wrap .u-profil-input {
+    padding-right: 44px;
+}
+
+/* Strength bar */
+.u-strength-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.u-strength-bar {
+    flex: 1;
+    height: 5px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.u-strength-bar__fill {
+    height: 100%;
+    border-radius: 10px;
+    width: 0%;
+    transition: width .3s ease, background .3s ease;
+}
+
+.u-strength-label {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    min-width: 36px;
+}
+
+/* Match message */
+.u-profil-field__match {
+    font-size: 11.5px;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+.u-profil-field__match--ok {
+    color: #10b981;
+}
+
+.u-profil-field__match--err {
+    color: #f43f5e;
+}
+
+/* Password tips card */
+.u-pass-tips {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+}
+
+.u-pass-tips__title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 8px;
+}
+
+.u-pass-tips ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.u-pass-tips ul li {
+    font-size: 12px;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.u-pass-tips ul li::before {
+    content: '•';
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* Dark mode adjustments for password section */
+html.dark .u-pass-tips {
+    background: var(--surface-2);
+    border-color: var(--border);
+}
+
+html.dark .u-pass-tips ul li {
+    color: var(--text-3);
+}
+
+html.dark .u-pass-tips ul li::before {
+    color: var(--accent);
+}
+
+html.dark .u-profil-eye:hover {
+    background: var(--accent-light);
+}
