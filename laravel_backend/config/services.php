@@ -35,8 +35,8 @@ return [
         ],
     ],
     'flask' => [
-        'url' => env('FLASK_API_URL', 'http://localhost:5050'),
-        'key' => env('FLASK_API_KEY', 'b9220f65f8bc2b7466d758f4ec62e65dd65ac70557ecf6839f19b6981c86fbcb'),
+        'url' => env('FLASK_API_URL', 'http://localhost:5000'),
+        'key' => env('FLASK_API_KEY', '018bebf855c3d0889727d47deaff81ff3366b11a6e96d0d36077e96eff64f435'),
     ],
 
 ];
