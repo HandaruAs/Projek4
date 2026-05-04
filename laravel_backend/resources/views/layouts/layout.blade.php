@@ -36,7 +36,9 @@
   <div class="sidebar-logo">
     <div class="logo-badge">
       <div class="logo-icon">
-        <i class="fas fa-chart-line"></i>
+        <img src="{{ asset('images/LOGO 2.png') }}"
+             alt="SIMOPANG"
+             style="width:100%; height:100%; object-fit:contain;">
       </div>
       <div>
         <div class="logo-title">SIMOPANG {{ $isAdmin ? 'Admin' : '' }}</div>
@@ -177,7 +179,7 @@
 </form>
 
 {{-- MODAL KONFIRMASI LOGOUT --}}
-<div class="modal-overlay" id="logoutModal" style="display:none"> {{-- ← fix: display:none --}}
+<div class="modal-overlay" id="logoutModal" style="display:none">
   <div class="modal-backdrop" onclick="closeLogout()"></div>
   <div class="modal-box">
     <div class="modal-icon modal-icon--rose">
@@ -204,7 +206,7 @@
 // ── Logout Modal ──
 function confirmLogout() {
   const modal = document.getElementById('logoutModal');
-  modal.style.display = 'flex'; // ← tampilkan dulu baru add class
+  modal.style.display = 'flex';
   modal.classList.add('show');
   document.body.style.overflow = 'hidden';
 }
@@ -212,7 +214,7 @@ function confirmLogout() {
 function closeLogout() {
   const modal = document.getElementById('logoutModal');
   modal.classList.remove('show');
-  modal.style.display = 'none'; // ← sembunyikan saat ditutup
+  modal.style.display = 'none';
   document.body.style.overflow = '';
 }
 

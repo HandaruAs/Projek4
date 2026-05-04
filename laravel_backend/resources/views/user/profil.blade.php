@@ -8,6 +8,8 @@
 @extends('layouts.layout')
 
 @section('title', 'Profil Saya')
+@section('page-title', 'Profil Saya')
+@section('page-sub', 'Kelola informasi akun dan data pribadi Anda.')
 
 @section('content')
 
@@ -17,14 +19,6 @@
     <span class="u-breadcrumb__sep">/</span>
     <span class="u-breadcrumb__current">Profil Saya</span>
   </nav>
-
-  {{-- ── PAGE HEADER ───────────────────────────────── --}}
-  <div class="u-page-header">
-    <div>
-      <h1>Profil Saya</h1>
-      <p>Kelola informasi akun dan data pribadi Anda.</p>
-    </div>
-  </div>
 
   {{-- ── ALERT SUCCESS ──────────────────────────────── --}}
   @if(session('success'))
