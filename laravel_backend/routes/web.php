@@ -12,7 +12,7 @@ use App\Http\Controllers\Web\UserPrediksiController;
 use App\Http\Controllers\Web\UserSimulasiController;
 use App\Http\Controllers\Web\UserChatAiController;
 use App\Http\Controllers\Web\UserProfilController;
-use App\Http\Controllers\Web\AdminApiStatusController; // ← tambahan
+use App\Http\Controllers\Web\AdminApiStatusController; 
 
 // Landing Page
 Route::get('/', function () {
