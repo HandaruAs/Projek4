@@ -45,15 +45,15 @@ class AdminController extends Controller
 
         $request->validate([
             'name'    => 'required|string|max:255',
-            'email'   => 'required|email|max:255',
             'phone'   => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'avatar'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            // email dihapus dari validasi karena tidak boleh diubah
         ]);
 
         $updateData = [
             'name'    => $request->name,
-            'email'   => $request->email,
+            // email tidak diubah - tetap menggunakan email lama
             'phone'   => $request->phone,
             'address' => $request->address,
         ];
