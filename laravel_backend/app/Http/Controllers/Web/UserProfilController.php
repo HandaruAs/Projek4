@@ -23,20 +23,18 @@ class UserProfilController extends Controller
 
         $request->validate([
             'nama'    => 'required|string|max:255',
-            'email'   => 'required|email|max:255',
             'telepon' => 'nullable|string|max:20',
             'alamat'  => 'nullable|string|max:255',
             'avatar'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            
         ]);
 
         $user->name  = $request->nama;
-        $user->email = $request->email;
         $user->telepon = $request->telepon;
         $user->alamat  = $request->alamat;
 
-        
-        if ($request->hasFile('avatar')) {
 
+        if ($request->hasFile('avatar')) {
             // hapus lama
             if ($user->avatar) {
                 Storage::disk('public')->delete($user->avatar);
