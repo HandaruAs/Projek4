@@ -36,7 +36,7 @@
   <div class="sidebar-logo">
     <div class="logo-badge">
       <div class="logo-icon">
-        <img src="{{ asset('images/LOGO 2.png') }}"
+        <img src="{{ asset('images/LOGO-2.png') }}"
              alt="SIMOPANG"
              style="width:100%; height:100%; object-fit:contain;">
       </div>
