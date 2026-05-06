@@ -12,11 +12,11 @@ class HargaController extends Controller
 {
     private function getCategories(): \Illuminate\Support\Collection
     {
-        return collect(
-            PriceHistory::raw(fn($col) => $col->distinct('category', []))
-        )->filter(fn($c) => !is_null($c) && $c !== '')
-         ->sort()
-         ->values();
+        return PriceHistory::pluck('category')
+            ->filter(fn($c) => !is_null($c) && $c !== '')
+            ->unique()
+            ->sort()
+            ->values();
     }
 
     // ── ADMIN: /admin/harga ───────────────────────────────────

@@ -46,12 +46,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
         // Komoditas
-        Route::get('/komoditas',           [KomoditasController::class, 'index'])->name('komoditas.index');
-        Route::get('/komoditas/create',    [KomoditasController::class, 'create'])->name('komoditas.create');
-        Route::post('/komoditas',          [KomoditasController::class, 'store'])->name('komoditas.store');
-        Route::get('/komoditas/{id}/edit', [KomoditasController::class, 'edit'])->name('komoditas.edit');
-        Route::put('/komoditas/{id}',      [KomoditasController::class, 'update'])->name('komoditas.update');
-        Route::delete('/komoditas/{id}',   [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
+        Route::get('/komoditas',             [KomoditasController::class, 'index'])->name('komoditas.index');
+        Route::get('/komoditas/create',      [KomoditasController::class, 'create'])->name('komoditas.create');
+        Route::post('/komoditas',            [KomoditasController::class, 'store'])->name('komoditas.store');
+        Route::post('/komoditas/{id}/harga', [KomoditasController::class, 'storeHarga'])->name('komoditas.storeHarga');
+        Route::get('/komoditas/{id}/edit',   [KomoditasController::class, 'edit'])->name('komoditas.edit');
+        Route::put('/komoditas/{id}',        [KomoditasController::class, 'update'])->name('komoditas.update');
+        Route::delete('/komoditas/{id}',     [KomoditasController::class, 'destroy'])->name('komoditas.destroy');
 
     // Harga
     Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
@@ -95,7 +96,7 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     // Profil
     Route::get('/user/profil',           [UserProfilController::class, 'index'])->name('user.profil');
     Route::put('/user/profil',           [UserProfilController::class, 'update'])->name('user.profil.update');
-    
+
 
     Route::get('/download-pdf', [UserController::class, 'downloadPdf'])->name('user.downloadPdf');
 
