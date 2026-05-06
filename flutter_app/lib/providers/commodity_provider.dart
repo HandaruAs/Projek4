@@ -3,24 +3,28 @@ import 'package:flutter_app/models/commodity_model.dart';
 import 'package:flutter_app/models/price_model.dart';
 import 'package:flutter_app/services/api_service.dart';
 
+List<String> _predictableCommodities = [];
+List<String> get predictableCommodities => _predictableCommodities;
+
 class CommodityProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
-  List<CommodityModel>    _commodities      = [];
-  CommodityModel?         _selectedCommodity;
-  List<PriceModel>        _priceHistory     = [];
-  Map<String, dynamic>?   _predictionResult;
-  bool                    _isLoading        = false;
-  String?                 _errorMessage;
-  String                  _selectedPeriod   = '7days';
-
-  List<CommodityModel>   get commodities       => _commodities;
-  CommodityModel?        get selectedCommodity  => _selectedCommodity;
-  List<PriceModel>       get priceHistory      => _priceHistory;
-  Map<String, dynamic>?  get predictionResult  => _predictionResult;
-  bool                   get isLoading         => _isLoading;
-  String?                get errorMessage      => _errorMessage;
-  String                 get selectedPeriod    => _selectedPeriod;
+  List<CommodityModel> _commodities = [];
+  CommodityModel? _selectedCommodity;
+  List<PriceModel> _priceHistory = [];
+  Map<String, dynamic>? _predictionResult;
+  bool _isLoading = false;
+  String? _errorMessage;
+  String _selectedPeriod = '7days';
+  List<String> _predictableCommodities = [];
+  List<String> get predictableCommodities => _predictableCommodities;
+  List<CommodityModel> get commodities => _commodities;
+  CommodityModel? get selectedCommodity => _selectedCommodity;
+  List<PriceModel> get priceHistory => _priceHistory;
+  Map<String, dynamic>? get predictionResult => _predictionResult;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  String get selectedPeriod => _selectedPeriod;
 
   // ── Load semua komoditas ────────────────────────────────
   Future<void> loadCommodities({bool forceReload = false}) async {
@@ -36,11 +40,24 @@ class CommodityProvider extends ChangeNotifier {
         _commodities = data.map((e) => CommodityModel.fromJson(e)).toList();
       } else {
         _errorMessage = response['message'] ?? 'Gagal memuat data komoditas';
-        _commodities  = [];
+        _commodities = [];
       }
     } catch (e) {
       _errorMessage = 'Koneksi gagal: $e';
-      _commodities  = [];
+      _commodities = [];
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> loadPredictableCommodities() async {
+    _setLoading(true);
+    _clearError();
+    try {
+      _predictableCommodities = await _apiService.getPredictableCommodities();
+    } catch (e) {
+      _errorMessage = 'Gagal memuat daftar komoditas: $e';
+      _predictableCommodities = [];
     } finally {
       _setLoading(false);
     }
@@ -74,7 +91,7 @@ class CommodityProvider extends ChangeNotifier {
     _setLoading(true);
     _clearError();
     _selectedPeriod = period;
-    _priceHistory   = [];
+    _priceHistory = [];
     notifyListeners();
 
     try {
@@ -82,9 +99,7 @@ class CommodityProvider extends ChangeNotifier {
 
       if (response['success'] == true && response['data'] != null) {
         final List data = response['data'];
-        _priceHistory = data
-            .map((e) => PriceModel.fromJson(e))
-            .toList()
+        _priceHistory = data.map((e) => PriceModel.fromJson(e)).toList()
           ..sort((a, b) => a.date.compareTo(b.date));
       } else {
         _errorMessage = response['message'] ?? 'Gagal memuat histori harga';
@@ -99,35 +114,50 @@ class CommodityProvider extends ChangeNotifier {
   }
 
   // ── Prediksi harga ──────────────────────────────────────
-  // Response API diharapkan mengembalikan struktur:
-  // {
-  //   "success": true,
-  //   "data": {
-  //     "predicted_price": 14862,
-  //     "current_price":   14500,   ← dibutuhkan simulasi
-  //     "total_cost":      29724,
-  //     "period":          "Bulan depan",
-  //     "insight":         "Teks wawasan AI..."   ← dibutuhkan simulasi
-  //   }
-  // }
-  Future<bool> predictPrice(String commodityId, double quantity) async {
+  Future<bool> predictPrice(String commodityName, double quantity) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final response = await _apiService.predictPrice(commodityId, quantity);
+      final response = await _apiService.predictPrice(commodityName, quantity);
 
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'] as Map<String, dynamic>;
 
-        // Normalisasi key agar konsisten di seluruh screen
+        // Response dari Laravel generate():
+        // {
+        //   "komoditas": "Beras Merah",
+        //   "harga_terakhir": 14500,
+        //   "forecast": [14600, 14700, ...],
+        //   "tanggal_pred": ["2025-06-01", ...],
+        //   "accuracy": { "mae": ..., "rmse": ..., "mape": ... }
+        // }
+
+        final List forecast = data['forecast'] as List? ?? [];
+        final hargaTerakhir =
+            (data['harga_terakhir'] as num?)?.toDouble() ?? 0.0;
+        // Ambil prediksi harga bulan depan = rata-rata 14 hari forecast
+        final hargaPrediksi = forecast.isNotEmpty
+            ? forecast
+                    .take(14)
+                    .map((e) => (e as num).toDouble())
+                    .reduce((a, b) => a + b) /
+                forecast.take(14).length
+            : hargaTerakhir;
+
+        final totalSekarang = hargaTerakhir * quantity * 4;
+        final totalPrediksi = hargaPrediksi * quantity * 4;
+        final selisih = totalPrediksi - totalSekarang;
+
         _predictionResult = {
-          'predicted_price': (data['predicted_price'] as num?)?.toDouble() ?? 0.0,
-          'current_price':   (data['current_price']   as num?)?.toDouble() ?? 0.0,
-          'total_cost':      (data['total_cost']       as num?)?.toDouble() ?? 0.0,
-          'period':          data['period']  as String? ?? 'Bulan depan',
-          'insight':         data['insight'] as String? ??
-              'AI memprediksi perubahan harga berdasarkan tren terkini.',
+          'current_price': hargaTerakhir,
+          'predicted_price': hargaPrediksi,
+          'total_cost': totalPrediksi,
+          'selisih': selisih,
+          'period': 'Bulan depan',
+          'insight': 'AI memprediksi harga ${data['komoditas']} sekitar '
+              'Rp ${hargaPrediksi.toStringAsFixed(0)} per kg bulan depan '
+              'berdasarkan tren historis terkini.',
         };
         return true;
       } else {
@@ -160,7 +190,7 @@ class CommodityProvider extends ChangeNotifier {
   // ── Clear ───────────────────────────────────────────────
   void clearSelectedCommodity() {
     _selectedCommodity = null;
-    _priceHistory      = [];
+    _priceHistory = [];
     notifyListeners();
   }
 

@@ -32,6 +32,7 @@ Route::get('/categories',           [CategoryController::class, 'index']);
 Route::get('/price-histories',      [PriceHistoryController::class, 'index']);
 Route::get('/price-histories/{id}', [PriceHistoryController::class, 'show']);
 Route::get('/statistics',           [StatisticsController::class, 'index']);
+Route::post('/predictions/generate', [PredictionController::class, 'generate']);
 // Urutan ini penting — rekomendasi harus di atas {komoditas}
 Route::post('/predictions/rekomendasi',         [PredictionController::class, 'rekomendasi']);
 Route::get('/predictions',                      [PredictionController::class, 'index']);
