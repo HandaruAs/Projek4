@@ -9,6 +9,7 @@
                placeholder="{{ $placeholder ?? 'Search...' }}"
                autocomplete="off">
     </div>
+
     {{-- Category filter --}}
     @if(isset($categories))
         <span class="filter-label">Category:</span>
@@ -19,8 +20,17 @@
             <option value="">All Categories</option>
             @foreach($categories as $cat)
                 @php
-                    $catValue = is_string($cat) ? $cat : (string) $cat->_id;
-                    $catLabel = is_string($cat) ? $cat : $cat->name;
+                    if (is_object($cat)) {
+                        $catValue = (string) $cat->_id;
+                        $catLabel = $cat->name;
+                    } elseif (is_array($cat)) {
+                        $catValue = (string) ($cat['id'] ?? $cat['_id'] ?? '');
+                        $catLabel = $cat['name'] ?? $catValue;
+                    } else {
+                        // plain string (misal dari pluck('category'))
+                        $catValue = (string) $cat;
+                        $catLabel = (string) $cat;
+                    }
                 @endphp
                 <option value="{{ $catValue }}"
                         {{ request('category') == $catValue ? 'selected' : '' }}>
@@ -29,6 +39,7 @@
             @endforeach
         </select>
     @endif
+
     {{-- Date filter --}}
     @if($withDate ?? false)
         <span class="filter-label">Date:</span>
@@ -39,9 +50,11 @@
                class="form-input-admin"
                style="width:160px">
     @endif
+
     {{-- Slot untuk tombol tambahan --}}
     {{ $slot }}
 </div>
+
 {{-- Auto submit — no button needed --}}
 <script>
 (function () {
