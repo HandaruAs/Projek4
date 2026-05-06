@@ -84,9 +84,6 @@
     <a href="{{ route('user.home') }}" class="nav-item {{ request()->routeIs('user.home') ? 'active' : '' }}">
       <i class="fas fa-gauge-high"></i> Dashboard
     </a>
-    <a href="{{ route('user.harga') }}" class="nav-item {{ request()->routeIs('user.harga') ? 'active' : '' }}">
-      <i class="fas fa-tags"></i> Data Harga
-    </a>
     <a href="{{ route('user.prediksi') }}" class="nav-item {{ request()->routeIs('user.prediksi') ? 'active' : '' }}">
       <i class="fas fa-chart-line"></i> Prediksi
     </a>

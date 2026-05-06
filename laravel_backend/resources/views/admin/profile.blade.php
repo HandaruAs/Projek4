@@ -46,8 +46,8 @@
       {{-- Avatar Card --}}
       <div class="u-avatar-card">
         <div class="u-avatar-wrap">
-          <div class="u-avatar"
-               id="avatarWrapper"
+          <div class="u-avatar-circle"
+              id="avatarWrapper"
                onclick="openAvatarModal()"
                title="Klik untuk melihat foto"
                style="cursor:pointer; transition:opacity .2s;"
