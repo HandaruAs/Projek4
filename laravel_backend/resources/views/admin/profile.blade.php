@@ -46,8 +46,8 @@
       {{-- Avatar Card --}}
       <div class="u-avatar-card">
         <div class="u-avatar-wrap">
-          <div class="u-avatar"
-               id="avatarWrapper"
+          <div class="u-avatar-circle"
+              id="avatarWrapper"
                onclick="openAvatarModal()"
                title="Klik untuk melihat foto"
                style="cursor:pointer; transition:opacity .2s;"
@@ -155,7 +155,7 @@
     {{-- ── RIGHT: FORM ───────────────────────────────── --}}
     <div class="u-profil-right">
 
-      <form method="POST" action="/admin/settings/profile" enctype="multipart/form-data">
+      <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -164,10 +164,10 @@
             <div class="u-profil-form-card__title">Data Pribadi</div>
             <div class="u-profil-form-card__sub">Informasi ini akan ditampilkan di profil Anda</div>
           </div>
-          <div class="u-profil-form-card__body">
+          <div class="u-profil-form-card__body" style="display: flex; flex-direction: column; gap: 0.75rem;">
 
             {{-- Foto Profil --}}
-            <div class="u-profil-field">
+            <div class="u-profil-field" style="margin-bottom: 0;">
               <label class="u-profil-field__label" for="avatar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -191,7 +191,7 @@
             </div>
 
             {{-- Nama --}}
-            <div class="u-profil-field">
+            <div class="u-profil-field" style="margin-bottom: 0;">
               <label class="u-profil-field__label" for="name">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -210,8 +210,8 @@
               @enderror
             </div>
 
-            {{-- Email --}}
-            <div class="u-profil-field">
+            {{-- Email - Tidak bisa diubah --}}
+            <div class="u-profil-field" style="margin-bottom: 0;">
               <label class="u-profil-field__label" for="email">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -224,35 +224,36 @@
                      class="u-profil-input @error('email') is-error @enderror"
                      value="{{ old('email', $user->email ?? '') }}"
                      placeholder="nama@email.com"
-                     required>
+                     readonly
+                     disabled
+                     style="background-color: #f5f5f5; color: #9ca3af; cursor: not-allowed; opacity: 1;">
+              <input type="hidden" name="email" value="{{ $user->email ?? '' }}">
               @error('email')
                 <div class="u-profil-field__error">{{ $message }}</div>
               @enderror
             </div>
 
             {{-- Telepon --}}
-            <div class="u-profil-row">
-              <div class="u-profil-field">
-                <label class="u-profil-field__label" for="phone">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.19 1.22 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.27-.54a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-                  </svg>
-                  No. Telepon
-                  <span class="u-profil-field__optional">Opsional</span>
-                </label>
-                <input type="tel" id="phone" name="phone"
-                       class="u-profil-input @error('phone') is-error @enderror"
-                       value="{{ old('phone', $user->phone ?? '') }}"
-                       placeholder="08xx-xxxx-xxxx">
-                @error('phone')
-                  <div class="u-profil-field__error">{{ $message }}</div>
-                @enderror
-              </div>
+            <div class="u-profil-field" style="margin-bottom: 0;">
+              <label class="u-profil-field__label" for="phone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.19 1.22 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.27-.54a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+                No. Telepon
+                <span class="u-profil-field__optional">Opsional</span>
+              </label>
+              <input type="tel" id="phone" name="phone"
+                     class="u-profil-input @error('phone') is-error @enderror"
+                     value="{{ old('phone', $user->phone ?? '') }}"
+                     placeholder="08xx-xxxx-xxxx">
+              @error('phone')
+                <div class="u-profil-field__error">{{ $message }}</div>
+              @enderror
             </div>
 
             {{-- Alamat --}}
-            <div class="u-profil-field">
+            <div class="u-profil-field" style="margin-bottom: 0;">
               <label class="u-profil-field__label" for="address">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -271,7 +272,7 @@
             </div>
 
             {{-- Role (read-only) --}}
-            <div class="u-profil-field">
+            <div class="u-profil-field" style="margin-bottom: 0;">
               <label class="u-profil-field__label" for="role">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -283,7 +284,7 @@
                      class="u-profil-input"
                      value="{{ ucfirst($user->role ?? 'Admin') }}"
                      disabled
-                     style="cursor: not-allowed; opacity: .6;">
+                     style="cursor: not-allowed; opacity: .6; background-color: #f5f5f5;">
             </div>
 
           </div>
@@ -315,11 +316,6 @@
   {{-- / profil grid --}}
 
   {{-- ── MODAL PREVIEW AVATAR ──────────────────────── --}}
-  {{--
-    CATATAN: Karena u-profil user tidak menggunakan position:fixed,
-    jika CSS layout Anda mendukung modal, gunakan class yang sudah ada.
-    Berikut ini implementasi modal dengan inline style minimal:
-  --}}
   <div id="avatarModal"
        onclick="closeAvatarModal()"
        style="display:none; position:fixed; inset:0; z-index:9999;

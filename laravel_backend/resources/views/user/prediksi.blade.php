@@ -35,10 +35,7 @@
             </div>
             @if($selectedNama)
                 <a href="{{ route('user.prediksi') }}"
-                   style="padding:8px 16px;font-size:13px;color:var(--muted);
-                          text-decoration:none;border:1px solid var(--border);
-                          border-radius:8px;white-space:nowrap">
-                    <i class="fas fa-xmark"></i> Reset
+                   style="border-radius:8px;white-space:nowrap">
                 </a>
             @endif
         </form>

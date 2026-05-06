@@ -36,7 +36,7 @@
   <div class="sidebar-logo">
     <div class="logo-badge">
       <div class="logo-icon">
-        <img src="{{ asset('images/LOGO 2.png') }}"
+        <img src="{{ asset('images/LOGO-2.png') }}"
              alt="SIMOPANG"
              style="width:100%; height:100%; object-fit:contain;">
       </div>
@@ -83,9 +83,6 @@
     <div class="nav-label">Menu</div>
     <a href="{{ route('user.home') }}" class="nav-item {{ request()->routeIs('user.home') ? 'active' : '' }}">
       <i class="fas fa-gauge-high"></i> Dashboard
-    </a>
-    <a href="{{ route('user.harga') }}" class="nav-item {{ request()->routeIs('user.harga') ? 'active' : '' }}">
-      <i class="fas fa-tags"></i> Data Harga
     </a>
     <a href="{{ route('user.prediksi') }}" class="nav-item {{ request()->routeIs('user.prediksi') ? 'active' : '' }}">
       <i class="fas fa-chart-line"></i> Prediksi

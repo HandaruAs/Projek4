@@ -8,6 +8,12 @@ use App\Http\Controllers\Api\PriceHistoryController;
 use App\Http\Controllers\Api\StatisticsController;
 use App\Http\Controllers\Api\PredictionController;
 use App\Http\Controllers\Api\PriceLatestController;
+use App\Http\Controllers\Web\UserChatAiController;
+
+// ── Chat AI ─────────────────────────────────────────────
+Route::get('/chatai/komoditas',    [UserChatAiController::class, 'komoditas']);
+Route::post('/chatai/rekomendasi', [UserChatAiController::class, 'rekomendasi']);
+Route::post('/chatai/followup',    [UserChatAiController::class, 'followup']);
 
 // ── Authentication (public) ─────────────────────────────
 Route::post('/login',           [AuthController::class, 'login']);
@@ -33,6 +39,11 @@ Route::get('/predictions/{komoditas}',          [PredictionController::class, 's
 Route::get('/prices/latest',        [PriceLatestController::class, 'index']);
 Route::get('/prices/categories',    [PriceLatestController::class, 'categories']);
 Route::get('/prices/top',           [PriceLatestController::class, 'top']);
+
+// ── Chat AI ─────────────────────────────────────────────
+Route::get('/chatai/komoditas',    [UserChatAiController::class, 'komoditas']);
+Route::post('/chatai/rekomendasi', [UserChatAiController::class, 'rekomendasi']);
+Route::post('/chatai/followup',    [UserChatAiController::class, 'followup']);
 
 // ── Protected: user yang login ───────────────────────────
 Route::middleware('auth:api')->group(function () {

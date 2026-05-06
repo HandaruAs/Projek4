@@ -12,7 +12,7 @@ use App\Http\Controllers\Web\UserPrediksiController;
 use App\Http\Controllers\Web\UserSimulasiController;
 use App\Http\Controllers\Web\UserChatAiController;
 use App\Http\Controllers\Web\UserProfilController;
-use App\Http\Controllers\Web\AdminApiStatusController; // ← tambahan
+use App\Http\Controllers\Web\AdminApiStatusController;
 
 // Landing Page
 Route::get('/', function () {
@@ -67,7 +67,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Profile
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
     Route::put('/profile', [AdminController::class, 'updateProfile'])->name('profile.update');
-    Route::put('/profile/password', [AdminController::class, 'updatePassword'])->name('profile.password');
+
 
     // routes/web.php — di dalam group admin
 
@@ -95,7 +95,7 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     // Profil
     Route::get('/user/profil',           [UserProfilController::class, 'index'])->name('user.profil');
     Route::put('/user/profil',           [UserProfilController::class, 'update'])->name('user.profil.update');
-    Route::put('/user/profil/password',  [UserProfilController::class, 'password'])->name('user.profil.password');
+    
 
     Route::get('/download-pdf', [UserController::class, 'downloadPdf'])->name('user.downloadPdf');
 
