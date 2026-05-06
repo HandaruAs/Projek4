@@ -14,7 +14,6 @@
 
 @section('content')
 
-{{-- Banner sukses tetap muncul jika tidak ada warning --}}
 @if(session('success'))
 <div class="alert-box alert-success"><i class="fas fa-circle-check"></i> {{ session('success') }}</div>
 @endif
@@ -23,7 +22,6 @@
 <div class="alert-box alert-error"><i class="fas fa-circle-xmark"></i> {{ session('error') }}</div>
 @endif
 
-{{-- Warning sebagai popup modal --}}
 @if(session('warning'))
 <div id="warningModal" class="modal-overlay">
     <div class="modal-content">
@@ -35,7 +33,6 @@
 </div>
 @endif
 
-{{-- Import error tetap menggunakan banner --}}
 @if(session('import_errors') && count(session('import_errors')) > 0)
 <div class="alert-warning">
     <div style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px">
@@ -86,19 +83,26 @@
             <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end">
                 <div style="flex:2; min-width:220px">
                     <label class="form-label-admin">Commodity <span class="text-danger">*</span></label>
-                    <select name="komoditas" class="form-select" required>
+                    <select name="komoditas" id="komoditas-select" class="form-select" required>
                         <option value="">Pilih Komoditas...</option>
+                        <option value="all" {{ old('komoditas') == 'all' ? 'selected' : '' }}>
+                            ⊞ Semua Komoditas
+                        </option>
                         @foreach($commodities as $c)
                         <option value="{{ $c->id }}" {{ old('komoditas', $selectedNama) == $c->id ? 'selected' : '' }}>
                             {{ $c->name }}
                         </option>
                         @endforeach
                     </select>
+                    <div id="all-commodity-info" style="display:none; align-items:center; gap:8px; margin-top:6px; padding:7px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; font-size:12px; color:#1d4ed8;">
+                        <i class="fas fa-circle-info"></i>
+                        Prediksi akan dijalankan untuk semua komoditas secara berurutan.
+                    </div>
                 </div>
                 <div style="flex:1; min-width:160px">
                     <label class="form-label-admin">Days <span class="text-danger">*</span></label>
                     <select name="steps" class="form-select" required>
-                        <option value="7" {{ old('steps', 30) == 7 ? 'selected' : '' }}>7 Hari</option>
+                        <option value="7"  {{ old('steps', 30) == 7  ? 'selected' : '' }}>7 Hari</option>
                         <option value="14" {{ old('steps', 30) == 14 ? 'selected' : '' }}>14 Hari</option>
                         <option value="30" {{ old('steps', 30) == 30 ? 'selected' : '' }}>30 Hari</option>
                         <option value="60" {{ old('steps', 30) == 60 ? 'selected' : '' }}>60 Hari</option>
@@ -213,5 +217,21 @@
     </div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+    const select = document.getElementById('komoditas-select');
+    const info   = document.getElementById('all-commodity-info');
+
+    function toggleInfo() {
+        info.style.display = select.value === 'all' ? 'flex' : 'none';
+    }
+
+    select.addEventListener('change', toggleInfo);
+
+    // tampilkan langsung jika old('komoditas') == 'all' saat page reload
+    toggleInfo();
+</script>
+@endpush
 
 @endsection
