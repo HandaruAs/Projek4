@@ -141,7 +141,6 @@ class PrediksiController extends Controller
                     ]);
 
                     $berhasil[] = $nama;
-
                 } catch (\Exception $e) {
                     Log::error("Generate all - gagal untuk [{$nama}]: " . $e->getMessage());
                     $gagal[] = $nama;
@@ -159,7 +158,7 @@ class PrediksiController extends Controller
             $pesan = "Prediksi selesai: {$totalBerhasil} komoditas berhasil.";
             if ($totalGagal > 0) {
                 $pesan .= " {$totalGagal} komoditas gagal: " . implode(', ', $gagal) . ".";
-                return redirect()->route('prediksi.index')->with('warning', $pesan);
+                return redirect()->route('prediksi.index')->with('success_modal', $pesan);
             }
 
             return redirect()->route('prediksi.index')->with('success', $pesan);
@@ -202,7 +201,6 @@ class PrediksiController extends Controller
 
             return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
                 ->with('success', "Prediksi {$komoditas} berhasil digenerate.");
-
         } catch (\Exception $e) {
             Log::error("Generate prediksi error: " . $e->getMessage());
             return back()->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
