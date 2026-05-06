@@ -22,13 +22,29 @@
 <div class="alert-box alert-error"><i class="fas fa-circle-xmark"></i> {{ session('error') }}</div>
 @endif
 
+{{-- Modal HIJAU: sebagian berhasil --}}
+@if(session('success_modal'))
+<div id="successModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-icon" style="color:#10b981; font-size:2.5rem">✅</div>
+        <div class="modal-title" style="color:#065f46">Berhasil</div>
+        <div class="modal-message">{{ session('success_modal') }}</div>
+        <button class="btn-close-modal"
+                style="background:#10b981; border-color:#10b981"
+                onclick="document.getElementById('successModal').remove()">Mengerti</button>
+    </div>
+</div>
+@endif
+
+{{-- Modal KUNING: warning tetap seperti semula --}}
 @if(session('warning'))
 <div id="warningModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-icon">⚠️</div>
         <div class="modal-title">Perhatian</div>
         <div class="modal-message">{{ session('warning') }}</div>
-        <button class="btn-close-modal" onclick="document.getElementById('warningModal').remove()">Mengerti</button>
+        <button class="btn-close-modal"
+                onclick="document.getElementById('warningModal').remove()">Mengerti</button>
     </div>
 </div>
 @endif
@@ -228,8 +244,6 @@
     }
 
     select.addEventListener('change', toggleInfo);
-
-    // tampilkan langsung jika old('komoditas') == 'all' saat page reload
     toggleInfo();
 </script>
 @endpush
