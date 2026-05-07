@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/forgot_password_screen.dart';
 import 'package:flutter_app/screens/auth/register_screen.dart';
-import 'package:flutter_app/screens/User/main_screen.dart'; 
+import 'package:flutter_app/screens/User/main_screen.dart';
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -38,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (success) {
-        // ✅ Tidak perlu cek role — semua user langsung ke UserMainScreen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const UserMainScreen()),
         );
@@ -68,22 +67,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const SizedBox(height: 40),
 
+                      // ── Logo SIMOPANG ──────────────────────────
                       Center(
                         child: Container(
-                          width: 80,
-                          height: 80,
+                          width: 90,
+                          height: 90,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1976D2).withOpacity(0.1),
                             shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF1976D2).withOpacity(0.2),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                          child: const Icon(
-                            Icons.agriculture,
-                            size: 40,
-                            color: Color(0xFF1976D2),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/LOGO-2.png',
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 24),
+
                       Center(
                         child: Text(
                           'Selamat Datang',
