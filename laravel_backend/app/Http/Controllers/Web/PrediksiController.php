@@ -48,7 +48,7 @@ class PrediksiController extends Controller
         $komoditasList = $this->getEligibleCommodities();
         $selectedNama  = $request->get('komoditas', null);
 
-        if ($selectedNama && !in_array($selectedNama, $komoditasList)) {
+        if ($selectedNama && $selectedNama !== 'all' && !in_array($selectedNama, $komoditasList)) {
             return redirect()->route('prediksi.index')
                 ->with('error', 'Komoditas tidak memiliki cukup data (min 20 titik).');
         }
@@ -56,22 +56,22 @@ class PrediksiController extends Controller
         $prediksiData = null;
         $chartData    = null;
 
-        if ($selectedNama) {
+        if ($selectedNama && $selectedNama !== 'all') {
             try {
                 $prediksiData = $this->prediksiService->generate($selectedNama, 30);
-                dd($prediksiData);
 
-                $forecast  = $prediksiData['forecast']       ?? [];
-                $tanggal   = $prediksiData['tanggal_pred']   ?? [];
-                $ciLower   = $prediksiData['ci_lower']       ?? [];
-                $ciUpper   = $prediksiData['ci_upper']       ?? [];
-                $hargaKini = $prediksiData['harga_terakhir'] ?? 0;
+                $payload   = $prediksiData;
+                $forecast  = $payload['forecast']       ?? [];
+                $tanggal   = $payload['tanggal_pred']   ?? [];
+                $ciLower   = $payload['ci_lower']       ?? [];
+                $ciUpper   = $payload['ci_upper']       ?? [];
+                $hargaKini = $payload['harga_terakhir'] ?? 0;
 
                 $chartData = [
                     'pred_tanggal' => array_slice($tanggal, 0, 14),
                     'pred_harga'   => array_slice($forecast, 0, 14),
-                    'ci_lower'     => array_slice($ciLower, 0, 14),
-                    'ci_upper'     => array_slice($ciUpper, 0, 14),
+                    'ci_lower'     => array_slice(is_array($ciLower) ? $ciLower : [], 0, 14),
+                    'ci_upper'     => array_slice(is_array($ciUpper) ? $ciUpper : [], 0, 14),
                     'harga_kini'   => $hargaKini,
                 ];
             } catch (\Exception $e) {
@@ -79,7 +79,6 @@ class PrediksiController extends Controller
             }
         }
 
-        // 🔧 HANYA TAMPILKAN PREDIKSI YANG SUDAH MEMILIKI METRIK
         $predictions = Prediction::whereNotNull('accuracy_mape')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -109,16 +108,70 @@ class PrediksiController extends Controller
 
         $komoditas = $request->komoditas;
         $steps     = (int) ($request->steps ?? 30);
+        $eligible  = $this->getEligibleCommodities();
 
-        $eligible = $this->getEligibleCommodities();
+        // ── ALL COMMODITY ──────────────────────────────────────────────
+        if ($komoditas === 'all') {
+            if (empty($eligible)) {
+                return back()->with('error', 'Tidak ada komoditas yang memiliki cukup data historis (min 20 data).');
+            }
+
+            $berhasil = [];
+            $gagal    = [];
+
+            foreach ($eligible as $nama) {
+                try {
+                    $payload = $this->prediksiService->generate($nama, $steps);
+                    $acc     = $payload['accuracy'] ?? [];
+
+                    Prediction::where('commodity_name', $nama)
+                        ->where('steps', $steps)
+                        ->delete();
+
+                    Prediction::create([
+                        'commodity_name' => $nama,
+                        'steps'          => $steps,
+                        'created_at'     => now(),
+                        'created_by'     => auth()->user()->name ?? 'laravel_web',
+                        'status'         => 'completed',
+                        'accuracy_mae'   => $acc['mae']  ?? null,
+                        'accuracy_rmse'  => $acc['rmse'] ?? null,
+                        'accuracy_mape'  => $acc['mape'] ?? null,
+                        'payload'        => $payload,
+                    ]);
+
+                    $berhasil[] = $nama;
+                } catch (\Exception $e) {
+                    Log::error("Generate all - gagal untuk [{$nama}]: " . $e->getMessage());
+                    $gagal[] = $nama;
+                }
+            }
+
+            $totalBerhasil = count($berhasil);
+            $totalGagal    = count($gagal);
+
+            if ($totalBerhasil === 0) {
+                return redirect()->route('prediksi.index')
+                    ->with('error', 'Semua komoditas gagal di-generate. Periksa log untuk detail.');
+            }
+
+            $pesan = "Prediksi selesai: {$totalBerhasil} komoditas berhasil.";
+            if ($totalGagal > 0) {
+                $pesan .= " {$totalGagal} komoditas gagal: " . implode(', ', $gagal) . ".";
+                return redirect()->route('prediksi.index')->with('success_modal', $pesan);
+            }
+
+            return redirect()->route('prediksi.index')->with('success', $pesan);
+        }
+
+        // ── SINGLE COMMODITY ───────────────────────────────────────────
         if (!in_array($komoditas, $eligible)) {
             return back()->with('error', 'Komoditas tidak memiliki cukup data historis (min 20 data).');
         }
 
         try {
             $payload = $this->prediksiService->generate($komoditas, $steps);
-
-            $acc = $payload['accuracy'] ?? [];
+            $acc     = $payload['accuracy'] ?? [];
 
             $warning = null;
             if (empty($acc['mae'])) {
@@ -129,8 +182,7 @@ class PrediksiController extends Controller
                 ->where('steps', $steps)
                 ->delete();
 
-            \App\Models\Prediction::create([
-                'commodity_id'   => $komoditas,
+            Prediction::create([
                 'commodity_name' => $komoditas,
                 'steps'          => $steps,
                 'created_at'     => now(),
@@ -142,7 +194,6 @@ class PrediksiController extends Controller
                 'payload'        => $payload,
             ]);
 
-            // ✅ HANYA WARNING JIKA METRIK KOSONG, SELAIN ITU SUCCESS
             if ($warning) {
                 return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
                     ->with('warning', $warning);
@@ -150,7 +201,6 @@ class PrediksiController extends Controller
 
             return redirect()->route('prediksi.index', ['komoditas' => $komoditas])
                 ->with('success', "Prediksi {$komoditas} berhasil digenerate.");
-
         } catch (\Exception $e) {
             Log::error("Generate prediksi error: " . $e->getMessage());
             return back()->with('error', 'Gagal generate prediksi: ' . $e->getMessage());
@@ -178,17 +228,18 @@ class PrediksiController extends Controller
             $file = fopen('php://output', 'w');
             fputcsv($file, ['Tanggal', 'Prediksi Harga', 'CI Lower', 'CI Upper']);
 
-            $tanggal  = $prediction->tanggal_pred ?? [];
-            $forecast = $prediction->forecast     ?? [];
-            $ciLower  = $prediction->ci_lower     ?? [];
-            $ciUpper  = $prediction->ci_upper     ?? [];
+            $payload  = $prediction->payload ?? [];
+            $tanggal  = $payload['tanggal_pred'] ?? [];
+            $forecast = $payload['forecast']     ?? [];
+            $ciLower  = $payload['ci_lower']     ?? [];
+            $ciUpper  = $payload['ci_upper']     ?? [];
 
             foreach ($tanggal as $i => $tgl) {
                 fputcsv($file, [
                     $tgl,
                     $forecast[$i] ?? '',
-                    $ciLower[$i]  ?? '',
-                    $ciUpper[$i]  ?? '',
+                    is_array($ciLower) ? ($ciLower[$i] ?? '') : '',
+                    is_array($ciUpper) ? ($ciUpper[$i] ?? '') : '',
                 ]);
             }
             fclose($file);
@@ -198,7 +249,7 @@ class PrediksiController extends Controller
     }
 
     // GET /admin/prediksi/{id}
-    public function show(string $id, Request $request)
+    public function show(string $id)
     {
         $prediction = Prediction::find($id);
         if (!$prediction) {
@@ -218,6 +269,6 @@ class PrediksiController extends Controller
                 ->with('success', 'Data prediksi berhasil dihapus.');
         }
         return redirect()->route('prediksi.index')
-            ->with('info', 'Data prediksi dikelola langsung oleh Flask ML.');
+            ->with('error', 'Data prediksi tidak ditemukan.');
     }
 }

@@ -2,7 +2,7 @@
 
 @section('title', 'Generate Prediksi')
 @section('page-title', 'Generate Prediksi')
-@section('page-sub', 'Generate commodity price predictions using machine learning models.')
+@section('page-sub', 'Upload data historis & jalankan model Holt-Winters')
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/modal-warning.css') }}">
@@ -14,7 +14,6 @@
 
 @section('content')
 
-{{-- Banner sukses tetap muncul jika tidak ada warning --}}
 @if(session('success'))
 <div class="alert-box alert-success"><i class="fas fa-circle-check"></i> {{ session('success') }}</div>
 @endif
@@ -23,19 +22,33 @@
 <div class="alert-box alert-error"><i class="fas fa-circle-xmark"></i> {{ session('error') }}</div>
 @endif
 
-{{-- Warning sebagai popup modal --}}
+{{-- Modal HIJAU: sebagian berhasil --}}
+@if(session('success_modal'))
+<div id="successModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-icon" style="color:#10b981; font-size:2.5rem">✅</div>
+        <div class="modal-title" style="color:#065f46">Berhasil</div>
+        <div class="modal-message">{{ session('success_modal') }}</div>
+        <button class="btn-close-modal"
+                style="background:#10b981; border-color:#10b981"
+                onclick="document.getElementById('successModal').remove()">Mengerti</button>
+    </div>
+</div>
+@endif
+
+{{-- Modal KUNING: warning tetap seperti semula --}}
 @if(session('warning'))
 <div id="warningModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-icon">⚠️</div>
         <div class="modal-title">Perhatian</div>
         <div class="modal-message">{{ session('warning') }}</div>
-        <button class="btn-close-modal" onclick="document.getElementById('warningModal').remove()">Mengerti</button>
+        <button class="btn-close-modal"
+                onclick="document.getElementById('warningModal').remove()">Mengerti</button>
     </div>
 </div>
 @endif
 
-{{-- Import error tetap menggunakan banner --}}
 @if(session('import_errors') && count(session('import_errors')) > 0)
 <div class="alert-warning">
     <div style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px">
@@ -54,7 +67,9 @@
             <div class="table-title"><i class="fas fa-upload"></i> Upload Historical Data</div>
             <div class="table-subtitle">Import data harga historis dari file CSV atau Excel.</div>
         </div>
-        <form method="POST" action="/admin/prediksi/upload" enctype="multipart/form-data">
+    </div>
+    <div style="padding:1.5rem">
+        <form method="POST" action="{{ route('prediksi.upload') }}" enctype="multipart/form-data">
             @csrf
             <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end">
                 <div style="flex:1; min-width:260px">
@@ -68,6 +83,7 @@
             </div>
         </form>
     </div>
+</div>
 
 {{-- ── GENERATE PREDICTION ── --}}
 <div class="table-card" style="margin-bottom:1.5rem">
@@ -76,24 +92,33 @@
             <div class="table-title"><i class="fas fa-wand-magic-sparkles"></i> Generate Prediction</div>
             <div class="table-subtitle">Pilih komoditas dan horizon prediksi, lalu jalankan model Holt-Winters.</div>
         </div>
-        <form method="POST" action="/admin/prediksi/generate">
+    </div>
+    <div style="padding:1.5rem">
+        <form method="POST" action="{{ route('prediksi.generate') }}">
             @csrf
             <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end">
                 <div style="flex:2; min-width:220px">
                     <label class="form-label-admin">Commodity <span class="text-danger">*</span></label>
-                    <select name="komoditas" class="form-select" required>
+                    <select name="komoditas" id="komoditas-select" class="form-select" required>
                         <option value="">Pilih Komoditas...</option>
+                        <option value="all" {{ old('komoditas') == 'all' ? 'selected' : '' }}>
+                            ⊞ Semua Komoditas
+                        </option>
                         @foreach($commodities as $c)
                         <option value="{{ $c->id }}" {{ old('komoditas', $selectedNama) == $c->id ? 'selected' : '' }}>
                             {{ $c->name }}
                         </option>
                         @endforeach
                     </select>
+                    <div id="all-commodity-info" style="display:none; align-items:center; gap:8px; margin-top:6px; padding:7px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; font-size:12px; color:#1d4ed8;">
+                        <i class="fas fa-circle-info"></i>
+                        Prediksi akan dijalankan untuk semua komoditas secara berurutan.
+                    </div>
                 </div>
                 <div style="flex:1; min-width:160px">
                     <label class="form-label-admin">Days <span class="text-danger">*</span></label>
                     <select name="steps" class="form-select" required>
-                        <option value="7" {{ old('steps', 30) == 7 ? 'selected' : '' }}>7 Hari</option>
+                        <option value="7"  {{ old('steps', 30) == 7  ? 'selected' : '' }}>7 Hari</option>
                         <option value="14" {{ old('steps', 30) == 14 ? 'selected' : '' }}>14 Hari</option>
                         <option value="30" {{ old('steps', 30) == 30 ? 'selected' : '' }}>30 Hari</option>
                         <option value="60" {{ old('steps', 30) == 60 ? 'selected' : '' }}>60 Hari</option>
@@ -106,12 +131,8 @@
                     </button>
                 </div>
             </div>
-            <button type="submit" class="btn-run-model">
-                <i class="fas fa-wand-magic-sparkles"></i> Run Prediction Model
-            </button>
         </form>
     </div>
-
 </div>
 
 {{-- ── PREDICTION HISTORY ── --}}
@@ -126,17 +147,19 @@
         </div>
     </div>
 
+    @if($predictions->count() > 0)
     <table>
         <thead>
             <tr>
-                <th>Date/Time</th>
-                <th>Commodity</th>
-                <th>Horizon</th>
+                <th>#</th>
+                <th>Komoditas</th>
+                <th>Generated</th>
+                <th>Days</th>
                 <th>MAE</th>
                 <th>RMSE</th>
                 <th>MAPE</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -197,12 +220,32 @@
 
     <div class="table-footer">
         <span class="table-footer-text">
-            Showing {{ $predictions->count() }} of {{ $predictions->total() }} results
+            Showing {{ $predictions->firstItem() }}–{{ $predictions->lastItem() }} of {{ $predictions->total() }} predictions
         </span>
-        <div class="pagination">
-            {{ $predictions->links() }}
-        </div>
+        <x-pagination :paginator="$predictions" />
     </div>
+
+    @else
+    <div class="empty-pred">
+        <i class="fas fa-chart-line"></i>
+        <div style="font-weight:600; margin-bottom:4px">Belum ada prediksi</div>
+        <div style="font-size:13px">Generate prediksi pertama menggunakan form di atas.</div>
+    </div>
+    @endif
 </div>
+
+@push('scripts')
+<script>
+    const select = document.getElementById('komoditas-select');
+    const info   = document.getElementById('all-commodity-info');
+
+    function toggleInfo() {
+        info.style.display = select.value === 'all' ? 'flex' : 'none';
+    }
+
+    select.addEventListener('change', toggleInfo);
+    toggleInfo();
+</script>
+@endpush
 
 @endsection

@@ -53,13 +53,15 @@
 
 </div>
 
-{{-- ── RECENT PRICE UPDATES ── --}}
+{{-- ── RECENT PRICE UPDATES (dari Predictions) ── --}}
 <div class="table-card">
 
     <div class="table-header">
         <div>
             <div class="table-title">Recent Price Updates</div>
-            <div class="table-subtitle">Showing the latest commodity price logs across all regions.</div>
+            <div class="table-subtitle">
+                Menampilkan 7 komoditas dengan harga prediksi tertinggi.
+            </div>
         </div>
         <div class="table-actions">
             <div class="search-box">
@@ -78,26 +80,17 @@
                 <th>Price (IDR)</th>
                 <th>Change</th>
                 <th>Date</th>
-                <th>Action</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody>
             @forelse($recentPrices as $item)
             <tr>
                 <td class="commodity-name">{{ $item->commodity_name }}</td>
-                {{-- PERBAIKAN: tangani string, array, dan objek --}}
-                <td class="region-text">
-                    @if(is_string($item->category))
-                        {{ $item->category }}
-                    @elseif(is_array($item->category))
-                        {{ implode(', ', $item->category) }}
-                    @elseif(is_object($item->category))
-                        {{ $item->category->name ?? json_encode($item->category) }}
-                    @else
-                        -
-                    @endif
+                <td class="region-text">{{ $item->category }}</td>
+                <td class="price-text">
+                    Rp {{ number_format($item->harga_sekarang, 0, ',', '.') }}
                 </td>
-                <td class="price-text">Rp {{ number_format($item->harga_sekarang, 0, ',', '.') }}</td>
                 <td>
                     @if($item->selisih > 0)
                         <span class="stat-change up" style="font-size:12px">
@@ -114,23 +107,20 @@
                     @endif
                 </td>
                 <td class="date-text">
-                    {{ \Carbon\Carbon::parse($item->date)->format('M d, Y') }}
+                    {{ $item->date ? \Carbon\Carbon::parse($item->date)->format('M d, Y') : '-' }}
                 </td>
                 <td>
-                    <div class="action-group">
-                        <a href="/admin/harga/{{ $item->id }}/edit" class="btn-action-edit">
-                            <i class="fas fa-pen"></i> Edit
-                        </a>
-                        <button class="btn-action-delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                    <span style="font-size:11px; padding:3px 10px;
+                                 background:#eff6ff; color:#3b82f6;
+                                 border-radius:999px; font-weight:600;">
+                        Prediksi
+                    </span>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-muted);">
-                    Belum ada data harga.
+                <td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted)">
+                    Belum ada data prediksi.
                 </td>
             </tr>
             @endforelse
@@ -138,7 +128,7 @@
     </table>
 
     <div class="table-footer">
-        <span class="table-footer-text">Showing top 7 latest records</span>
+        <span class="table-footer-text">Showing top 7 highest predicted prices</span>
         <div class="pagination">
             <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
             <button class="page-btn"><i class="fas fa-chevron-right"></i></button>

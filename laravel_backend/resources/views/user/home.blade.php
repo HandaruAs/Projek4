@@ -9,56 +9,52 @@
 {{-- ── STAT CARDS ── --}}
 <div class="stats-grid">
 
+    {{-- Card Oranye: Rata-rata Harga Terkini --}}
     <div class="stat-card">
         <div>
-            <div class="stat-label">Harga Terbaru ({{ $namaKomoditas ?? 'Beras' }})</div>
+            <div class="stat-label">Rata-rata Harga Terkini</div>
             <div class="stat-value">
-                Rp {{ number_format($hargaTerbaru ?? 14500, 0, ',', '.') }}
+                Rp {{ number_format($rataRataHarga ?? 0, 0, ',', '.') }}
+                <span style="font-size:14px; font-weight:400">/kg</span>
+            </div>
+            <div class="stat-change up">
+                <i class="fas fa-chart-bar"></i>
+                <span class="stat-change-sub">Rata-rata harga terkini seluruh komoditas</span>
+            </div>
+        </div>
+        <div class="stat-icon icon-orange"><i class="fas fa-chart-bar"></i></div>
+    </div>
+
+    {{-- Card Hijau: Harga Tertinggi Terkini --}}
+    <div class="stat-card">
+        <div>
+            <div class="stat-label">Harga Tertinggi Terkini</div>
+            <div class="stat-value">
+                Rp {{ number_format($hargaTertinggi ?? 0, 0, ',', '.') }}
                 <span style="font-size:14px; font-weight:400">/kg</span>
             </div>
             <div class="stat-change up">
                 <i class="fas fa-arrow-trend-up"></i>
-                <span class="stat-change-sub">Update terbaru</span>
+                <span class="stat-change-sub">{{ $namaKomoditasTertinggi ?? '-' }}</span>
             </div>
         </div>
         <div class="stat-icon icon-orange"><i class="fas fa-arrow-trend-up"></i></div>
     </div>
 
+    {{-- Card Biru: Total Komoditas --}}
     <div class="stat-card">
         <div>
-            <div class="stat-label">Perubahan Bulanan</div>
-            <div class="stat-value">
-                @if(($hargaChange ?? 0) >= 0)
-                    + Rp {{ number_format($hargaChange ?? 0, 0, ',', '.') }}
-                @else
-                    - Rp {{ number_format(abs($hargaChange ?? 0), 0, ',', '.') }}
-                @endif
-            </div>
-            <div class="stat-change {{ ($hargaChange ?? 0) >= 0 ? 'up' : 'down' }}">
-                <i class="fas {{ ($hargaChange ?? 0) >= 0 ? 'fa-arrow-up' : 'fa-arrow-down' }}"></i>
-                <span class="stat-change-sub">
-                    vs bulan lalu Rp {{ number_format($hargaKemarin ?? 0, 0, ',', '.') }}
-                    ({{ ($hargaPercent ?? 0) >= 0 ? '+' : '' }}{{ number_format($hargaPercent ?? 0, 2) }}%)
-                </span>
-            </div>
-        </div>
-        <div class="stat-icon icon-orange"><i class="fas fa-chart-line"></i></div>
-    </div>
-
-    <div class="stat-card">
-        <div>
-            <div class="stat-label">Status Volatilitas</div>
-            <div class="stat-value">{{ $statusVolatilitas ?? 'Rendah' }}</div>
+            <div class="stat-label">Total Komoditas</div>
+            <div class="stat-value">{{ $totalKomoditas ?? 0 }}</div>
             <div class="stat-change neutral">
-                <i class="fas fa-minus"></i>
-                <span class="stat-change-sub">Indeks: {{ $indexVolatilitas ?? '0.38' }} (normal)</span>
+                <i class="fas fa-boxes-stacked"></i>
+                <span class="stat-change-sub">Keseluruhan komoditas</span>
             </div>
         </div>
-        <div class="stat-icon icon-blue"><i class="fas fa-wave-square"></i></div>
+        <div class="stat-icon icon-blue"><i class="fas fa-boxes-stacked"></i></div>
     </div>
 
 </div>
-
 {{-- ── FILTER BAR ── --}}
 <form method="GET" action="{{ url()->current() }}">
     <x-filter-bar
@@ -107,40 +103,44 @@
                     <th>Kategori</th>
                     <th>Harga (IDR)</th>
                     <th>Perubahan</th>
-                    <th>Tanggal</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach($recentPrices as $item)
-                <tr>
-                    <td class="commodity-name">{{ $item->commodity_name ?? '-' }}</td>
-                    <td class="region-text">{{ $item->categoryRelation->name ?? '-' }}</td>
-                    <td class="price-text">Rp {{ number_format($item->harga_sekarang ?? 0, 0, ',', '.') }}</td>
-                    <td>
-                        @php
-                            $selisih = $item->selisih ?? 0;
-                            $persen = $item->persen ?? 0;
-                        @endphp
-                        @if($selisih > 0)
-                            <span class="stat-change up" style="font-size:12px">
-                                <i class="fas fa-arrow-up"></i> +{{ number_format(abs($persen), 2) }}%
-                            </span>
-                        @elseif($selisih < 0)
-                            <span class="stat-change down" style="font-size:12px">
-                                <i class="fas fa-arrow-down"></i> -{{ number_format(abs($persen), 2) }}%
-                            </span>
-                        @else
-                            <span class="stat-change neutral" style="font-size:12px">
-                                <i class="fas fa-minus"></i> 0%
-                            </span>
-                        @endif
-                    </td>
-                    <td class="date-text">
-                        {{ \Carbon\Carbon::parse($item->date)->format('M d, Y') }}
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
+           <tbody>
+    @foreach($recentPrices as $item)
+    <tr>
+        {{-- Komoditas --}}
+        <td class="commodity-name">{{ $item->commodity_name ?? '-' }}</td>
+
+        {{-- Kategori --}}
+        <td class="region-text">{{ $item->kategori ?? '-' }}</td>
+
+        {{-- Harga (IDR) --}}
+        <td class="price-text">Rp {{ number_format($item->harga_sekarang ?? 0, 0, ',', '.') }}</td>
+
+        {{-- Perubahan --}}
+        <td>
+            @php
+                $selisih = $item->selisih ?? 0;
+                $persen  = $item->persen ?? 0;
+            @endphp
+            @if($selisih > 0)
+                <span class="stat-change up" style="font-size:12px">
+                    <i class="fas fa-arrow-up"></i> +{{ number_format(abs($persen), 2) }}%
+                </span>
+            @elseif($selisih < 0)
+                <span class="stat-change down" style="font-size:12px">
+                    <i class="fas fa-arrow-down"></i> -{{ number_format(abs($persen), 2) }}%
+                </span>
+            @else
+                <span class="stat-change neutral" style="font-size:12px">
+                    <i class="fas fa-minus"></i> 0%
+                </span>
+            @endif
+        </td>
+    </tr>
+    @endforeach
+</tbody>
+
         </table>
     </div>
     @else

@@ -11,10 +11,16 @@
 <body>
 
 <nav class="navbar">
-    <a href="/" class="navbar-brand">
-        <div class="brand-icon"><i class="fas fa-chart-line"></i></div>
-        <span class="brand-name">SIMOPANG Admin</span>
-    </a>
+   <a href="/" class="navbar-brand">
+    <div style="width:36px; height:36px; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.15); transition:transform 0.2s;" 
+         onmouseover="this.style.transform='scale(1.05)'" 
+         onmouseout="this.style.transform='scale(1)'">
+        <img src="{{ asset('images/LOGO-2.png') }}" 
+             alt="Logo SIMOPANG" 
+             style="width:100%; height:100%; object-fit:cover;">
+    </div>
+    <span class="brand-name">SIMOPANG</span>
+</a>
     <div class="navbar-links">
         <a href="/" class="btn-back">
             <i class="fas fa-house"></i>
@@ -91,9 +97,12 @@
                     <label class="form-label" for="email">Email Address</label>
                     <div class="input-wrapper">
                         <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" id="email" name="email"
-                            class="form-input {{ $errors->has('email') ? 'is-error' : '' }}"
-                            placeholder="nama@email.com" value="{{ old('email') }}" required>
+                       <input type="email" id="email" name="email"
+                                class="form-input {{ $errors->has('email') ? 'is-error' : '' }}"
+                                placeholder="contoh@gmail.com"
+                                pattern="[a-zA-Z0-9._%+\-]+@gmail\.com"
+                                title="Gunakan akun email anda"
+                                value="{{ old('email') }}" required>
                     </div>
                     @error('email')
                         <div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ $message }}</div>

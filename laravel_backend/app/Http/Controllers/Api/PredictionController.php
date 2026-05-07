@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\PrediksiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PredictionController extends Controller
 {
@@ -66,6 +67,47 @@ class PredictionController extends Controller
             return response()->json(['success' => true, 'data' => $data]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+    // POST /api/predictions/generate
+    public function generate(Request $request)
+    {
+        $request->validate([
+            'komoditas' => 'required|string',
+            'steps'     => 'nullable|integer|min:1|max:90',
+        ]);
+
+        $komoditas = $request->komoditas;
+        $steps     = (int) ($request->steps ?? 30);
+
+        try {
+            $data = $this->prediksiService->generate($komoditas, $steps);
+
+            $forecast  = $data['forecast']       ?? [];
+            $tanggal   = $data['tanggal_pred']   ?? [];
+            $ciLower   = $data['ci_lower']       ?? [];
+            $ciUpper   = $data['ci_upper']       ?? [];
+            $hargaKini = $data['harga_terakhir'] ?? 0;
+            $acc       = $data['accuracy']       ?? [];
+
+            return response()->json([
+                'success' => true,
+                'data'    => [
+                    'komoditas'     => $komoditas,
+                    'harga_terakhir' => $hargaKini,
+                    'forecast'      => array_slice($forecast, 0, 14),
+                    'tanggal_pred'  => array_slice($tanggal,  0, 14),
+                    'ci_lower'      => array_slice(is_array($ciLower) ? $ciLower : [], 0, 14),
+                    'ci_upper'      => array_slice(is_array($ciUpper) ? $ciUpper : [], 0, 14),
+                    'accuracy'      => $acc,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error("API generate prediksi error: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal generate prediksi: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

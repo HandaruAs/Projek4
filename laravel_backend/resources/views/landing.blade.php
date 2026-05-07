@@ -8,13 +8,17 @@
 <nav class="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100/50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16 md:h-20">
-            
+
             {{-- Logo & Brand --}}
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-blue-900 to-blue-500 text-white flex items-center justify-center shadow-md transform transition hover:scale-105">
-                    <i class="fas fa-chart-line text-white text-xl"></i>
-                </div>
-                <span class="text-xl md:text-2xl font-bold tracking-tight text-gray-900">SIMOPANG</span>
+            <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden shadow-md transform transition hover:scale-105">
+                <img src="{{ asset('images/LOGO-2.png') }}"
+                    alt="Logo"
+                    class="w-full h-full object-cover">
+            </div>
+            <span class="text-xl md:text-2xl font-bold tracking-tight text-gray-900">
+                SIMOPANG
+            </span>
             </div>
 
             {{-- Desktop Menu --}}
@@ -126,7 +130,7 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            
+
             {{-- Card 1: Monitoring Harga --}}
             <div class="group bg-white p-6 md:p-8 rounded-2xl shadow-soft hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-100 transform hover:-translate-y-2">
                 <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 text-white flex items-center justify-center mb-5 shadow-md group-hover:scale-110 transition">
@@ -180,10 +184,12 @@
             </ul>
         </div>
         <div class="relative">
-            <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden p-2">
-                <img src="https://placehold.co/600x400/0a1f44/ffffff?text=SIMOPANG+Dashboard+Preview" alt="Dashboard Preview" class="w-full h-auto rounded-2xl">
-            </div>
-            {{-- Dekorasi --}}
+         <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden p-2">
+            <img src="{{ asset('images/dashboard.png') }}"
+            alt="Dashboard Preview"
+            class="w-full h-auto rounded-2xl">
+         </div>
+                {{-- Dekorasi --}}
             <div class="absolute -bottom-5 -right-5 w-32 h-32 bg-blue-100 rounded-full -z-10"></div>
             <div class="absolute -top-5 -left-5 w-32 h-32 bg-indigo-100 rounded-full -z-10"></div>
         </div>
@@ -244,8 +250,10 @@
             {{-- Brand --}}
             <div class="col-span-1 md:col-span-2">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center shadow-md">
-                        <i class="fas fa-chart-line text-white text-sm"></i>
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center shadow-md overflow-hidden">
+                        <img src="{{ asset('image/logo2.png') }}"
+                             alt="Logo"
+                             class="w-full h-full object-contain">
                     </div>
                     <span class="text-xl font-bold text-gray-900">SIMOPANG</span>
                 </div>

@@ -17,7 +17,7 @@ class AuthController extends Controller
 
     // ─────────────────────────────────────────────
     // LOGIN
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────    
     public function login(Request $request)
     {
         $user = User::where('email', $request->email)->first();
@@ -69,13 +69,14 @@ class AuthController extends Controller
     // REGISTER USER
     // ─────────────────────────────────────────────
     public function registerUser(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email', // ✅ cek duplikat email
-            'password' => 'required|string|min:6',
-        ]);
-
+{
+    $validator = Validator::make($request->all(), [
+        'name'     => 'required|string|max:255',
+        'email'    => ['required', 'email', 'unique:users,email', 'regex:/^[a-zA-Z0-9._%+\-]+@gmail\.com$/'],
+        'password' => 'required|string|min:6',
+    ], [
+        'email.regex' => 'Email harus menggunakan @gmail.com',
+    ]);
         if ($validator->fails()) {
             return response()->json([
                 'status'  => 'error',
@@ -110,22 +111,33 @@ class AuthController extends Controller
     // ─────────────────────────────────────────────
     // REGISTER ADMIN
     // ─────────────────────────────────────────────
-    public function registerAdmin(Request $request)
-    {
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role'     => 'admin'
-        ]);
+  public function registerAdmin(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'name'     => 'required|string|max:255',
+        'email'    => ['required', 'email', 'unique:users,email', 'regex:/^[a-zA-Z0-9._%+\-]+@gmail\.com$/'],
+        'password' => 'required|string|min:6',
+    ], [
+        'email.regex' => 'Email harus menggunakan @gmail.com',
+    ]);
 
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Admin berhasil dibuat',
-            'data'    => $user
-        ]);
+    if ($validator->fails()) {
+        return back()->withErrors($validator)->withInput();
     }
 
+    $user = User::create([
+        'name'     => $request->name,
+        'email'    => $request->email,
+        'password' => Hash::make($request->password),
+        'role'     => 'admin'
+    ]);
+
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'Admin berhasil dibuat',
+        'data'    => $user
+    ]);
+}
 
     // ─────────────────────────────────────────────
     // LOGOUT
