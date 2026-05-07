@@ -33,20 +33,22 @@
 {{-- ═══════════ SIDEBAR ═══════════ --}}
 <aside class="sidebar" id="appSidebar">
 
-  <div class="sidebar-logo">
+ <div class="sidebar-logo">
     <div class="logo-badge">
-      <div class="logo-icon">
-        <img src="{{ asset('images/LOGO-2.png') }}"
-             alt="SIMOPANG"
-             style="width:100%; height:100%; object-fit:contain;">
-      </div>
-      <div>
-        <div class="logo-title">SIMOPANG {{ $isAdmin ? 'Admin' : '' }}</div>
-        <div class="logo-sub">Monitoring & Prediksi</div>
-      </div>
+        <div class="logo-icon"
+             style="border-radius:12px; overflow:hidden; transition:transform 0.2s;"
+             onmouseover="this.style.transform='scale(1.05)'"
+             onmouseout="this.style.transform='scale(1)'">
+            <img src="{{ asset('images/LOGO-2.png') }}"
+                 alt="SIMOPANG"
+                 style="width:100%; height:100%; object-fit:contain;">
+        </div>
+        <div>
+            <div class="logo-title">SIMOPANG {{ $isAdmin ? 'Admin' : '' }}</div>
+            <div class="logo-sub">Monitoring & Prediksi</div>
+        </div>
     </div>
-  </div>
-
+</div>
   @if($isAdmin)
   {{-- ADMIN --}}
   <nav class="nav-section">
