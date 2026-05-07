@@ -10,12 +10,8 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-<<<<<<< HEAD
-        "mongodb/laravel-mongodb": "^5.6"
-=======
         "mongodb/laravel-mongodb": "^5.6",
         "tymon/jwt-auth": "^2.3"
->>>>>>> cdacd4730c3db6ecfc7820297fb35cec1fd22d82
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
