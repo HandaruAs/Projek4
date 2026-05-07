@@ -111,8 +111,11 @@
                     <div class="input-wrapper">
                         <i class="fas fa-envelope input-icon"></i>
                         <input type="email" id="email" name="email"
-                            class="form-input {{ $errors->has('email') ? 'is-error' : '' }}"
-                            placeholder="nama@email.com" value="{{ old('email') }}" required>
+                         class="form-input {{ $errors->has('email') ? 'is-error' : '' }}"
+                        placeholder="contoh@gmail.com"
+                        pattern="[a-zA-Z0-9._%+\-]+@gmail\.com"
+                        title="Gunakan akun email anda"
+                        value="{{ old('email') }}" required>
                     </div>
                     @error('email')
                         <div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ $message }}</div>

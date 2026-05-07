@@ -8,12 +8,12 @@
 <nav class="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100/50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16 md:h-20">
-            
+
             {{-- Logo & Brand --}}
             <div class="flex items-center gap-3">
             <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden shadow-md transform transition hover:scale-105">
-                <img src="{{ asset('image/logo2.png') }}" 
-                    alt="Logo" 
+                <img src="{{ asset('images/LOGO-2.png') }}"
+                    alt="Logo"
                     class="w-full h-full object-cover">
             </div>
             <span class="text-xl md:text-2xl font-bold tracking-tight text-gray-900">
@@ -130,7 +130,7 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            
+
             {{-- Card 1: Monitoring Harga --}}
             <div class="group bg-white p-6 md:p-8 rounded-2xl shadow-soft hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-100 transform hover:-translate-y-2">
                 <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 text-white flex items-center justify-center mb-5 shadow-md group-hover:scale-110 transition">
@@ -185,8 +185,8 @@
         </div>
         <div class="relative">
          <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden p-2">
-            <img src="{{ asset('image/dashboard.png') }}" 
-            alt="Dashboard Preview" 
+            <img src="{{ asset('images/dashboard.png') }}"
+            alt="Dashboard Preview"
             class="w-full h-auto rounded-2xl">
          </div>
                 {{-- Dekorasi --}}
@@ -236,9 +236,7 @@
             <a href="{{ route('register') }}" class="px-8 py-4 bg-white text-blue-900 rounded-xl text-lg font-bold shadow-lg hover:bg-gray-100 transform hover:-translate-y-1 transition-all duration-200">
                 Daftar Sekarang
             </a>
-            <a href="#" class="px-8 py-4 bg-transparent border border-white/30 text-white rounded-xl text-lg font-semibold hover:bg-white/10 transition-all duration-200">
-                Kontak Email
-            </a>
+
         </div>
     </div>
 </section>
@@ -251,8 +249,8 @@
             <div class="col-span-1 md:col-span-2">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center shadow-md overflow-hidden">
-                        <img src="{{ asset('image/logo2.png') }}" 
-                             alt="Logo" 
+                        <img src="{{ asset('image/LOGO-2.png') }}"
+                             alt="Logo"
                              class="w-full h-full object-contain">
                     </div>
                     <span class="text-xl font-bold text-gray-900">SIMOPANG</span>

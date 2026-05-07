@@ -227,43 +227,27 @@ class ApiService {
     String period,
   ) async {
     try {
-      final now = DateTime.now();
-      final endDate = now.toIso8601String().substring(0, 10);
-      late String startDate;
-
+      // Tentukan jumlah data berdasarkan periode
+      int perPage;
       switch (period) {
         case '7days':
-          startDate = now
-              .subtract(const Duration(days: 7))
-              .toIso8601String()
-              .substring(0, 10);
+          perPage = 7;
           break;
         case '30days':
-          startDate = now
-              .subtract(const Duration(days: 30))
-              .toIso8601String()
-              .substring(0, 10);
+          perPage = 30;
           break;
         case '3months':
-          startDate = now
-              .subtract(const Duration(days: 90))
-              .toIso8601String()
-              .substring(0, 10);
+          perPage = 90;
           break;
         default:
-          startDate = now
-              .subtract(const Duration(days: 7))
-              .toIso8601String()
-              .substring(0, 10);
+          perPage = 30;
       }
 
       final response = await _dio.get(
         '/price-histories',
         queryParameters: {
           'commodity_id': commodityId,
-          'start_date': startDate,
-          'end_date': endDate,
-          'per_page': '200',
+          'per_page': perPage.toString(),
         },
       );
       return Map<String, dynamic>.from(response.data);
@@ -329,19 +313,35 @@ class ApiService {
     }
   }
 
+  Future<List<String>> getPredictableCommodities() async {
+    try {
+      final response = await _dio.get('/predictions');
+      final data = response.data;
+      if (data['success'] == true && data['data'] != null) {
+        return List<String>.from(data['data']);
+      }
+      return [];
+    } on DioException catch (e) {
+      if (kDebugMode) print('getPredictableCommodities error: $e');
+      return [];
+    }
+  }
   // ══════════════════════════════════════════════════════════
   // PREDICTIONS
   // ══════════════════════════════════════════════════════════
 
   Future<Map<String, dynamic>> predictPrice(
-    String commodityId,
+    String commodityName,
     double quantity,
   ) async {
     try {
       await _addAuthHeader();
       final response = await _dio.post(
         '/predictions/generate',
-        data: {'commodity_id': commodityId, 'quantity': quantity},
+        data: {
+          'komoditas': commodityName,
+          'steps': 30,
+        },
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {

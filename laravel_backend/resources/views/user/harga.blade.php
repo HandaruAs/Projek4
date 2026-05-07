@@ -14,7 +14,7 @@
     {{-- Card 1: Rata-rata Harga Hari Ini --}}
     <div class="stat-card">
         <div>
-            <div class="stat-label">Rata-rata Harga Hari Ini</div>
+            <div class="stat-label">Rata-rata Harga Terkini</div>
             <div class="stat-value">
                 {{ $avgHargaHariIni ? 'Rp ' . number_format($avgHargaHariIni, 0, ',', '.') : '—' }}
             </div>
@@ -36,10 +36,10 @@
         <div class="stat-icon icon-blue"><i class="fas fa-chart-line"></i></div>
     </div>
 
-    {{-- Card 2: Naik Tertinggi Hari Ini --}}
+    {{-- Card 2: Harga Tertinggi Saat Ini --}}
     <div class="stat-card">
         <div>
-            <div class="stat-label">Naik Tertinggi Hari Ini</div>
+            <div class="stat-label">Harga Tertinggi Saat Ini</div>
             <div class="stat-value" style="font-size: 1.15rem; line-height: 1.3;">
                 {{ $naikTertinggi->commodity_name ?? '—' }}
             </div>
