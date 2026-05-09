@@ -17,6 +17,7 @@ class CommodityProvider extends ChangeNotifier {
   String? _errorMessage;
   String _selectedPeriod = '7days';
   List<String> _predictableCommodities = [];
+  
   List<String> get predictableCommodities => _predictableCommodities;
   List<CommodityModel> get commodities => _commodities;
   CommodityModel? get selectedCommodity => _selectedCommodity;
@@ -83,7 +84,7 @@ class CommodityProvider extends ChangeNotifier {
     }
   }
 
-  // ── Load histori harga ──────────────────────────────────
+  // ── Load histori harga (dengan setState) ─────────────────
   Future<void> loadPriceHistory(
     String commodityId, {
     String period = '7days',
@@ -110,6 +111,29 @@ class CommodityProvider extends ChangeNotifier {
       _priceHistory = [];
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // ── FUTUREBUILDER: Load histori harga (tanpa setState, return Future) ──
+  // Method ini khusus untuk digunakan dengan FutureBuilder
+  // Tidak mengubah state _priceHistory, hanya mengembalikan data
+  Future<List<PriceModel>> loadPriceHistoryFuture(
+    String commodityId, {
+    String period = '7days',
+  }) async {
+    try {
+      final response = await _apiService.getPriceHistory(commodityId, period);
+
+      if (response['success'] == true && response['data'] != null) {
+        final List data = response['data'];
+        List<PriceModel> history = data.map((e) => PriceModel.fromJson(e)).toList();
+        history.sort((a, b) => a.date.compareTo(b.date));
+        return history;
+      } else {
+        throw Exception(response['message'] ?? 'Gagal memuat histori harga');
+      }
+    } catch (e) {
+      throw Exception('Koneksi gagal: $e');
     }
   }
 

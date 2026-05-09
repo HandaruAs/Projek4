@@ -12,9 +12,12 @@ class UserStatisticsScreen extends StatefulWidget {
 
 class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
   final ApiService _apiService = ApiService();
-  bool _isLoading = true;
-  String? _error;
-  Map<String, dynamic>? _data;
+  
+  // FUTUREBUILDER 1: Future untuk menyimpan data statistik
+  late final Future<Map<String, dynamic>?> _statisticsFuture;
+  
+  // Untuk refresh manual (pull to refresh)
+  bool _isRefreshing = false;
 
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'id',
@@ -25,122 +28,166 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadStatistics();
+    // Inisialisasi FutureBuilder di initState
+    _statisticsFuture = _loadStatistics();
   }
 
-  Future<void> _loadStatistics() async {
-    setState(() { _isLoading = true; _error = null; });
+  // Fungsi async yang mengembalikan Future untuk FutureBuilder
+  Future<Map<String, dynamic>?> _loadStatistics() async {
     try {
       final response = await _apiService.getStatistics();
       if (response['success'] == true) {
-        setState(() => _data = response['data']);
+        return response['data'];
       } else {
-        setState(() => _error = response['message'] ?? 'Gagal memuat statistik');
+        throw Exception(response['message'] ?? 'Gagal memuat statistik');
       }
     } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      setState(() => _isLoading = false);
+      debugPrint('Error loading statistics: $e');
+      return null;
+    }
+  }
+
+  // Fungsi untuk refresh (pull to refresh)
+  Future<void> _refresh() async {
+    setState(() {
+      _isRefreshing = true;
+      // Re-create Future untuk FutureBuilder
+      _statisticsFuture = _loadStatistics();
+    });
+    await _statisticsFuture;
+    if (mounted) {
+      setState(() => _isRefreshing = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme   = Theme.of(context).textTheme;
-    final isDark      = Theme.of(context).brightness == Brightness.dark;
+    final textTheme = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (_isLoading) return const Center(child: LoadingWidget());
-    if (_error != null) return _buildError();
+    // FUTUREBUILDER: Menampilkan UI berdasarkan status Future
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _statisticsFuture,
+      builder: (context, snapshot) {
+        // State 1: Loading (masih menunggu)
+        if (snapshot.connectionState == ConnectionState.waiting && !_isRefreshing) {
+          return const Center(child: LoadingWidget());
+        }
 
-    final ringkasan   = _data!['ringkasan'];
-    final topNaik     = List<Map<String, dynamic>>.from(_data!['top_naik']);
-    final topTurun    = List<Map<String, dynamic>>.from(_data!['top_turun']);
-    final perKategori = List<Map<String, dynamic>>.from(_data!['per_kategori']);
+        // State 2: Error (Future gagal)
+        if (snapshot.hasError || snapshot.data == null) {
+          return _buildError(onRetry: _refresh);
+        }
 
-    final maxRataRata = perKategori.isEmpty ? 1.0 :
-        perKategori.map((e) => (e['rata_rata'] as num).toDouble()).reduce((a, b) => a > b ? a : b);
-
-    return RefreshIndicator(
-      onRefresh: _loadStatistics,
-      color: colorScheme.primary,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            // ── Ringkasan ──
-            Row(
-              children: [
-                Expanded(child: _metricCard(
-                  label: 'Total Komoditas',
-                  value: '${ringkasan['total_komoditas']}',
-                  sub: 'terdaftar',
-                  color: colorScheme.primary,
-                  isDark: isDark,
-                )),
-                const SizedBox(width: 10),
-                Expanded(child: _metricCard(
-                  label: 'Harga Naik',
-                  value: '${ringkasan['naik']}',
-                  sub: 'komoditas',
-                  color: Colors.green,
-                  isDark: isDark,
-                )),
-                const SizedBox(width: 10),
-                Expanded(child: _metricCard(
-                  label: 'Harga Turun',
-                  value: '${ringkasan['turun']}',
-                  sub: 'komoditas',
-                  color: Colors.red,
-                  isDark: isDark,
-                )),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            _sectionTitle('Kenaikan Tertinggi', Icons.trending_up, Colors.green, textTheme),
-            const SizedBox(height: 10),
-            _buildPriceList(topNaik, isUp: true, isDark: isDark),
-
-            const SizedBox(height: 24),
-
-            _sectionTitle('Penurunan Terbesar', Icons.trending_down, Colors.red, textTheme),
-            const SizedBox(height: 10),
-            _buildPriceList(topTurun, isUp: false, isDark: isDark),
-
-            const SizedBox(height: 24),
-
-            _sectionTitle('Rata-rata harga per kategori', Icons.category, colorScheme.primary, textTheme),
-            const SizedBox(height: 10),
-            _buildKategoriChart(perKategori, maxRataRata, isDark: isDark, primary: colorScheme.primary),
-
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
+        // State 3: Success (data berhasil dimuat)
+        final data = snapshot.data!;
+        
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          color: colorScheme.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: _buildContent(data, colorScheme, textTheme, isDark),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildError() {
+  // Widget error dengan tombol retry
+  Widget _buildError({required VoidCallback onRetry}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.wifi_off, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
-          Text(_error!, style: TextStyle(color: Colors.grey.shade600)),
+          Text(
+            'Gagal memuat data statistik',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: _loadStatistics,
+            onPressed: onRetry,
             icon: const Icon(Icons.refresh),
             label: const Text('Coba Lagi'),
           ),
         ],
       ),
+    );
+  }
+
+  // Widget konten utama (dipisah dari FutureBuilder agar rapi)
+  Widget _buildContent(
+    Map<String, dynamic> data,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+    bool isDark,
+  ) {
+    final ringkasan = data['ringkasan'];
+    final topNaik = List<Map<String, dynamic>>.from(data['top_naik']);
+    final topTurun = List<Map<String, dynamic>>.from(data['top_turun']);
+    final perKategori = List<Map<String, dynamic>>.from(data['per_kategori']);
+
+    final maxRataRata = perKategori.isEmpty
+        ? 1.0
+        : perKategori
+            .map((e) => (e['rata_rata'] as num).toDouble())
+            .reduce((a, b) => a > b ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Ringkasan ──
+        Row(
+          children: [
+            Expanded(
+              child: _metricCard(
+                label: 'Total Komoditas',
+                value: '${ringkasan['total_komoditas']}',
+                sub: 'terdaftar',
+                color: colorScheme.primary,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _metricCard(
+                label: 'Harga Naik',
+                value: '${ringkasan['naik']}',
+                sub: 'komoditas',
+                color: Colors.green,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _metricCard(
+                label: 'Harga Turun',
+                value: '${ringkasan['turun']}',
+                sub: 'komoditas',
+                color: Colors.red,
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        _sectionTitle('Kenaikan Tertinggi', Icons.trending_up, Colors.green, textTheme),
+        const SizedBox(height: 10),
+        _buildPriceList(topNaik, isUp: true, isDark: isDark),
+        const SizedBox(height: 24),
+        _sectionTitle('Penurunan Terbesar', Icons.trending_down, Colors.red, textTheme),
+        const SizedBox(height: 10),
+        _buildPriceList(topTurun, isUp: false, isDark: isDark),
+        const SizedBox(height: 24),
+        _sectionTitle('Rata-rata harga per kategori', Icons.category, colorScheme.primary, textTheme),
+        const SizedBox(height: 10),
+        _buildKategoriChart(perKategori, maxRataRata, isDark: isDark, primary: colorScheme.primary),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -163,7 +210,10 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
         children: [
           Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
+          Text(
+            value,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color),
+          ),
           Text(sub, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
         ],
       ),
@@ -189,9 +239,20 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
         decoration: BoxDecoration(
           color: cardColor,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )
+          ],
         ),
-        child: Center(child: Text('Tidak ada data', style: TextStyle(color: Colors.grey.shade500))),
+        child: Center(
+          child: Text(
+            'Tidak ada data',
+            style: TextStyle(color: Colors.grey.shade500),
+          ),
+        ),
       );
     }
 
@@ -199,21 +260,31 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          )
+        ],
       ),
       child: Column(
         children: items.asMap().entries.map((entry) {
-          final i      = entry.key;
-          final item   = entry.value;
+          final i = entry.key;
+          final item = entry.value;
           final persen = (item['persen'] as num).toDouble();
           final isLast = i == items.length - 1;
 
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              border: isLast ? null : Border(
-                bottom: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade100),
-              ),
+              border: isLast
+                  ? null
+                  : Border(
+                      bottom: BorderSide(
+                        color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                      ),
+                    ),
             ),
             child: Row(
               children: [
@@ -276,7 +347,12 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
     );
   }
 
-  Widget _buildKategoriChart(List<Map<String, dynamic>> items, double maxVal, {required bool isDark, required Color primary}) {
+  Widget _buildKategoriChart(
+    List<Map<String, dynamic>> items,
+    double maxVal, {
+    required bool isDark,
+    required Color primary,
+  }) {
     if (items.isEmpty) return const SizedBox();
 
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
@@ -286,12 +362,18 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          )
+        ],
       ),
       child: Column(
         children: items.map((item) {
           final rataRata = (item['rata_rata'] as num).toDouble();
-          final ratio    = maxVal > 0 ? rataRata / maxVal : 0.0;
+          final ratio = maxVal > 0 ? rataRata / maxVal : 0.0;
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),

@@ -135,7 +135,7 @@ class _UserMainScreenState extends State<UserMainScreen>
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: ScaleTransition(
-          scale: _pulseAnim,
+          scale: _pulseAnim,    //Efek denyut (pulse)
           child: GestureDetector(
             onTap: _openChatAI,
             child: Container(
@@ -147,14 +147,14 @@ class _UserMainScreenState extends State<UserMainScreen>
                   colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
                 ),
                 shape: BoxShape.circle,
-                boxShadow: [
+                boxShadow: [    //INI EFEK GLOW-NYA
                   BoxShadow(
-                    color: Color.fromRGBO(21, 101, 192, 0.45),
-                    blurRadius: 16,
+                    color: Color.fromRGBO(21, 101, 192, 0.45),    //biru dengan transparansi
+                    blurRadius: 16, //seberapa besar efek glow-nya  
                     offset: Offset(0, 6),
                   ),
                   BoxShadow(
-                    color: Color.fromRGBO(255, 255, 255, 0.2),
+                    color: Color.fromRGBO(255, 255, 255, 0.2),  //putih dengan transparansi untuk highlight/glow tambahan
                     blurRadius: 4,
                     offset: Offset(-2, -2),
                   ),

@@ -13,30 +13,37 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey           = GlobalKey<FormState>();
-  final _nameController    = TextEditingController();
-  final _emailController   = TextEditingController();
-  final _phoneController   = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  final _apiService        = ApiService();
+  final _apiService = ApiService();
 
   bool _isLoading = false;
   bool _isEditing = false;
+  
+  //  FUTUREBUILDER 1: Untuk initial load profile
+  late final Future<UserModel?> _profileFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    //  Inisialisasi Future untuk load profile
+    _profileFuture = _loadProfile();
   }
 
-  void _loadProfile() {
+  //  Fungsi async untuk load profile (digunakan oleh FutureBuilder)
+  Future<UserModel?> _loadProfile() async {
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user != null) {
-      _nameController.text    = user.name;
-      _emailController.text   = user.email;
-      _phoneController.text   = user.phone;
+      _nameController.text = user.name;
+      _emailController.text = user.email;
+      _phoneController.text = user.phone;
       _addressController.text = user.address;
+      return user;
     }
+    return null;
   }
 
   Future<void> _saveProfile() async {
@@ -45,9 +52,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       final response = await _apiService.updateProfile(
-        name:    _nameController.text.trim(),
-        email:   _emailController.text.trim(),
-        phone:   _phoneController.text.trim(),
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
       );
 
@@ -59,12 +66,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .updateCurrentUser(updatedUser);
 
         setState(() => _isEditing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profil berhasil diperbarui'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil berhasil diperbarui'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -105,168 +115,195 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark      = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => setState(() => _isEditing = true),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () {
-                setState(() => _isEditing = false);
-                _loadProfile();
-              },
+    //  FUTUREBUILDER 2: Menampilkan UI berdasarkan status load profile
+    return FutureBuilder<UserModel?>(
+      future: _profileFuture,
+      builder: (context, snapshot) {
+        //  State 1: Loading
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        //  State 2: Error atau tidak ada data
+        if (snapshot.hasError || snapshot.data == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Profil'),
             ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-
-              // ── Avatar ──────────────────────────
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: colorScheme.primary.withOpacity(0.1),
-                child: Icon(
-                  Icons.person,
-                  size: 50,
-                  color: colorScheme.primary,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) => Text(
-                  auth.currentUser?.name ?? '',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Gagal memuat data profil',
+                    style: TextStyle(color: Colors.grey.shade600),
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 4),
-
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) => Text(
-                  auth.currentUser?.email ?? '',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        //  Refresh Future
+                        _profileFuture = _loadProfile();
+                      });
+                    },
+                    child: const Text('Coba Lagi'),
                   ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        //  State 3: Success - Tampilkan UI utama
+        return Scaffold(
+          appBar: AppBar(
+            actions: [
+              if (!_isEditing)
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => setState(() => _isEditing = true),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() => _isEditing = false);
+                    _loadProfile(); // Reload data
+                  },
                 ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // ── Nama ────────────────────────────
-              _buildField(
-                controller: _nameController,
-                label: 'Nama',
-                icon: Icons.person_outline,
-                enabled: _isEditing,
-                isDark: isDark,
-                primary: colorScheme.primary,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Nama tidak boleh kosong' : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Email ───────────────────────────
-              _buildField(
-                controller: _emailController,
-                label: 'Email',
-                icon: Icons.email_outlined,
-                enabled: _isEditing,
-                isDark: isDark,
-                primary: colorScheme.primary,
-                keyboardType: TextInputType.emailAddress,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Email tidak boleh kosong' : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── No HP ───────────────────────────
-              _buildField(
-                controller: _phoneController,
-                label: 'No. HP (opsional)',
-                icon: Icons.phone_outlined,
-                enabled: _isEditing,
-                isDark: isDark,
-                primary: colorScheme.primary,
-                keyboardType: TextInputType.phone,
-                hint: 'ex: 08562561612',
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Alamat ───────────────────────────
-              _buildField(
-                controller: _addressController,
-                label: 'Alamat (opsional)',
-                icon: Icons.location_on_outlined,
-                enabled: _isEditing,
-                isDark: isDark,
-                primary: colorScheme.primary,
-                keyboardType: TextInputType.streetAddress,
-                maxLines: 3,
-                hint: 'ex: Jl. Hayam Wuruk No. 1, Jember',
-              ),
-
-              const SizedBox(height: 32),
-
-              // ── Tombol Simpan ───────────────────
-              if (_isEditing)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _saveProfile,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text('Simpan Perubahan'),
-                  ),
-                ),
-
-              const SizedBox(height: 16),
-
-              // ── Tombol Logout ───────────────────
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _handleLogout,
-                  icon: const Icon(Icons.logout, color: Colors.red),
-                  label: const Text(
-                    'Logout',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
             ],
           ),
-        ),
-      ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // ── Avatar ──────────────────────────
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: colorScheme.primary.withOpacity(0.1),
+                    child: Icon(
+                      Icons.person,
+                      size: 50,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Consumer<AuthProvider>(
+                    builder: (context, auth, _) => Text(
+                      auth.currentUser?.name ?? '',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Consumer<AuthProvider>(
+                    builder: (context, auth, _) => Text(
+                      auth.currentUser?.email ?? '',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // ── Nama ────────────────────────────
+                  _buildField(
+                    controller: _nameController,
+                    label: 'Nama',
+                    icon: Icons.person_outline,
+                    enabled: _isEditing,
+                    isDark: isDark,
+                    primary: colorScheme.primary,
+                    validator: (v) => v == null || v.isEmpty ? 'Nama tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Email ───────────────────────────
+                  _buildField(
+                    controller: _emailController,
+                    label: 'Email',
+                    icon: Icons.email_outlined,
+                    enabled: _isEditing,
+                    isDark: isDark,
+                    primary: colorScheme.primary,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) => v == null || v.isEmpty ? 'Email tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  // ── No HP ───────────────────────────
+                  _buildField(
+                    controller: _phoneController,
+                    label: 'No. HP (opsional)',
+                    icon: Icons.phone_outlined,
+                    enabled: _isEditing,
+                    isDark: isDark,
+                    primary: colorScheme.primary,
+                    keyboardType: TextInputType.phone,
+                    hint: 'ex: 08562561612',
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Alamat ───────────────────────────
+                  _buildField(
+                    controller: _addressController,
+                    label: 'Alamat (opsional)',
+                    icon: Icons.location_on_outlined,
+                    enabled: _isEditing,
+                    isDark: isDark,
+                    primary: colorScheme.primary,
+                    keyboardType: TextInputType.streetAddress,
+                    maxLines: 3,
+                    hint: 'ex: Jl. Hayam Wuruk No. 1, Jember',
+                  ),
+                  const SizedBox(height: 32),
+                  // ── Tombol Simpan ───────────────────
+                  if (_isEditing)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _saveProfile,
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Simpan Perubahan'),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  // ── Tombol Logout ───────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _handleLogout,
+                      icon: const Icon(Icons.logout, color: Colors.red),
+                      label: const Text(
+                        'Logout',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
