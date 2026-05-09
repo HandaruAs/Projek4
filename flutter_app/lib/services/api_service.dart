@@ -8,7 +8,7 @@ class ApiService {
   ApiService._internal();
 
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.10.180.5:8000/api',
+    baseUrl: 'http://192.168.1.24:8000/api',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -329,6 +329,20 @@ class ApiService {
   // ══════════════════════════════════════════════════════════
   // PREDICTIONS
   // ══════════════════════════════════════════════════════════
+
+  /// GET /api/predictions/{komoditas}
+  /// Ambil hasil prediksi yang sudah di-generate admin.
+  Future<Map<String, dynamic>> getPrediction(String komoditas) async {
+    try {
+      final encoded = Uri.encodeComponent(komoditas);
+      final response = await _dio.get('/predictions/$encoded');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
 
   Future<Map<String, dynamic>> predictPrice(
     String commodityName,
