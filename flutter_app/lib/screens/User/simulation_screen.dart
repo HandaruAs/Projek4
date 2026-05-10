@@ -26,6 +26,7 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
   double? _totalPrediksi;
   double? _selisih;
   double? _changePercent;
+  List<double> _historicalPrices = []; // harga 3 bulan terakhir (aktual)
   String _wawasanAI =
       'AI kami memprediksi kenaikan harga beras sekitar 2.5% bulan depan '
       'dikarenakan faktor musim panen yang bergeser.';
@@ -87,6 +88,23 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
       final selisih = totalPrediksi - totalSekarang;
       final pct = totalSekarang > 0 ? (selisih / totalSekarang * 100) : 0.0;
 
+      // Ambil historical prices dari response (3 bulan terakhir sebelum current)
+      // Backend diharapkan mengirim field 'price_history' berupa List<num>
+      // Jika tidak ada, fallback ke simulasi linier dari current ke predicted
+      final rawHistory = r['price_history'];
+      List<double> historical;
+      if (rawHistory is List && rawHistory.isNotEmpty) {
+        historical = rawHistory.map((e) => (e as num).toDouble()).toList();
+      } else {
+        // Fallback: buat 3 titik linier menuju hargaTerbaru
+        final step = (hargaTerbaru - hargaPrediksi) / 4;
+        historical = [
+          hargaTerbaru - step * 3,
+          hargaTerbaru - step * 2,
+          hargaTerbaru - step,
+        ];
+      }
+
       setState(() {
         _hargaTerbaru = hargaTerbaru;
         _hargaPrediksi = hargaPrediksi;
@@ -94,6 +112,7 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
         _totalPrediksi = totalPrediksi;
         _selisih = selisih;
         _changePercent = pct;
+        _historicalPrices = historical;
         _wawasanAI = r['insight'] as String? ?? _wawasanAI;
         _hasilVisible = true;
       });
@@ -663,32 +682,76 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     final gridColor = isDark ? Colors.grey.shade800 : const Color(0xFFE5EAF3);
     final labelColor = isDark ? Colors.grey[500]! : Colors.grey;
 
+    // Bangun label bulan dinamis tanpa locale khusus
+    const bulan = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MEI',
+      'JUN',
+      'JUL',
+      'AGU',
+      'SEP',
+      'OKT',
+      'NOV',
+      'DES'
+    ];
+    final now = DateTime.now();
+    String monthLabel(int offsetMonths) {
+      final d = DateTime(now.year, now.month + offsetMonths);
+      return bulan[(d.month - 1) % 12];
+    }
+
+    final labels = [
+      monthLabel(-3),
+      monthLabel(-2),
+      monthLabel(-1),
+      monthLabel(0),
+      '${monthLabel(1)} →',
+    ];
+
+    // Kumpulkan semua harga untuk diteruskan ke painter
+    final allPrices = [
+      ..._historicalPrices,
+      if (_hargaTerbaru != null) _hargaTerbaru!,
+      if (_hargaPrediksi != null) _hargaPrediksi!,
+    ];
+
     return Column(
       children: [
         SizedBox(
           height: 80,
           child: CustomPaint(
-            painter: _MiniChartPainter(gridColor: gridColor),
+            painter: _MiniChartPainter(
+              gridColor: gridColor,
+              historicalPrices: _historicalPrices,
+              currentPrice: _hargaTerbaru,
+              predictedPrice: _hargaPrediksi,
+            ),
             child: const SizedBox.expand(),
           ),
         ),
         const SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('MAR', style: TextStyle(fontSize: 10, color: labelColor)),
-            Text('APR', style: TextStyle(fontSize: 10, color: labelColor)),
-            Text('MEI', style: TextStyle(fontSize: 10, color: labelColor)),
-            Text('JUN →',
-                style: TextStyle(
-                    fontSize: 10,
-                    color: labelColor,
-                    fontWeight: FontWeight.bold)),
-          ],
+          children: labels
+              .map((l) => Text(
+                    l,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: labelColor,
+                      fontWeight:
+                          l.contains('→') ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ))
+              .toList(),
         ),
         const SizedBox(height: 4),
         Text(
-          'Grafik Tren Harga 4 Bulan Terakhir & Prediksi',
+          allPrices.isEmpty
+              ? 'Grafik akan muncul setelah simulasi dihitung'
+              : 'Grafik Tren Harga 4 Bulan Terakhir & Prediksi',
           style: TextStyle(fontSize: 11, color: labelColor),
           textAlign: TextAlign.center,
         ),
@@ -700,13 +763,30 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
 // ── MINI CHART PAINTER ──
 class _MiniChartPainter extends CustomPainter {
   final Color gridColor;
-  const _MiniChartPainter({required this.gridColor});
+
+  /// 3 harga historis (bulan lalu, 2 bln lalu, 3 bln lalu).
+  /// Boleh kosong — painter akan render placeholder flat line.
+  final List<double> historicalPrices;
+
+  /// Harga terkini (titik aktual terakhir).
+  final double? currentPrice;
+
+  /// Harga prediksi bulan depan.
+  final double? predictedPrice;
+
+  const _MiniChartPainter({
+    required this.gridColor,
+    this.historicalPrices = const [],
+    this.currentPrice,
+    this.predictedPrice,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
 
+    // ── Grid lines ──
     final gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
@@ -714,83 +794,133 @@ class _MiniChartPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
     }
 
-    final actualPoints = [
-      Offset(0, h * .69),
-      Offset(w * .165, h * .64),
-      Offset(w * .33, h * .56),
-      Offset(w * .5, h * .5),
+    // Jika belum ada data, render placeholder flat line di tengah
+    if (currentPrice == null) {
+      canvas.drawLine(
+        Offset(0, h * .5),
+        Offset(w, h * .5),
+        Paint()
+          ..color = gridColor
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round,
+      );
+      return;
+    }
+
+    // ── Normalisasi harga ke koordinat canvas ──
+    // Titik aktual = historicalPrices + currentPrice (maks 4 titik)
+    final actualValues = [...historicalPrices, currentPrice!];
+
+    // Semua nilai untuk menentukan skala min/max
+    final allValues = [
+      ...actualValues,
+      if (predictedPrice != null) predictedPrice!,
+    ];
+    final minVal = allValues.reduce((a, b) => a < b ? a : b);
+    final maxVal = allValues.reduce((a, b) => a > b ? a : b);
+
+    // Padding vertikal agar titik tidak mepet tepi
+    const vPad = 0.12;
+    final range = (maxVal - minVal).abs();
+    // Jika semua harga sama, beri range artifisial agar grafik tidak flat
+    final effectiveRange = range < 1 ? currentPrice! * 0.05 : range;
+
+    double toY(double val) {
+      final norm = (val - minVal) / effectiveRange;
+      // Flip: nilai tinggi = y kecil (atas canvas)
+      return h * (1 - vPad) - norm * h * (1 - vPad * 2);
+    }
+
+    // Titik aktual terdistribusi merata di separuh kiri canvas (0 – w*0.5)
+    final nActual = actualValues.length;
+    final actualPoints = List.generate(nActual, (i) {
+      final x = (w * 0.5) * i / (nActual - 1);
+      return Offset(x, toY(actualValues[i]));
+    });
+
+    // Titik prediksi: mulai dari currentPrice, lanjut ke predictedPrice
+    final predictPoints = <Offset>[
+      actualPoints.last, // titik sambungan
+      if (predictedPrice != null) Offset(w, toY(predictedPrice!)),
     ];
 
-    final predictPoints = [
-      Offset(w * .5, h * .5),
-      Offset(w * .75, h * .33),
-      Offset(w, h * .24),
-    ];
-
+    // ── Area aktual ──
     final areaActualPath = Path()
       ..moveTo(actualPoints.first.dx, actualPoints.first.dy);
     _addCurve(areaActualPath, actualPoints);
     areaActualPath
-      ..lineTo(w * .5, h)
-      ..lineTo(0, h)
+      ..lineTo(actualPoints.last.dx, h)
+      ..lineTo(actualPoints.first.dx, h)
       ..close();
     canvas.drawPath(
-        areaActualPath,
-        Paint()
-          ..shader = LinearGradient(
-            colors: [
-              const Color(0xFF2563EB).withOpacity(.18),
-              const Color(0xFF2563EB).withOpacity(0)
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ).createShader(Rect.fromLTWH(0, 0, w, h)));
+      areaActualPath,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [
+            const Color(0xFF2563EB).withOpacity(.18),
+            const Color(0xFF2563EB).withOpacity(0),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
+    );
 
+    // ── Garis aktual ──
     final linePath = Path()
       ..moveTo(actualPoints.first.dx, actualPoints.first.dy);
     _addCurve(linePath, actualPoints);
     canvas.drawPath(
-        linePath,
-        Paint()
-          ..color = const Color(0xFF2563EB)
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round);
+      linePath,
+      Paint()
+        ..color = const Color(0xFF2563EB)
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
 
-    final areaPredictPath = Path()
-      ..moveTo(predictPoints.first.dx, predictPoints.first.dy);
-    _addCurve(areaPredictPath, predictPoints);
-    areaPredictPath
-      ..lineTo(w, h)
-      ..lineTo(w * .5, h)
-      ..close();
-    canvas.drawPath(
+    // ── Area prediksi ──
+    if (predictPoints.length >= 2) {
+      final areaPredictPath = Path()
+        ..moveTo(predictPoints.first.dx, predictPoints.first.dy);
+      _addCurve(areaPredictPath, predictPoints);
+      areaPredictPath
+        ..lineTo(predictPoints.last.dx, h)
+        ..lineTo(predictPoints.first.dx, h)
+        ..close();
+      canvas.drawPath(
         areaPredictPath,
         Paint()
           ..shader = LinearGradient(
             colors: [
               const Color(0xFF0EA5E9).withOpacity(.22),
-              const Color(0xFF0EA5E9).withOpacity(0)
+              const Color(0xFF0EA5E9).withOpacity(0),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-          ).createShader(Rect.fromLTWH(0, 0, w, h)));
+          ).createShader(Rect.fromLTWH(0, 0, w, h)),
+      );
 
-    _drawDashedPath(canvas, predictPoints, const Color(0xFF0EA5E9));
+      _drawDashedPath(canvas, predictPoints, const Color(0xFF0EA5E9));
+    }
 
+    // ── Garis pemisah aktual / prediksi ──
     canvas.drawLine(
-        Offset(w * .5, h * .1),
-        Offset(w * .5, h * .88),
-        Paint()
-          ..color = gridColor
-          ..strokeWidth = 1
-          ..style = PaintingStyle.stroke);
+      Offset(w * .5, h * .1),
+      Offset(w * .5, h * .88),
+      Paint()
+        ..color = gridColor
+        ..strokeWidth = 1
+        ..style = PaintingStyle.stroke,
+    );
 
+    // ── Titik aktual ──
     for (int i = 0; i < actualPoints.length; i++) {
       final r = i == actualPoints.length - 1 ? 4.5 : 3.5;
       canvas.drawCircle(
           actualPoints[i], r, Paint()..color = const Color(0xFF2563EB));
     }
+
+    // ── Titik prediksi (hollow) ──
     for (int i = 1; i < predictPoints.length; i++) {
       canvas.drawCircle(
           predictPoints[i],
@@ -842,5 +972,8 @@ class _MiniChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MiniChartPainter old) =>
-      old.gridColor != gridColor;
+      old.gridColor != gridColor ||
+      old.currentPrice != currentPrice ||
+      old.predictedPrice != predictedPrice ||
+      old.historicalPrices != historicalPrices;
 }
