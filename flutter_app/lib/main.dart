@@ -3,7 +3,7 @@ import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/providers/commodity_provider.dart';
 import 'package:flutter_app/providers/price_provider.dart';
 import 'package:flutter_app/providers/theme_provider.dart';
-import 'package:flutter_app/screens/splash_screen.dart';
+import 'package:flutter_app/router.dart'; // ← tambahan
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -25,10 +25,13 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
-          return MaterialApp(
+          return MaterialApp.router(
+            // ← ganti MaterialApp
             title: 'Monitoring Harga Pangan',
             debugShowCheckedModeBanner: false,
-            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            routerConfig: appRouter, // ← tambahan
+            themeMode:
+                themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
             // ── Light Theme ──────────────────────
             theme: ThemeData(
@@ -74,7 +77,8 @@ class MyApp extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1976D2), width: 1),
+                  borderSide:
+                      const BorderSide(color: Color(0xFF1976D2), width: 1),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -104,7 +108,8 @@ class MyApp extends StatelessWidget {
                 surface: Color(0xFF1E1E1E),
               ),
               scaffoldBackgroundColor: const Color(0xFF121212),
-              textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+              textTheme:
+                  GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
               appBarTheme: const AppBarTheme(
                 backgroundColor: Color(0xFF1E1E1E),
                 elevation: 0,
@@ -138,7 +143,8 @@ class MyApp extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1976D2), width: 1),
+                  borderSide:
+                      const BorderSide(color: Color(0xFF1976D2), width: 1),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -158,7 +164,7 @@ class MyApp extends StatelessWidget {
               ),
             ),
 
-            home: const SplashScreen(),
+            // home: const SplashScreen(), ← dihapus, sudah ditangani router
           );
         },
       ),
