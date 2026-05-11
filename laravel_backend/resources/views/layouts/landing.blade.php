@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('images/LOGO-2.png') }}"> 
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>@yield('title', 'SIMOPANG - Sistem Monitoring & Prediksi Harga Pangan')</title>
     <meta name="description" content="@yield('meta_desc', 'Pantau harga pangan real-time dan prediksi tren masa depan dengan AI canggih.')">
