@@ -5,7 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class UserSimulationScreen extends StatefulWidget {
-  const UserSimulationScreen({super.key});
+  /// Nama komoditas untuk pre-fill otomatis dari notifikasi (opsional)
+  final String? initialCommodity;
+
+  const UserSimulationScreen({super.key, this.initialCommodity});
 
   @override
   State<UserSimulationScreen> createState() => _UserSimulationScreenState();
