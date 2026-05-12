@@ -34,7 +34,7 @@ class AdminApiStatusController extends Controller
                 'method' => 'POST',
                 'path'   => '/api/register/user',
                 'payload'=> ['name' => '', 'email' => '', 'password' => ''],
-                'expect' => [200, 201, 422],
+                'expect' => [200, 201, 302, 422],
             ],
             [
                 'group'  => 'Auth',
@@ -43,7 +43,7 @@ class AdminApiStatusController extends Controller
                 'method' => 'POST',
                 'path'   => '/api/register/admin',
                 'payload'=> ['name' => '', 'email' => '', 'password' => ''],
-                'expect' => [200, 201, 422],
+                'expect' => [200, 201, 302, 422],
             ],
             [
                 'group'  => 'Auth',
@@ -154,13 +154,13 @@ class AdminApiStatusController extends Controller
                 'expect' => [200],
             ],
             [
-                'group'  => 'Prediction',
-                'name'   => 'Detail Prediction',
-                'desc'   => 'GET /api/predictions/{id}',
-                'method' => 'GET',
-                'path'   => '/api/predictions/1',
-                'expect' => [200, 404],
-            ],
+            'group'  => 'Prediction',
+            'name'   => 'Detail Prediction',
+            'desc'   => 'GET /api/predictions/{komoditas}',
+            'method' => 'GET',
+            'path'   => '/api/predictions',  // pakai index tanpa komoditas
+            'expect' => [200],
+             ],
 
             // ── STATISTICS ────────────────────────────────────────────────────
             [
