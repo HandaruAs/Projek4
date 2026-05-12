@@ -70,7 +70,7 @@
             Sistem ini membantu pengguna dalam mengambil keputusan yang lebih tepat terkait kebutuhan dan pengelolaan pangan.
         </p>
         <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ route('login') }}"
+            <a href="{{ route('register') }}"
                class="px-10 py-4 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl hover:from-blue-800 hover:to-blue-600 transform hover:-translate-y-1 transition-all duration-200">
                 Daftar Sekarang <i class="fas fa-arrow-right ml-2"></i>
             </a>
@@ -215,9 +215,8 @@
                 </div>
                 <p class="text-gray-600 text-sm max-w-md">Sistem Monitoring & Prediksi Harga Pangan. Solusi cerdas berbasis data untuk ketahanan pangan Indonesia.</p>
                 <div class="flex space-x-4 mt-6">
-                    <a href="#" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=61589738575911" target="_blank" rel="noopener noreferrer" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/official.simopang?igsh=MTdpM3czZjludGt0aA==" target="_blank" rel="noopener noreferrer" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
             {{-- Navigasi --}}
