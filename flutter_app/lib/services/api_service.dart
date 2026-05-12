@@ -344,6 +344,20 @@ class ApiService {
     }
   }
 
+  /// GET /api/predictions/{komoditas}
+  /// Ambil hasil prediksi yang sudah di-generate admin.
+  Future<Map<String, dynamic>> getPrediction(String komoditas) async {
+    try {
+      final encoded = Uri.encodeComponent(komoditas);
+      final response = await _dio.get('/predictions/$encoded');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> predictPrice(
     String commodityName,
     double quantity,

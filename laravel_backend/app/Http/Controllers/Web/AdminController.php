@@ -15,13 +15,47 @@ class AdminController extends Controller
     public function dashboard()
     {
         $totalKomoditas = Commodity::count();
-        $hargaTertinggi = PriceHistory::orderBy('harga_sekarang', 'desc')->first();
-        $hargaTerendah  = PriceHistory::orderBy('harga_sekarang', 'asc')->first();
-        $recentPrices = PriceHistory::whereNotNull('category')
-            ->where('category', '!=', '')
-            ->orderBy('date', 'desc')
-            ->limit(7)
-            ->get();
+
+        // ✅ Ambil semua prediksi terbaru per komoditas
+        $allPredictions = \App\Models\Prediction::where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->unique('commodity_name')
+            ->map(function ($pred) {
+                $forecast      = $pred->payload['forecast']     ?? [];
+                $tanggal       = $pred->payload['tanggal_pred'] ?? [];
+                $hargaTerakhir = (float) ($pred->payload['harga_terakhir'] ?? 0);
+
+                $maxHarga   = !empty($forecast) ? max($forecast) : 0;
+                $maxIndex   = !empty($forecast) ? array_search($maxHarga, $forecast) : 0;
+                $maxTanggal = $tanggal[$maxIndex] ?? null;
+
+                $selisih = $maxHarga - $hargaTerakhir;
+                $persen  = $hargaTerakhir > 0
+                    ? round(($selisih / $hargaTerakhir) * 100, 2)
+                    : 0;
+
+                return (object) [
+                    'commodity_name' => $pred->commodity_name,
+                    'category'       => $pred->payload['kategori']  ?? '-',
+                    'harga_sekarang' => $maxHarga,
+                    'date'           => $maxTanggal,
+                    'satuan'         => $pred->payload['satuan']    ?? '-',
+                    'selisih'        => $selisih,
+                    'persen'         => $persen,
+                    'harga_terakhir' => $hargaTerakhir,
+                ];
+            });
+
+        // ✅ Stat cards dari predictions
+        $hargaTertinggi = $allPredictions->sortByDesc('harga_sekarang')->first();
+        $hargaTerendah  = $allPredictions->sortBy('harga_sekarang')->first();
+
+        // ✅ Tabel: top 7 harga forecast tertinggi
+        $recentPrices = $allPredictions
+            ->sortByDesc('harga_sekarang')
+            ->take(7)
+            ->values();
 
         return view('admin.dashboard', compact(
             'totalKomoditas',

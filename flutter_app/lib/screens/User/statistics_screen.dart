@@ -102,13 +102,13 @@ class _UserStatisticsScreenState extends State<UserStatisticsScreen> {
 
             const SizedBox(height: 24),
 
-            _sectionTitle('Naik tertinggi minggu ini', Icons.trending_up, Colors.green, textTheme),
+            _sectionTitle('Kenaikan Tertinggi', Icons.trending_up, Colors.green, textTheme),
             const SizedBox(height: 10),
             _buildPriceList(topNaik, isUp: true, isDark: isDark),
 
             const SizedBox(height: 24),
 
-            _sectionTitle('Turun terbanyak minggu ini', Icons.trending_down, Colors.red, textTheme),
+            _sectionTitle('Penurunan Terbesar', Icons.trending_down, Colors.red, textTheme),
             const SizedBox(height: 10),
             _buildPriceList(topTurun, isUp: false, isDark: isDark),
 
