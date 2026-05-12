@@ -5,20 +5,15 @@
 @section('content')
 
 {{-- ==================== NAVBAR ==================== --}}
-<nav class="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100/50 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<nav class="fixed top-0 left-0 w-full z-50 bg-white/40 backdrop-blur-sm border-b border-white/30">
         <div class="flex justify-between items-center h-16 md:h-20">
 
             {{-- Logo & Brand --}}
             <div class="flex items-center gap-3">
-            <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden shadow-md transform transition hover:scale-105">
-                <img src="{{ asset('images/LOGO-2.png') }}"
-                    alt="Logo"
-                    class="w-full h-full object-cover">
-            </div>
-            <span class="text-xl md:text-2xl font-bold tracking-tight text-gray-900">
-                SIMOPANG
-            </span>
+                <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden shadow-md transform transition hover:scale-105">
+                    <img src="{{ asset('images/LOGO-2.png') }}" alt="Logo" class="w-full h-full object-cover">
+                </div>
+                <span class="text-xl md:text-2xl font-bold tracking-tight text-gray-900">SIMOPANG</span>
             </div>
 
             {{-- Desktop Menu --}}
@@ -26,7 +21,6 @@
                 <a href="#home" class="hover:text-blue-700 transition">Home</a>
                 <a href="#fitur" class="hover:text-blue-700 transition">Fitur</a>
                 <a href="#tentang" class="hover:text-blue-700 transition">Tentang</a>
-                <a href="#kontak" class="hover:text-blue-700 transition">Kontak</a>
                 <a href="{{ route('login') }}" class="ml-4 px-5 py-2.5 bg-gradient-to-r from-blue-900 to-blue-600 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
                     Login
                 </a>
@@ -47,7 +41,6 @@
             <a href="#home" class="px-4 py-2 hover:bg-blue-50 rounded-lg">Home</a>
             <a href="#fitur" class="px-4 py-2 hover:bg-blue-50 rounded-lg">Fitur</a>
             <a href="#tentang" class="px-4 py-2 hover:bg-blue-50 rounded-lg">Tentang</a>
-            <a href="#kontak" class="px-4 py-2 hover:bg-blue-50 rounded-lg">Kontak</a>
             <a href="{{ route('login') }}" class="mt-2 px-5 py-3 bg-gradient-to-r from-blue-900 to-blue-600 text-white rounded-xl text-center font-semibold shadow-md">
                 Login
             </a>
@@ -56,68 +49,39 @@
 </nav>
 
 {{-- ==================== HERO SECTION ==================== --}}
-<section id="home" class="pt-24 md:pt-32 pb-16 md:pb-24 px-4 max-w-7xl mx-auto">
-    <div class="grid md:grid-cols-2 gap-10 items-center">
-        {{-- Left Content --}}
-        <div class="text-center md:text-left">
-            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
-                Pantau & Prediksi <br>
-                <span class="text-gradient">Harga Pangan dengan AI</span>
-            </h1>
-            <p class="mt-6 text-lg md:text-xl text-gray-600 max-w-xl mx-auto md:mx-0">
-                Sistem ini membantu pengguna dalam mengambil keputusan yang lebih tepat terkait kebutuhan dan pengelolaan pangan.
-            </p>
-            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                <a href="{{ route('login') }}" class="px-8 py-4 bg-gradient-to-r from-blue-900 to-blue-600 text-white rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200">
-                    Mulai Sekarang <i class="fas fa-arrow-right ml-2"></i>
-                </a>
-                <a href="#fitur" class="px-8 py-4 bg-white border border-gray-200 text-gray-700 rounded-xl text-lg font-semibold shadow-soft hover:shadow-lg transition-all duration-200">
-                    Pelajari Fitur
-                </a>
-            </div>
-        </div>
+<section id="home" class="relative min-h-screen flex items-center justify-center text-center overflow-hidden">
 
-        {{-- Right Illustration / Dashboard Preview --}}
-        <div class="relative flex justify-center">
-            <div class="relative w-full max-w-lg">
-                {{-- Glassmorphism Card --}}
-                <div class="bg-glass rounded-3xl p-5 md:p-8 shadow-2xl border border-white/40">
-                    {{-- Placeholder Dashboard --}}
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex space-x-2">
-                            <div class="w-3 h-3 rounded-full bg-red-400"></div>
-                            <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
-                            <div class="w-3 h-3 rounded-full bg-green-400"></div>
-                        </div>
-                        <div class="text-xs font-medium text-gray-500 bg-white/50 px-3 py-1 rounded-full">Dashboard Preview</div>
-                    </div>
-                    {{-- Chart Placeholder --}}
-                    <div class="h-40 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 flex items-end space-x-2">
-                        <div class="w-1/5 h-16 bg-gradient-to-t from-blue-500 to-blue-300 rounded-lg"></div>
-                        <div class="w-1/5 h-24 bg-gradient-to-t from-blue-600 to-blue-400 rounded-lg"></div>
-                        <div class="w-1/5 h-32 bg-gradient-to-t from-blue-700 to-blue-500 rounded-lg shadow-lg"></div>
-                        <div class="w-1/5 h-20 bg-gradient-to-t from-blue-600 to-blue-400 rounded-lg"></div>
-                        <div class="w-1/5 h-28 bg-gradient-to-t from-blue-500 to-blue-300 rounded-lg"></div>
-                    </div>
-                    {{-- Stat Placeholder --}}
-                    <div class="grid grid-cols-2 gap-3 mt-4">
-                        <div class="bg-white/60 p-3 rounded-xl">
-                            <div class="text-xs text-gray-500">Harga Beras</div>
-                            <div class="text-lg font-bold text-gray-800">Rp 12.500</div>
-                            <div class="text-xs text-green-600">↑ 2.5%</div>
-                        </div>
-                        <div class="bg-white/60 p-3 rounded-xl">
-                            <div class="text-xs text-gray-500">Prediksi Minggu Depan</div>
-                            <div class="text-lg font-bold text-gray-800">Rp 12.750</div>
-                            <div class="text-xs text-yellow-600">→ AI Confidence 95%</div>
-                        </div>
-                    </div>
-                </div>
-                {{-- Background Blur Effect --}}
-                <div class="absolute -z-10 -bottom-5 -right-5 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-                <div class="absolute -z-10 -top-5 -left-5 w-64 h-64 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-            </div>
+    {{-- Background Image --}}
+    <div class="absolute inset-0 z-0">
+        <img src="{{ asset('images/Commodity.png') }}"
+             alt="Background"
+             class="w-full h-full object-cover">
+        {{-- Overlay gelap --}}
+        <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
+    </div>
+
+    {{-- Content --}}
+    <div class="relative z-10 px-4 max-w-4xl mx-auto">
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight drop-shadow-lg">
+            Pantau & Prediksi <br>
+            <span class="text-blue-400">Harga Pangan</span> dengan AI
+        </h1>
+        <p class="mt-6 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto leading-relaxed">
+            Sistem ini membantu pengguna dalam mengambil keputusan yang lebih tepat terkait kebutuhan dan pengelolaan pangan.
+        </p>
+        <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{{ route('login') }}"
+               class="px-10 py-4 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl hover:from-blue-800 hover:to-blue-600 transform hover:-translate-y-1 transition-all duration-200">
+                Daftar Sekarang <i class="fas fa-arrow-right ml-2"></i>
+            </a>
         </div>
+    </div>
+
+    {{-- Scroll indicator --}}
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+        <a href="#fitur">
+            <i class="fas fa-chevron-down text-white/70 text-2xl"></i>
+        </a>
     </div>
 </section>
 
@@ -184,12 +148,9 @@
             </ul>
         </div>
         <div class="relative">
-         <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden p-2">
-            <img src="{{ asset('images/dashboard.png') }}"
-            alt="Dashboard Preview"
-            class="w-full h-auto rounded-2xl">
-         </div>
-                {{-- Dekorasi --}}
+            <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden p-2">
+                <img src="{{ asset('images/dashboard.png') }}" alt="Dashboard Preview" class="w-full h-auto rounded-2xl">
+            </div>
             <div class="absolute -bottom-5 -right-5 w-32 h-32 bg-blue-100 rounded-full -z-10"></div>
             <div class="absolute -top-5 -left-5 w-32 h-32 bg-indigo-100 rounded-full -z-10"></div>
         </div>
@@ -236,9 +197,6 @@
             <a href="{{ route('register') }}" class="px-8 py-4 bg-white text-blue-900 rounded-xl text-lg font-bold shadow-lg hover:bg-gray-100 transform hover:-translate-y-1 transition-all duration-200">
                 Daftar Sekarang
             </a>
-            <a href="#" class="px-8 py-4 bg-transparent border border-white/30 text-white rounded-xl text-lg font-semibold hover:bg-white/10 transition-all duration-200">
-                Kontak Email
-            </a>
         </div>
     </div>
 </section>
@@ -251,19 +209,15 @@
             <div class="col-span-1 md:col-span-2">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center shadow-md overflow-hidden">
-                        <img src="{{ asset('image/logo2.png') }}"
-                             alt="Logo"
-                             class="w-full h-full object-contain">
+                        <img src="{{ asset('images/LOGO-2.png') }}" alt="Logo" class="w-full h-full object-contain">
                     </div>
                     <span class="text-xl font-bold text-gray-900">SIMOPANG</span>
                 </div>
                 <p class="text-gray-600 text-sm max-w-md">Sistem Monitoring & Prediksi Harga Pangan. Solusi cerdas berbasis data untuk ketahanan pangan Indonesia.</p>
-                {{-- Social Media --}}
                 <div class="flex space-x-4 mt-6">
                     <a href="#" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-twitter"></i></a>
                     <a href="#" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-facebook-f"></i></a>
                     <a href="#" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:border-blue-300 transition shadow-sm"><i class="fab fa-linkedin-in"></i></a>
                 </div>
             </div>
             {{-- Navigasi --}}
@@ -273,7 +227,6 @@
                     <li><a href="#home" class="text-gray-600 hover:text-blue-700 transition">Home</a></li>
                     <li><a href="#fitur" class="text-gray-600 hover:text-blue-700 transition">Fitur</a></li>
                     <li><a href="#tentang" class="text-gray-600 hover:text-blue-700 transition">Tentang</a></li>
-                    <li><a href="#kontak" class="text-gray-600 hover:text-blue-700 transition">Kontak</a></li>
                 </ul>
             </div>
             <div>
