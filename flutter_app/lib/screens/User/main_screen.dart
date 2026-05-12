@@ -21,10 +21,14 @@ class _UserMainScreenState extends State<UserMainScreen>
   int _selectedIndex = 0;
 
   late AnimationController _pulseController;
-  late Animation<double>   _pulseAnim;
+  late Animation<double> _pulseAnim;
 
   final List<String> _titles = [
-    'Beranda', 'Prediksi', 'Statistik', 'Simulasi', 'Profil',
+    'Beranda',
+    'Prediksi',
+    'Statistik',
+    'Simulasi',
+    'Profil',
   ];
 
   final List<Widget> _screens = const [
@@ -75,6 +79,30 @@ class _UserMainScreenState extends State<UserMainScreen>
     );
   }
 
+  // ── Buka notifikasi dan tangani hasil navigasi ──
+  Future<void> _openNotifications() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationScreen()),
+    );
+
+    // Tandai semua sudah dibaca setelah kembali
+    setState(() => _unreadCount = 0);
+
+    if (result != null && mounted) {
+      final action = result['action'] as String?;
+      final tabIndex = result['tabIndex'] as int?;
+
+      if (action == 'navigate_tab' && tabIndex != null) {
+        // Pindah ke tab yang diminta (Prediksi = 1, Simulasi = 3)
+        setState(() => _selectedIndex = tabIndex);
+      } else if (action == 'open_ai') {
+        // Buka AI Chat dengan transisi circular reveal
+        _openChatAI();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,28 +114,26 @@ class _UserMainScreenState extends State<UserMainScreen>
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                  );
-                  setState(() => _unreadCount = 0);
-                },
+                onPressed: _openNotifications,
               ),
               if (_unreadCount > 0)
                 Positioned(
-                  right: 8, top: 8,
+                  right: 8,
+                  top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(3),
                     decoration: const BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    constraints:
+                        const BoxConstraints(minWidth: 16, minHeight: 16),
                     child: Text(
                       '$_unreadCount',
                       style: const TextStyle(
-                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -139,7 +165,8 @@ class _UserMainScreenState extends State<UserMainScreen>
           child: GestureDetector(
             onTap: _openChatAI,
             child: Container(
-              width: 58, height: 58,
+              width: 58,
+              height: 58,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
@@ -164,8 +191,9 @@ class _UserMainScreenState extends State<UserMainScreen>
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
                       color: Color.fromRGBO(255, 255, 255, 0.1),
                       shape: BoxShape.circle,
                     ),
@@ -191,11 +219,14 @@ class _UserMainScreenState extends State<UserMainScreen>
           height: 60,
           child: Row(
             children: [
-              _buildNavItem(0, Icons.home_outlined,        Icons.home,        'Beranda'),
-              _buildNavItem(1, Icons.trending_up_outlined,  Icons.trending_up, 'Prediksi'),
-              _buildNavItem(2, Icons.bar_chart_outlined,    Icons.bar_chart,   'Statistik'),
-              _buildNavItem(3, Icons.calculate_outlined,    Icons.calculate,   'Simulasi'),
-              _buildNavItem(4, Icons.person_outline,        Icons.person,      'Profil'),
+              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Beranda'),
+              _buildNavItem(
+                  1, Icons.trending_up_outlined, Icons.trending_up, 'Prediksi'),
+              _buildNavItem(
+                  2, Icons.bar_chart_outlined, Icons.bar_chart, 'Statistik'),
+              _buildNavItem(
+                  3, Icons.calculate_outlined, Icons.calculate, 'Simulasi'),
+              _buildNavItem(4, Icons.person_outline, Icons.person, 'Profil'),
             ],
           ),
         ),
@@ -203,7 +234,8 @@ class _UserMainScreenState extends State<UserMainScreen>
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+  Widget _buildNavItem(
+      int index, IconData icon, IconData activeIcon, String label) {
     final isActive = _selectedIndex == index;
     return Expanded(
       child: GestureDetector(
@@ -275,7 +307,6 @@ class _CircularRevealClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
-    // Hitung jarak dari pojok kanan bawah ke pojok kiri atas (diagonal)
     final double maxRadius = sqrt(
       pow(centerOffset.dx, 2) + pow(centerOffset.dy, 2),
     );
