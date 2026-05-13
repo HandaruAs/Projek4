@@ -287,5 +287,4 @@
 
   </div>
   {{-- / profil grid --}}
-
 @endsection

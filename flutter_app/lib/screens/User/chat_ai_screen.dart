@@ -33,7 +33,7 @@ class ChatAiScreen extends StatefulWidget {
 class _ChatAiScreenState extends State<ChatAiScreen>
     with TickerProviderStateMixin {
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.10.6.199:8000/api',
+    baseUrl: 'http://10.10.186.79:8000/api',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 60),
     headers: {
