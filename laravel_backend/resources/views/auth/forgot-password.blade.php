@@ -12,9 +12,16 @@
         <body>
 
         <nav class="navbar">
-            <a href="/" class="navbar-brand">
-        <img src="{{ asset('images/LOGO-2.png') }}" alt="SIMOPANG Logo" style="height: 36px; width: auto; object-fit: contain;">
-    </a>
+           <a href="/" class="navbar-brand">
+    <div style="width:36px; height:36px; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.15); transition:transform 0.2s;" 
+         onmouseover="this.style.transform='scale(1.05)'" 
+         onmouseout="this.style.transform='scale(1)'">
+        <img src="{{ asset('images/LOGO-2.png') }}" 
+             alt="Logo SIMOPANG" 
+             style="width:100%; height:100%; object-fit:cover;">
+    </div>
+    <span class="brand-name">SIMOPANG</span>
+</a>
             <div class="navbar-links">
                 <a href="/" class="btn-back">
                     <i class="fas fa-house"></i>

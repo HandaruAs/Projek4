@@ -90,7 +90,7 @@
     <div class="max-w-7xl mx-auto">
         <div class="text-center mb-12">
             <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Fitur <span class="text-gradient">Unggulan</span></h2>
-            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Dilengkapi teknologi AI terkini untuk membantu keputusan Anda lebih akurat.</p>
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Dilengkapi teknologi AI terkini untuk membantu keputusan anda lebih akurat.</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
@@ -119,7 +119,7 @@
                     <i class="fas fa-calculator text-2xl"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900 mb-2">Simulasi Pengeluaran</h3>
-                <p class="text-gray-600">Hitung estimasi biaya belanja berdasarkan komoditas yang ingin Anda pantau.</p>
+                <p class="text-gray-600">Hitung estimasi biaya belanja berdasarkan komoditas yang ingin anda pantau.</p>
             </div>
 
             {{-- Card 4: AI Assistant --}}
