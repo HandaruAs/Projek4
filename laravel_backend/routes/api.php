@@ -50,6 +50,8 @@ Route::post('/chatai/followup',    [UserChatAiController::class, 'followup']);
 Route::middleware('auth:api')->group(function () {
     Route::get('/profile',  [AuthController::class, 'getProfile']);
     Route::put('/profile',  [AuthController::class, 'updateProfile']);
+    Route::post('/profile', [AuthController::class, 'updateProfile']); 
+    Route::delete('profile/avatar', [AuthController::class, 'removeAvatar']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout',  [AuthController::class, 'logout']);
 });
