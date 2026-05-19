@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="{{ asset('images/LOGO-2.png') }}"> 
+    <link rel="icon" type="image/png" href="{{ asset('images/LOGO-2.png') }}">
     <title>Verifikasi OTP — SIMOPANG</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ asset('css/auth-base.css') }}" rel="stylesheet">
@@ -13,8 +13,8 @@
 
 <nav class="navbar">
     <a href="/" class="navbar-brand">
-        <div class="brand-icon"><i class="fas fa-chart-line"></i></div>
-        <span class="brand-name">SIMOPANG</span>
+    <img src="{{ asset('images/LOGO-2.png') }}" alt="SIMOPANG Logo" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
+    <span class="brand-name">SIMOPANG</span>
     </a>
     <div class="navbar-links">
         <a href="/" class="btn-back">

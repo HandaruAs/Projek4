@@ -144,9 +144,20 @@ class AuthController extends Controller
         return redirect()->route('reset.password')->with('email', $user->email);
     }
 
-    public function showResetPassword()
+    public function showResetPassword(Request $request)
     {
-        return view('auth.reset-password');
+        // Ambil dari session flash, simpan lagi agar tersedia di view
+        $email = session('email');
+
+        if (!$email) {
+            return redirect()->route('forgot.password')
+                ->with('error', 'Sesi habis, ulangi dari awal');
+        }
+
+        // Simpan ulang agar tidak hilang saat form submit gagal
+        session()->keep(['email']);
+
+        return view('auth.reset-password', compact('email'));
     }
 
     public function resetPassword(Request $request)
