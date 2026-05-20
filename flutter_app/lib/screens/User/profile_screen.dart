@@ -31,7 +31,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadProfile();
+    _refreshProfile();
   }
+
+  // ─── Fetch profil terbaru dari server ─────────────────────
+Future<void> _refreshProfile() async {
+  try {
+    final response = await _apiService.getProfile();
+    if (!mounted) return;
+    if (response['status'] == 'success') {
+      final updatedUser = UserModel.fromJson(response['data']);
+      await Provider.of<AuthProvider>(context, listen: false)
+          .updateCurrentUser(updatedUser);
+    }
+  } catch (_) {}
+}
 
   void _loadProfile() {
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
