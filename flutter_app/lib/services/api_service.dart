@@ -154,11 +154,11 @@ class ApiService {
       if (avatarFile != null) {
         // Kirim sebagai multipart/form-data jika ada file foto
         final formData = FormData.fromMap({
-          if (name != null)    'name':    name,
-          if (email != null)   'email':   email,
-          if (phone != null)   'phone':   phone,
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
+          if (phone != null) 'phone': phone,
           if (address != null) 'address': address,
-          '_method': 'PUT',              // ← Laravel method spoofing
+          '_method': 'PUT', // ← Laravel method spoofing
           'avatar': await MultipartFile.fromFile(
             avatarFile.path,
             filename: avatarFile.path.split('/').last,
@@ -173,9 +173,9 @@ class ApiService {
       } else {
         // Tanpa foto, tetap pakai PUT + JSON seperti semula
         final response = await _dio.put('/profile', data: {
-          if (name != null)    'name':    name,
-          if (email != null)   'email':   email,
-          if (phone != null)   'phone':   phone,
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
+          if (phone != null) 'phone': phone,
           if (address != null) 'address': address,
         });
         return Map<String, dynamic>.from(response.data);
@@ -358,19 +358,6 @@ class ApiService {
   // ══════════════════════════════════════════════════════════
   // PREDICTIONS
   // ══════════════════════════════════════════════════════════
-
-  Future<Map<String, dynamic>> getPrediction(String komoditas) async {
-    try {
-      final encoded = Uri.encodeComponent(komoditas);
-      final response = await _dio.get('/predictions/$encoded');
-      return Map<String, dynamic>.from(response.data);
-    } on DioException catch (e) {
-      if (e.response != null)
-        return Map<String, dynamic>.from(e.response!.data);
-      throw _handleError(e);
-    }
-  }
-
   /// GET /api/predictions/{komoditas}
   /// Ambil hasil prediksi yang sudah di-generate admin.
   Future<Map<String, dynamic>> getPrediction(String komoditas) async {
