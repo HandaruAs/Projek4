@@ -5,20 +5,51 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\PriceHistory;
 use App\Models\Commodity;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PriceHistoryController extends Controller
 {
-    /**
-     * Ambil data harga & stok dengan filter.
-     * Dipakai untuk monitoring di dashboard Laravel & Flutter.
-     *
-     * GET /api/price-histories
-     * GET /api/price-histories?commodity_id=xxx
-     * GET /api/price-histories?commodity_id=xxx&start_date=2024-01-01&end_date=2024-12-31
-     * Akses: semua role
-     */
+    // ══════════════════════════════════════════════════════════
+    // HELPER: Buat notifikasi harga baru ke semua user (broadcast)
+    // ══════════════════════════════════════════════════════════
+
+    private function createPriceNotification(
+        string $commodityName,
+        float $newPrice,
+        ?float $oldPrice
+    ): void {
+        // Tentukan naik/turun/baru
+        if ($oldPrice === null) {
+            $title = "Harga {$commodityName} Tersedia";
+            $body  = "Data harga {$commodityName} baru telah ditambahkan oleh admin.";
+        } else {
+            $diff    = $newPrice - $oldPrice;
+            $pct     = $oldPrice > 0 ? abs($diff / $oldPrice * 100) : 0;
+            $pctStr  = number_format($pct, 1);
+            $arah    = $diff > 0 ? 'naik' : 'turun';
+            $title   = "Harga {$commodityName} " . ucfirst($arah) . "!";
+            $body    = "Harga {$commodityName} {$arah} {$pctStr}% "
+                     . "dari Rp " . number_format($oldPrice, 0, ',', '.')
+                     . " menjadi Rp " . number_format($newPrice, 0, ',', '.') . ".";
+        }
+
+        Notification::create([
+            'user_id'    => null,   // null = broadcast ke semua user
+            'title'      => $title,
+            'body'       => $body,
+            'type'       => 'price_alert',
+            'commodity'  => $commodityName,
+            'meta'       => ['tabIndex' => 0],
+            'is_read_by' => [],
+        ]);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // GET /api/price-histories
+    // ══════════════════════════════════════════════════════════
+
     public function index(Request $request)
     {
         $query = PriceHistory::with('commodity')->orderBy('date', 'desc');
@@ -31,7 +62,6 @@ class PriceHistoryController extends Controller
             $query->dateRange($request->start_date, $request->end_date);
         }
 
-        // Pagination — default 30 data per halaman
         $data = $query->paginate($request->get('per_page', 30));
 
         return response()->json([
@@ -46,12 +76,10 @@ class PriceHistoryController extends Controller
         ]);
     }
 
-    /**
-     * Ambil detail satu data harga.
-     *
-     * GET /api/price-histories/{id}
-     * Akses: semua role
-     */
+    // ══════════════════════════════════════════════════════════
+    // GET /api/price-histories/{id}
+    // ══════════════════════════════════════════════════════════
+
     public function show(string $id)
     {
         $priceHistory = PriceHistory::with('commodity')->find($id);
@@ -69,12 +97,10 @@ class PriceHistoryController extends Controller
         ]);
     }
 
-    /**
-     * Tambah satu data harga & stok.
-     *
-     * POST /api/price-histories
-     * Akses: admin, petugas
-     */
+    // ══════════════════════════════════════════════════════════
+    // POST /api/price-histories
+    // ══════════════════════════════════════════════════════════
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -92,7 +118,6 @@ class PriceHistoryController extends Controller
             ], 422);
         }
 
-        // Pastikan commodity_id valid
         $commodity = Commodity::find($request->commodity_id);
         if (!$commodity) {
             return response()->json([
@@ -101,7 +126,6 @@ class PriceHistoryController extends Controller
             ], 404);
         }
 
-        // Cegah duplikat data pada tanggal yang sama untuk komoditas yang sama
         $exists = PriceHistory::where('commodity_id', $request->commodity_id)
             ->whereDate('date', $request->date)
             ->exists();
@@ -113,6 +137,11 @@ class PriceHistoryController extends Controller
             ], 409);
         }
 
+        // Ambil harga terakhir sebelum insert (untuk perbandingan notifikasi)
+        $lastPrice = PriceHistory::where('commodity_id', $request->commodity_id)
+            ->orderBy('date', 'desc')
+            ->value('price');
+
         $priceHistory = PriceHistory::create([
             'commodity_id'   => $request->commodity_id,
             'commodity_name' => $commodity->name,
@@ -121,6 +150,13 @@ class PriceHistoryController extends Controller
             'stok'           => $request->stok,
         ]);
 
+        // Kirim notifikasi harga baru
+        $this->createPriceNotification(
+            $commodity->name,
+            (float) $request->price,
+            $lastPrice !== null ? (float) $lastPrice : null
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Data harga berhasil ditambahkan',
@@ -128,14 +164,10 @@ class PriceHistoryController extends Controller
         ], 201);
     }
 
-    /**
-     * Import banyak data harga sekaligus (bulk insert).
-     * Berguna saat admin upload dataset dari CSV.
-     *
-     * POST /api/price-histories/bulk
-     * Body: { "data": [ { commodity_id, date, price, stok }, ... ] }
-     * Akses: admin
-     */
+    // ══════════════════════════════════════════════════════════
+    // POST /api/price-histories/bulk
+    // ══════════════════════════════════════════════════════════
+
     public function bulkStore(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -154,9 +186,10 @@ class PriceHistoryController extends Controller
             ], 422);
         }
 
-        $inserted = 0;
-        $skipped  = 0;
-        $errors   = [];
+        $inserted          = 0;
+        $skipped           = 0;
+        $errors            = [];
+        $notifiedCommodity = []; // Hindari notif duplikat per komoditas dalam satu bulk
 
         foreach ($request->data as $index => $item) {
             $commodity = Commodity::find($item['commodity_id']);
@@ -167,7 +200,6 @@ class PriceHistoryController extends Controller
                 continue;
             }
 
-            // Skip jika sudah ada data pada tanggal yang sama
             $exists = PriceHistory::where('commodity_id', $item['commodity_id'])
                 ->whereDate('date', $item['date'])
                 ->exists();
@@ -175,6 +207,14 @@ class PriceHistoryController extends Controller
             if ($exists) {
                 $skipped++;
                 continue;
+            }
+
+            // Ambil harga terakhir sebelum insert (hanya sekali per komoditas)
+            $lastPrice = null;
+            if (!isset($notifiedCommodity[$item['commodity_id']])) {
+                $lastPrice = PriceHistory::where('commodity_id', $item['commodity_id'])
+                    ->orderBy('date', 'desc')
+                    ->value('price');
             }
 
             PriceHistory::create([
@@ -186,6 +226,16 @@ class PriceHistoryController extends Controller
             ]);
 
             $inserted++;
+
+            // Kirim notifikasi hanya sekali per komoditas dalam satu bulk
+            if (!isset($notifiedCommodity[$item['commodity_id']])) {
+                $this->createPriceNotification(
+                    $commodity->name,
+                    (float) $item['price'],
+                    $lastPrice !== null ? (float) $lastPrice : null
+                );
+                $notifiedCommodity[$item['commodity_id']] = true;
+            }
         }
 
         return response()->json([
@@ -199,12 +249,10 @@ class PriceHistoryController extends Controller
         ], 201);
     }
 
-    /**
-     * Update data harga & stok.
-     *
-     * PUT /api/price-histories/{id}
-     * Akses: admin, petugas
-     */
+    // ══════════════════════════════════════════════════════════
+    // PUT /api/price-histories/{id}
+    // ══════════════════════════════════════════════════════════
+
     public function update(Request $request, string $id)
     {
         $priceHistory = PriceHistory::find($id);
@@ -230,7 +278,6 @@ class PriceHistoryController extends Controller
             ], 422);
         }
 
-        // Cegah duplikat jika tanggal diubah
         if ($request->has('date') && $request->date !== $priceHistory->date->toDateString()) {
             $exists = PriceHistory::where('commodity_id', $priceHistory->commodity_id)
                 ->whereDate('date', $request->date)
@@ -254,12 +301,10 @@ class PriceHistoryController extends Controller
         ]);
     }
 
-    /**
-     * Hapus satu data harga.
-     *
-     * DELETE /api/price-histories/{id}
-     * Akses: admin
-     */
+    // ══════════════════════════════════════════════════════════
+    // DELETE /api/price-histories/{id}
+    // ══════════════════════════════════════════════════════════
+
     public function destroy(string $id)
     {
         $priceHistory = PriceHistory::find($id);
@@ -279,14 +324,10 @@ class PriceHistoryController extends Controller
         ]);
     }
 
-    /**
-     * Ambil data khusus untuk keperluan training LSTM di Flask.
-     * Data diurutkan ascending by date (wajib untuk time series).
-     *
-     * GET /api/price-histories/training-data?commodity_id=xxx
-     * GET /api/price-histories/training-data?commodity_id=xxx&start_date=2023-01-01&end_date=2024-01-01
-     * Akses: admin
-     */
+    // ══════════════════════════════════════════════════════════
+    // GET /api/price-histories/training-data
+    // ══════════════════════════════════════════════════════════
+
     public function trainingData(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -319,7 +360,6 @@ class PriceHistoryController extends Controller
 
         $data = $query->get();
 
-        // LSTM butuh minimal 30 data untuk training yang valid
         if ($data->count() < 30) {
             return response()->json([
                 'success' => false,

@@ -5,8 +5,8 @@
 @section('content')
 
 {{-- ==================== NAVBAR ==================== --}}
-<nav class="fixed top-0 left-0 w-full z-50  bg-white/40 backdrop-blur-sm border-b border-white/30">
-        <div class="flex justify-between items-center h-16 md:h-20 px-2 md:px-8">
+<nav class="fixed top-0 left-0 w-full z-50 bg-white/40 backdrop-blur-sm border-b border-white/30">
+        <div class="flex justify-between items-center h-16 md:h-20">
 
             {{-- Logo & Brand --}}
             <div class="flex items-center gap-3">
@@ -18,9 +18,9 @@
 
             {{-- Desktop Menu --}}
             <div class="hidden md:flex items-center space-x-8 font-medium text-gray-700">
-                <a href="#home" class="px-3 py-2 hover:text-white hover:bg-gradient-to-r hover:from-blue-900 hover:to-blue-600 rounded-xl hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">Home</a>
-                <a href="#fitur" class="px-3 py-2 hover:text-white hover:bg-gradient-to-r hover:from-blue-900 hover:to-blue-600 rounded-xl hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">Fitur</a>
-                <a href="#tentang" class="px-3 py-2 hover:text-white hover:bg-gradient-to-r hover:from-blue-900 hover:to-blue-600 rounded-xl hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">Tentang</a>
+                <a href="#home" class="hover:text-blue-700 transition">Home</a>
+                <a href="#fitur" class="hover:text-blue-700 transition">Fitur</a>
+                <a href="#tentang" class="hover:text-blue-700 transition">Tentang</a>
                 <a href="{{ route('login') }}" class="ml-4 px-5 py-2.5 bg-gradient-to-r from-blue-900 to-blue-600 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
                     Login
                 </a>
@@ -64,7 +64,7 @@
     <div class="relative z-10 px-4 max-w-4xl mx-auto">
         <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight drop-shadow-lg">
             Pantau & Prediksi <br>
-            <span class="text-blue-500">Harga Pangan</span> Dengan AI
+            <span class="text-blue-400">Harga Pangan</span> dengan AI
         </h1>
         <p class="mt-6 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto leading-relaxed">
             Sistem ini membantu pengguna dalam mengambil keputusan yang lebih tepat terkait kebutuhan dan pengelolaan pangan.
@@ -244,23 +244,3 @@
 </footer>
 
 @endsection
-
-@push('scripts')
-<script>
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (!target) return;
-
-        const navbarHeight = document.querySelector('nav').offsetHeight;
-        const targetPosition = target.getBoundingClientRect().top + window.scrollY - navbarHeight;
-
-        window.scrollTo({
-            top: targetPosition,
-            behavior: 'smooth'
-        });
-    });
-});
-</script>
-@endpush
