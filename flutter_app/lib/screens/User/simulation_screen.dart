@@ -5,7 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class UserSimulationScreen extends StatefulWidget {
-  const UserSimulationScreen({super.key});
+  /// Nama komoditas untuk pre-fill otomatis dari notifikasi (opsional)
+  final String? initialCommodity;
+
+  const UserSimulationScreen({super.key, this.initialCommodity});
 
   @override
   State<UserSimulationScreen> createState() => _UserSimulationScreenState();
@@ -14,8 +17,9 @@ class UserSimulationScreen extends StatefulWidget {
 class _UserSimulationScreenState extends State<UserSimulationScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedCommodityName;
-  final TextEditingController _konsumsiController =
-      TextEditingController(text: '0.5');
+  final TextEditingController _konsumsiController = TextEditingController(
+    text: '0.5',
+  );
 
   double? _hargaTerbaru;
   double? _hargaPrediksi;
@@ -23,6 +27,7 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
   double? _totalPrediksi;
   double? _selisih;
   double? _changePercent;
+  List<double> _historicalPrices = []; // harga 3 bulan terakhir (aktual)
   String _wawasanAI =
       'AI kami memprediksi kenaikan harga beras sekitar 2.5% bulan depan '
       'dikarenakan faktor musim panen yang bergeser.';
@@ -41,7 +46,9 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
   void initState() {
     super.initState();
     _animCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _loadCommodities();
   }
@@ -52,7 +59,8 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     if (provider.predictableCommodities.isNotEmpty &&
         _selectedCommodityName == null) {
       setState(
-          () => _selectedCommodityName = provider.predictableCommodities.first);
+        () => _selectedCommodityName = provider.predictableCommodities.first,
+      );
     }
   }
 
@@ -70,8 +78,10 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     final provider = Provider.of<CommodityProvider>(context, listen: false);
 
     // Langsung kirim nama — sudah pasti valid karena dari Flask
-    final success =
-        await provider.predictPrice(_selectedCommodityName!, konsumsi);
+    final success = await provider.predictPrice(
+      _selectedCommodityName!,
+      konsumsi,
+    );
 
     if (!mounted) return;
 
@@ -84,6 +94,23 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
       final selisih = totalPrediksi - totalSekarang;
       final pct = totalSekarang > 0 ? (selisih / totalSekarang * 100) : 0.0;
 
+      // Ambil historical prices dari response (3 bulan terakhir sebelum current)
+      // Backend diharapkan mengirim field 'price_history' berupa List<num>
+      // Jika tidak ada, fallback ke simulasi linier dari current ke predicted
+      final rawHistory = r['price_history'];
+      List<double> historical;
+      if (rawHistory is List && rawHistory.isNotEmpty) {
+        historical = rawHistory.map((e) => (e as num).toDouble()).toList();
+      } else {
+        // Fallback: buat 3 titik linier menuju hargaTerbaru
+        final step = (hargaTerbaru - hargaPrediksi) / 4;
+        historical = [
+          hargaTerbaru - step * 3,
+          hargaTerbaru - step * 2,
+          hargaTerbaru - step,
+        ];
+      }
+
       setState(() {
         _hargaTerbaru = hargaTerbaru;
         _hargaPrediksi = hargaPrediksi;
@@ -91,13 +118,16 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
         _totalPrediksi = totalPrediksi;
         _selisih = selisih;
         _changePercent = pct;
+        _historicalPrices = historical;
         _wawasanAI = r['insight'] as String? ?? _wawasanAI;
         _hasilVisible = true;
       });
       _animCtrl.forward(from: 0);
     } else {
-      _showSnack(provider.errorMessage ?? 'Gagal menghitung simulasi',
-          isError: true);
+      _showSnack(
+        provider.errorMessage ?? 'Gagal menghitung simulasi',
+        isError: true,
+      );
     }
   }
 
@@ -178,7 +208,10 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
           Text(
             'Simulasi Pengeluaran AI',
             style: TextStyle(
-                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: 6),
           Text(
@@ -225,25 +258,32 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                     color: iconBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.monitor,
-                      color: Color(0xFF1976D2), size: 20),
+                  child: const Icon(
+                    Icons.monitor,
+                    color: Color(0xFF1976D2),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Text(
                   'Input Data Konsumsi',
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: labelColor),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: labelColor,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 18),
-            Text('Pilih Komoditas',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : const Color(0xFF1A1A2E))),
+            Text(
+              'Pilih Komoditas',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              ),
+            ),
             const SizedBox(height: 8),
             // Ganti Consumer<CommodityProvider> di dropdown dengan ini
             DropdownButtonFormField<String>(
@@ -251,68 +291,85 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
               value: _selectedCommodityName,
               dropdownColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
               style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black, fontSize: 14),
+                color: isDark ? Colors.white : Colors.black,
+                fontSize: 14,
+              ),
               items: provider.predictableCommodities.map((name) {
                 return DropdownMenuItem(value: name, child: Text(name));
               }).toList(),
               onChanged: (val) => setState(() => _selectedCommodityName = val),
               decoration: InputDecoration(
                 filled: true,
-                fillColor:
-                    isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade50,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                fillColor: isDark
+                    ? const Color(0xFF2C2C2C)
+                    : Colors.grey.shade50,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide(
-                      color:
-                          isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                  ),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            Text('Konsumsi per Minggu (Kg/Liter)',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : const Color(0xFF1A1A2E))),
+            Text(
+              'Konsumsi per Minggu (Kg/Liter)',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              ),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _konsumsiController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    style:
-                        TextStyle(color: isDark ? Colors.white : Colors.black),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: isDark
                           ? const Color(0xFF2C2C2C)
                           : Colors.grey.shade50,
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide(
-                            color: isDark
-                                ? Colors.grey.shade700
-                                : Colors.grey.shade300),
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       hintText: '0.5',
                       hintStyle: TextStyle(color: Colors.grey[500]),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 13,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark
                         ? const Color(0xFF1976D2).withOpacity(0.2)
@@ -324,10 +381,13 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                           : const Color(0xFFBBDEFB),
                     ),
                   ),
-                  child: const Text('kg',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1976D2))),
+                  child: const Text(
+                    'kg',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1976D2),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -344,13 +404,16 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                 builder: (_, prov, __) => ElevatedButton.icon(
                   onPressed: prov.isLoading ? null : _hitungSimulasi,
                   icon: const Icon(Icons.calculate_outlined, size: 18),
-                  label: const Text('Hitung Estimasi',
-                      style: TextStyle(fontSize: 15)),
+                  label: const Text(
+                    'Hitung Estimasi',
+                    style: TextStyle(fontSize: 15),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1976D2),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 2,
                   ),
                 ),
@@ -370,10 +433,12 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     final borderColor = isDark
         ? const Color(0xFF2E7D32).withOpacity(0.5)
         : const Color(0xFFA5D6A7);
-    final titleColor =
-        isDark ? const Color(0xFF81C784) : const Color(0xFF1B5E20);
-    final textColor =
-        isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32);
+    final titleColor = isDark
+        ? const Color(0xFF81C784)
+        : const Color(0xFF1B5E20);
+    final textColor = isDark
+        ? const Color(0xFF81C784)
+        : const Color(0xFF2E7D32);
     final iconBg = isDark
         ? const Color(0xFF43A047).withOpacity(0.2)
         : const Color(0xFF43A047).withOpacity(0.15);
@@ -398,15 +463,19 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Wawasan AI',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: titleColor)),
+                Text(
+                  'Wawasan AI',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: titleColor,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(_wawasanAI,
-                    style:
-                        TextStyle(fontSize: 12, color: textColor, height: 1.5)),
+                Text(
+                  _wawasanAI,
+                  style: TextStyle(fontSize: 12, color: textColor, height: 1.5),
+                ),
               ],
             ),
           ),
@@ -462,33 +531,47 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                 color: Colors.white.withOpacity(0.25),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text('AI Prediction',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold)),
-            ),
-          Text(isPredict ? 'Prediksi Bulan Depan' : 'Harga Saat Ini',
-              style: const TextStyle(color: Colors.white70, fontSize: 11)),
-          const SizedBox(height: 6),
-          Text(harga != null ? _fmt.format(harga) : 'Rp -',
-              style: const TextStyle(
+              child: const Text(
+                'AI Prediction',
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          const Text('/kg',
-              style: TextStyle(color: Colors.white60, fontSize: 11)),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          Text(
+            isPredict ? 'Prediksi Bulan Depan' : 'Harga Saat Ini',
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            harga != null ? _fmt.format(harga) : 'Rp -',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Text(
+            '/kg',
+            style: TextStyle(color: Colors.white60, fontSize: 11),
+          ),
           const SizedBox(height: 10),
           const Divider(color: Colors.white24, height: 1),
           const SizedBox(height: 8),
           Text(
-              isPredict ? 'Estimasi Bulan Depan' : 'Total Pengeluaran Sekarang',
-              style: const TextStyle(color: Colors.white70, fontSize: 10)),
-          Text(total != null ? '${_fmt.format(total)}/bln' : 'Rp -/bln',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700)),
+            isPredict ? 'Estimasi Bulan Depan' : 'Total Pengeluaran Sekarang',
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
+          ),
+          Text(
+            total != null ? '${_fmt.format(total)}/bln' : 'Rp -/bln',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -499,8 +582,9 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final titleColor = isDark ? Colors.white : const Color(0xFF1A237E);
     final subColor = isDark ? Colors.grey[400]! : Colors.grey;
-    final konsumsiText =
-        _konsumsiController.text.isNotEmpty ? _konsumsiController.text : '0.5';
+    final konsumsiText = _konsumsiController.text.isNotEmpty
+        ? _konsumsiController.text
+        : '0.5';
     final selisih = _selisih ?? 0;
     final pct = _changePercent ?? 0;
     final isUp = selisih >= 0;
@@ -528,11 +612,14 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Ringkasan Anggaran',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: titleColor)),
+                    Text(
+                      'Ringkasan Anggaran',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: titleColor,
+                      ),
+                    ),
                     Text(
                       'Berdasarkan konsumsi $konsumsiText kg per minggu',
                       style: TextStyle(fontSize: 11, color: subColor),
@@ -540,8 +627,10 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.file_present_outlined,
-                      color: Color(0xFF1976D2)),
+                  icon: const Icon(
+                    Icons.file_present_outlined,
+                    color: Color(0xFF1976D2),
+                  ),
                   tooltip: 'Unduh Ringkasan',
                   onPressed: () => _showSnack('Fitur unduh akan segera hadir'),
                 ),
@@ -549,8 +638,9 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
             ),
             const SizedBox(height: 14),
             Divider(
-                height: 1,
-                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+              height: 1,
+              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+            ),
             const SizedBox(height: 14),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,8 +649,10 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Selisih Pengeluaran',
-                          style: TextStyle(fontSize: 12, color: subColor)),
+                      Text(
+                        'Selisih Pengeluaran',
+                        style: TextStyle(fontSize: 12, color: subColor),
+                      ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
@@ -586,12 +678,14 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                           style: TextStyle(fontSize: 11, color: subColor),
                           children: [
                             const TextSpan(
-                                text: 'Peningkatan biaya estimasi sekitar '),
+                              text: 'Peningkatan biaya estimasi sekitar ',
+                            ),
                             TextSpan(
                               text: '${pct.toStringAsFixed(1)}%',
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
                             ),
                           ],
                         ),
@@ -604,17 +698,25 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Rekomendasi Tindakan',
-                          style: TextStyle(fontSize: 12, color: subColor)),
+                      Text(
+                        'Rekomendasi Tindakan',
+                        style: TextStyle(fontSize: 12, color: subColor),
+                      ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _actionBtn('Stok Lebih Awal',
-                              isPrimary: true, isDark: isDark),
-                          _actionBtn('Cari Promo',
-                              isPrimary: false, isDark: isDark),
+                          _actionBtn(
+                            'Stok Lebih Awal',
+                            isPrimary: true,
+                            isDark: isDark,
+                          ),
+                          _actionBtn(
+                            'Cari Promo',
+                            isPrimary: false,
+                            isDark: isDark,
+                          ),
                         ],
                       ),
                     ],
@@ -630,8 +732,11 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     );
   }
 
-  Widget _actionBtn(String label,
-      {required bool isPrimary, required bool isDark}) {
+  Widget _actionBtn(
+    String label, {
+    required bool isPrimary,
+    required bool isDark,
+  }) {
     return GestureDetector(
       onTap: () {},
       child: Container(
@@ -640,8 +745,8 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
           color: isPrimary
               ? const Color(0xFF1976D2)
               : (isDark
-                  ? const Color(0xFF1976D2).withOpacity(0.2)
-                  : const Color(0xFFE3F2FD)),
+                    ? const Color(0xFF1976D2).withOpacity(0.2)
+                    : const Color(0xFFE3F2FD)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -660,32 +765,79 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
     final gridColor = isDark ? Colors.grey.shade800 : const Color(0xFFE5EAF3);
     final labelColor = isDark ? Colors.grey[500]! : Colors.grey;
 
+    // Bangun label bulan dinamis tanpa locale khusus
+    const bulan = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MEI',
+      'JUN',
+      'JUL',
+      'AGU',
+      'SEP',
+      'OKT',
+      'NOV',
+      'DES',
+    ];
+    final now = DateTime.now();
+    String monthLabel(int offsetMonths) {
+      final d = DateTime(now.year, now.month + offsetMonths);
+      return bulan[(d.month - 1) % 12];
+    }
+
+    final labels = [
+      monthLabel(-3),
+      monthLabel(-2),
+      monthLabel(-1),
+      monthLabel(0),
+      '${monthLabel(1)} →',
+    ];
+
+    // Kumpulkan semua harga untuk diteruskan ke painter
+    final allPrices = [
+      ..._historicalPrices,
+      if (_hargaTerbaru != null) _hargaTerbaru!,
+      if (_hargaPrediksi != null) _hargaPrediksi!,
+    ];
+
     return Column(
       children: [
         SizedBox(
           height: 80,
           child: CustomPaint(
-            painter: _MiniChartPainter(gridColor: gridColor),
+            painter: _MiniChartPainter(
+              gridColor: gridColor,
+              historicalPrices: _historicalPrices,
+              currentPrice: _hargaTerbaru,
+              predictedPrice: _hargaPrediksi,
+            ),
             child: const SizedBox.expand(),
           ),
         ),
         const SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('MAR', style: TextStyle(fontSize: 10, color: labelColor)),
-            Text('APR', style: TextStyle(fontSize: 10, color: labelColor)),
-            Text('MEI', style: TextStyle(fontSize: 10, color: labelColor)),
-            Text('JUN →',
-                style: TextStyle(
+          children: labels
+              .map(
+                (l) => Text(
+                  l,
+                  style: TextStyle(
                     fontSize: 10,
                     color: labelColor,
-                    fontWeight: FontWeight.bold)),
-          ],
+                    fontWeight: l.contains('→')
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+              )
+              .toList(),
         ),
         const SizedBox(height: 4),
         Text(
-          'Grafik Tren Harga 4 Bulan Terakhir & Prediksi',
+          allPrices.isEmpty
+              ? 'Grafik akan muncul setelah simulasi dihitung'
+              : 'Grafik Tren Harga 4 Bulan Terakhir & Prediksi',
           style: TextStyle(fontSize: 11, color: labelColor),
           textAlign: TextAlign.center,
         ),
@@ -697,13 +849,30 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
 // ── MINI CHART PAINTER ──
 class _MiniChartPainter extends CustomPainter {
   final Color gridColor;
-  const _MiniChartPainter({required this.gridColor});
+
+  /// 3 harga historis (bulan lalu, 2 bln lalu, 3 bln lalu).
+  /// Boleh kosong — painter akan render placeholder flat line.
+  final List<double> historicalPrices;
+
+  /// Harga terkini (titik aktual terakhir).
+  final double? currentPrice;
+
+  /// Harga prediksi bulan depan.
+  final double? predictedPrice;
+
+  const _MiniChartPainter({
+    required this.gridColor,
+    this.historicalPrices = const [],
+    this.currentPrice,
+    this.predictedPrice,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
 
+    // ── Grid lines ──
     final gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
@@ -711,97 +880,152 @@ class _MiniChartPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
     }
 
-    final actualPoints = [
-      Offset(0, h * .69),
-      Offset(w * .165, h * .64),
-      Offset(w * .33, h * .56),
-      Offset(w * .5, h * .5),
+    // Jika belum ada data, render placeholder flat line di tengah
+    if (currentPrice == null) {
+      canvas.drawLine(
+        Offset(0, h * .5),
+        Offset(w, h * .5),
+        Paint()
+          ..color = gridColor
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round,
+      );
+      return;
+    }
+
+    // ── Normalisasi harga ke koordinat canvas ──
+    // Titik aktual = historicalPrices + currentPrice (maks 4 titik)
+    final actualValues = [...historicalPrices, currentPrice!];
+
+    // Semua nilai untuk menentukan skala min/max
+    final allValues = [
+      ...actualValues,
+      if (predictedPrice != null) predictedPrice!,
+    ];
+    final minVal = allValues.reduce((a, b) => a < b ? a : b);
+    final maxVal = allValues.reduce((a, b) => a > b ? a : b);
+
+    // Padding vertikal agar titik tidak mepet tepi
+    const vPad = 0.12;
+    final range = (maxVal - minVal).abs();
+    // Jika semua harga sama, beri range artifisial agar grafik tidak flat
+    final effectiveRange = range < 1 ? currentPrice! * 0.05 : range;
+
+    double toY(double val) {
+      final norm = (val - minVal) / effectiveRange;
+      // Flip: nilai tinggi = y kecil (atas canvas)
+      return h * (1 - vPad) - norm * h * (1 - vPad * 2);
+    }
+
+    // Titik aktual terdistribusi merata di separuh kiri canvas (0 – w*0.5)
+    final nActual = actualValues.length;
+    final actualPoints = List.generate(nActual, (i) {
+      final x = (w * 0.5) * i / (nActual - 1);
+      return Offset(x, toY(actualValues[i]));
+    });
+
+    // Titik prediksi: mulai dari currentPrice, lanjut ke predictedPrice
+    final predictPoints = <Offset>[
+      actualPoints.last, // titik sambungan
+      if (predictedPrice != null) Offset(w, toY(predictedPrice!)),
     ];
 
-    final predictPoints = [
-      Offset(w * .5, h * .5),
-      Offset(w * .75, h * .33),
-      Offset(w, h * .24),
-    ];
-
+    // ── Area aktual ──
     final areaActualPath = Path()
       ..moveTo(actualPoints.first.dx, actualPoints.first.dy);
     _addCurve(areaActualPath, actualPoints);
     areaActualPath
-      ..lineTo(w * .5, h)
-      ..lineTo(0, h)
+      ..lineTo(actualPoints.last.dx, h)
+      ..lineTo(actualPoints.first.dx, h)
       ..close();
     canvas.drawPath(
-        areaActualPath,
-        Paint()
-          ..shader = LinearGradient(
-            colors: [
-              const Color(0xFF2563EB).withOpacity(.18),
-              const Color(0xFF2563EB).withOpacity(0)
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ).createShader(Rect.fromLTWH(0, 0, w, h)));
+      areaActualPath,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [
+            const Color(0xFF2563EB).withOpacity(.18),
+            const Color(0xFF2563EB).withOpacity(0),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
+    );
 
+    // ── Garis aktual ──
     final linePath = Path()
       ..moveTo(actualPoints.first.dx, actualPoints.first.dy);
     _addCurve(linePath, actualPoints);
     canvas.drawPath(
-        linePath,
-        Paint()
-          ..color = const Color(0xFF2563EB)
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round);
+      linePath,
+      Paint()
+        ..color = const Color(0xFF2563EB)
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
 
-    final areaPredictPath = Path()
-      ..moveTo(predictPoints.first.dx, predictPoints.first.dy);
-    _addCurve(areaPredictPath, predictPoints);
-    areaPredictPath
-      ..lineTo(w, h)
-      ..lineTo(w * .5, h)
-      ..close();
-    canvas.drawPath(
+    // ── Area prediksi ──
+    if (predictPoints.length >= 2) {
+      final areaPredictPath = Path()
+        ..moveTo(predictPoints.first.dx, predictPoints.first.dy);
+      _addCurve(areaPredictPath, predictPoints);
+      areaPredictPath
+        ..lineTo(predictPoints.last.dx, h)
+        ..lineTo(predictPoints.first.dx, h)
+        ..close();
+      canvas.drawPath(
         areaPredictPath,
         Paint()
           ..shader = LinearGradient(
             colors: [
               const Color(0xFF0EA5E9).withOpacity(.22),
-              const Color(0xFF0EA5E9).withOpacity(0)
+              const Color(0xFF0EA5E9).withOpacity(0),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-          ).createShader(Rect.fromLTWH(0, 0, w, h)));
+          ).createShader(Rect.fromLTWH(0, 0, w, h)),
+      );
 
-    _drawDashedPath(canvas, predictPoints, const Color(0xFF0EA5E9));
+      _drawDashedPath(canvas, predictPoints, const Color(0xFF0EA5E9));
+    }
 
+    // ── Garis pemisah aktual / prediksi ──
     canvas.drawLine(
-        Offset(w * .5, h * .1),
-        Offset(w * .5, h * .88),
-        Paint()
-          ..color = gridColor
-          ..strokeWidth = 1
-          ..style = PaintingStyle.stroke);
+      Offset(w * .5, h * .1),
+      Offset(w * .5, h * .88),
+      Paint()
+        ..color = gridColor
+        ..strokeWidth = 1
+        ..style = PaintingStyle.stroke,
+    );
 
+    // ── Titik aktual ──
     for (int i = 0; i < actualPoints.length; i++) {
       final r = i == actualPoints.length - 1 ? 4.5 : 3.5;
       canvas.drawCircle(
-          actualPoints[i], r, Paint()..color = const Color(0xFF2563EB));
+        actualPoints[i],
+        r,
+        Paint()..color = const Color(0xFF2563EB),
+      );
     }
+
+    // ── Titik prediksi (hollow) ──
     for (int i = 1; i < predictPoints.length; i++) {
       canvas.drawCircle(
-          predictPoints[i],
-          3.5,
-          Paint()
-            ..color = Colors.white
-            ..style = PaintingStyle.fill);
+        predictPoints[i],
+        3.5,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill,
+      );
       canvas.drawCircle(
-          predictPoints[i],
-          3.5,
-          Paint()
-            ..color = const Color(0xFF0EA5E9)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5);
+        predictPoints[i],
+        3.5,
+        Paint()
+          ..color = const Color(0xFF0EA5E9)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
     }
   }
 
@@ -839,5 +1063,8 @@ class _MiniChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MiniChartPainter old) =>
-      old.gridColor != gridColor;
+      old.gridColor != gridColor ||
+      old.currentPrice != currentPrice ||
+      old.predictedPrice != predictedPrice ||
+      old.historicalPrices != historicalPrices;
 }

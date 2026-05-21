@@ -32,15 +32,17 @@ class ChatAiScreen extends StatefulWidget {
 
 class _ChatAiScreenState extends State<ChatAiScreen>
     with TickerProviderStateMixin {
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.10.6.199:8000/api',
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 60),
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: 'http://10.10.185.133:8000/api',
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 60),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    ),
+  );
 
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
@@ -88,15 +90,20 @@ class _ChatAiScreenState extends State<ChatAiScreen>
   // ── Dark mode color helpers ──────────────────────────────────
   static const _blue = Color(0xFF1565C0);
 
-  Color _bg(bool dark) => dark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+  Color _bg(bool dark) =>
+      dark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
   Color _cardBg(bool dark) => dark ? const Color(0xFF1E293B) : Colors.white;
-  Color _chipBg(bool dark) => dark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF);
-  Color _chipBorder(bool dark) => dark ? const Color(0xFF3B82F6).withOpacity(0.4) : _blue.withOpacity(0.3);
+  Color _chipBg(bool dark) =>
+      dark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF);
+  Color _chipBorder(bool dark) =>
+      dark ? const Color(0xFF3B82F6).withOpacity(0.4) : _blue.withOpacity(0.3);
   Color _chipText(bool dark) => dark ? const Color(0xFF93C5FD) : _blue;
-  Color _textPrimary(bool dark) => dark ? Colors.white : const Color(0xFF1E293B);
+  Color _textPrimary(bool dark) =>
+      dark ? Colors.white : const Color(0xFF1E293B);
   Color _textMuted(bool dark) => dark ? Colors.grey[400]! : Colors.grey[500]!;
   Color _inputBg(bool dark) => dark ? const Color(0xFF1E293B) : Colors.white;
-  Color _divider(bool dark) => dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06);
+  Color _divider(bool dark) =>
+      dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06);
 
   @override
   void initState() {
@@ -159,17 +166,23 @@ class _ChatAiScreenState extends State<ChatAiScreen>
       case 1:
         _periode = value;
         _step = 2;
-        _addBotMessage('Baik, untuk periode $_periode.\n\nBerapa jumlah anggota keluarga yang perlu dipenuhi kebutuhan pangannya?');
+        _addBotMessage(
+          'Baik, untuk periode $_periode.\n\nBerapa jumlah anggota keluarga yang perlu dipenuhi kebutuhan pangannya?',
+        );
         break;
       case 2:
         _anggota = value;
         _step = 3;
-        _addBotMessage('Untuk $_anggota selama $_periode.\n\nBerapa total budget belanja pangan Anda?');
+        _addBotMessage(
+          'Untuk $_anggota selama $_periode.\n\nBerapa total budget belanja pangan Anda?',
+        );
         break;
       case 3:
         _budget = value;
         _step = 4;
-        _addBotMessage('Budget $_budget. Bagus!\n\nKomoditas pangan apa saja yang biasanya Anda beli? (Pilih satu atau lebih)');
+        _addBotMessage(
+          'Budget $_budget. Bagus!\n\nKomoditas pangan apa saja yang biasanya Anda beli? (Pilih satu atau lebih)',
+        );
         _loadKomoditas();
         break;
       case 5:
@@ -197,7 +210,9 @@ class _ChatAiScreenState extends State<ChatAiScreen>
       _step = 5;
       _selectedKomSet = {};
     });
-    _addBotMessage('Pilihan komoditas sudah dicatat ✅\n\nTerakhir, apa prioritas utama Anda dalam belanja pangan?');
+    _addBotMessage(
+      'Pilihan komoditas sudah dicatat ✅\n\nTerakhir, apa prioritas utama Anda dalam belanja pangan?',
+    );
   }
 
   Future<void> _loadKomoditas() async {
@@ -217,9 +232,21 @@ class _ChatAiScreenState extends State<ChatAiScreen>
   void _useFallbackKomoditas() {
     setState(() {
       _dbKomoditas = [
-        'Beras', 'Telur', 'Cabai', 'Bawang Merah', 'Bawang Putih',
-        'Daging Sapi', 'Daging Ayam', 'Ikan', 'Sayuran', 'Minyak Goreng',
-        'Gula', 'Tempe', 'Tahu', 'Kentang', 'Wortel',
+        'Beras',
+        'Telur',
+        'Cabai',
+        'Bawang Merah',
+        'Bawang Putih',
+        'Daging Sapi',
+        'Daging Ayam',
+        'Ikan',
+        'Sayuran',
+        'Minyak Goreng',
+        'Gula',
+        'Tempe',
+        'Tahu',
+        'Kentang',
+        'Wortel',
       ];
       _loadingKomoditas = false;
     });
@@ -230,13 +257,16 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     setState(() => _isLoadingAI = true);
 
     try {
-      final res = await _dio.post('/chatai/rekomendasi', data: {
-        'periode': _periode,
-        'anggota': _anggota,
-        'budget': _budget,
-        'komoditas': _komoditas,
-        'prioritas': _prioritas,
-      });
+      final res = await _dio.post(
+        '/chatai/rekomendasi',
+        data: {
+          'periode': _periode,
+          'anggota': _anggota,
+          'budget': _budget,
+          'komoditas': _komoditas,
+          'prioritas': _prioritas,
+        },
+      );
       _removeLastMessage();
       _addBotMessage(res.data['reply'] ?? 'Maaf, tidak ada jawaban dari AI.');
     } on DioException catch (e) {
@@ -254,10 +284,20 @@ class _ChatAiScreenState extends State<ChatAiScreen>
   }
 
   Future<void> _handleFollowUp(String action, String label) async {
-    if (action == 'reset') { _resetWizard(); return; }
+    if (action == 'reset') {
+      _resetWizard();
+      return;
+    }
     if (action == 'resetStep3') {
-      setState(() { _budget = null; _komoditas = []; _prioritas = null; _step = 3; });
-      _addBotMessage('Baik, mari pilih budget yang berbeda!\n\nBerapa total budget belanja pangan Anda?');
+      setState(() {
+        _budget = null;
+        _komoditas = [];
+        _prioritas = null;
+        _step = 3;
+      });
+      _addBotMessage(
+        'Baik, mari pilih budget yang berbeda!\n\nBerapa total budget belanja pangan Anda?',
+      );
       return;
     }
 
@@ -265,7 +305,10 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     _addBotMessage('Sedang mencari informasi...', isLoading: true);
 
     try {
-      final res = await _dio.post('/chatai/followup', data: {'action': action, 'komoditas': _komoditas});
+      final res = await _dio.post(
+        '/chatai/followup',
+        data: {'action': action, 'komoditas': _komoditas},
+      );
       _removeLastMessage();
       _addBotMessage(res.data['reply'] ?? 'Tidak ada jawaban.');
     } on DioException catch (_) {
@@ -326,28 +369,45 @@ class _ChatAiScreenState extends State<ChatAiScreen>
       title: Row(
         children: [
           Container(
-            width: 34, height: 34,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.smart_toy_outlined, size: 18, color: Colors.white),
+            child: const Icon(
+              Icons.smart_toy_outlined,
+              size: 18,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('SIMOPANG AI',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+              const Text(
+                'SIMOPANG AI',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               Row(
                 children: [
                   Container(
-                    width: 6, height: 6,
-                    decoration: const BoxDecoration(color: Color(0xFF4ADE80), shape: BoxShape.circle),
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4ADE80),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                   const SizedBox(width: 4),
-                  const Text('Aktif & siap membantu',
-                      style: TextStyle(fontSize: 11, color: Colors.white70)),
+                  const Text(
+                    'Aktif & siap membantu',
+                    style: TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
                 ],
               ),
             ],
@@ -365,7 +425,14 @@ class _ChatAiScreenState extends State<ChatAiScreen>
   }
 
   Widget _buildStepIndicator() {
-    final steps = ['Waktu', 'Anggota', 'Budget', 'Komoditas', 'Prioritas', 'Hasil'];
+    final steps = [
+      'Waktu',
+      'Anggota',
+      'Budget',
+      'Komoditas',
+      'Prioritas',
+      'Hasil',
+    ];
     final currentStep = _step > 6 ? 6 : _step;
 
     return Container(
@@ -384,24 +451,27 @@ class _ChatAiScreenState extends State<ChatAiScreen>
                   children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      width: 22, height: 22,
+                      width: 22,
+                      height: 22,
                       decoration: BoxDecoration(
                         color: isDone
                             ? const Color(0xFF4ADE80)
                             : isActive
-                                ? Colors.white
-                                : Colors.white.withOpacity(0.2),
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.2),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: isDone
                             ? const Icon(Icons.check, size: 12, color: _blue)
-                            : Text('$stepNum',
+                            : Text(
+                                '$stepNum',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: isActive ? _blue : Colors.white54,
-                                )),
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -409,8 +479,12 @@ class _ChatAiScreenState extends State<ChatAiScreen>
                       steps[i],
                       style: TextStyle(
                         fontSize: 8,
-                        color: isActive || isDone ? Colors.white : Colors.white38,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                        color: isActive || isDone
+                            ? Colors.white
+                            : Colors.white38,
+                        fontWeight: isActive
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -420,7 +494,9 @@ class _ChatAiScreenState extends State<ChatAiScreen>
                     child: Container(
                       height: 1.5,
                       margin: const EdgeInsets.only(bottom: 14),
-                      color: isDone ? const Color(0xFF4ADE80) : Colors.white.withOpacity(0.2),
+                      color: isDone
+                          ? const Color(0xFF4ADE80)
+                          : Colors.white.withOpacity(0.2),
                     ),
                   ),
               ],
@@ -438,27 +514,38 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: msg.isBot ? MainAxisAlignment.start : MainAxisAlignment.end,
+        mainAxisAlignment: msg.isBot
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (msg.isBot) ...[
             Container(
-              width: 28, height: 28,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: _blue.withOpacity(isDark ? 0.3 : 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.smart_toy_outlined, size: 14,
-                  color: isDark ? const Color(0xFF93C5FD) : _blue),
+              child: Icon(
+                Icons.smart_toy_outlined,
+                size: 14,
+                color: isDark ? const Color(0xFF93C5FD) : _blue,
+              ),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: msg.isBot ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+              crossAxisAlignment: msg.isBot
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: msg.isBot ? botBubbleBg : userBubbleBg,
                     borderRadius: BorderRadius.only(
@@ -481,7 +568,9 @@ class _ChatAiScreenState extends State<ChatAiScreen>
                           msg.text,
                           style: TextStyle(
                             fontSize: 13,
-                            color: msg.isBot ? _textPrimary(isDark) : Colors.white,
+                            color: msg.isBot
+                                ? _textPrimary(isDark)
+                                : Colors.white,
                             height: 1.5,
                           ),
                         ),
@@ -511,9 +600,12 @@ class _ChatAiScreenState extends State<ChatAiScreen>
             duration: Duration(milliseconds: 500 + i * 150),
             builder: (_, val, __) => Container(
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: 7, height: 7,
+              width: 7,
+              height: 7,
               decoration: BoxDecoration(
-                color: (isDark ? const Color(0xFF93C5FD) : _blue).withOpacity(val),
+                color: (isDark ? const Color(0xFF93C5FD) : _blue).withOpacity(
+                  val,
+                ),
                 shape: BoxShape.circle,
               ),
             ),
@@ -531,9 +623,7 @@ class _ChatAiScreenState extends State<ChatAiScreen>
       ),
       decoration: BoxDecoration(
         color: _inputBg(isDark),
-        border: Border(
-          top: BorderSide(color: _divider(isDark), width: 1),
-        ),
+        border: Border(top: BorderSide(color: _divider(isDark), width: 1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
@@ -568,13 +658,20 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     }
 
     switch (_step) {
-      case 1:  return _buildChoiceButtons(_periodeChoices, isDark);
-      case 2:  return _buildChoiceButtons(_anggotaChoices, isDark);
-      case 3:  return _buildChoiceButtons(_budgetChoices, isDark);
-      case 4:  return _buildKomoditasSelector(isDark);
-      case 5:  return _buildChoiceButtons(_prioritasChoices, isDark);
-      case 99: return _buildFollowUpButtons(isDark);
-      default: return const SizedBox.shrink();
+      case 1:
+        return _buildChoiceButtons(_periodeChoices, isDark);
+      case 2:
+        return _buildChoiceButtons(_anggotaChoices, isDark);
+      case 3:
+        return _buildChoiceButtons(_budgetChoices, isDark);
+      case 4:
+        return _buildKomoditasSelector(isDark);
+      case 5:
+        return _buildChoiceButtons(_prioritasChoices, isDark);
+      case 99:
+        return _buildFollowUpButtons(isDark);
+      default:
+        return const SizedBox.shrink();
     }
   }
 
@@ -615,15 +712,18 @@ class _ChatAiScreenState extends State<ChatAiScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                width: 16, height: 16,
+                width: 16,
+                height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: isDark ? const Color(0xFF93C5FD) : _blue,
                 ),
               ),
               const SizedBox(width: 8),
-              Text('Memuat komoditas...',
-                  style: TextStyle(color: _textMuted(isDark), fontSize: 13)),
+              Text(
+                'Memuat komoditas...',
+                style: TextStyle(color: _textMuted(isDark), fontSize: 13),
+              ),
             ],
           ),
         ),
@@ -665,7 +765,11 @@ class _ChatAiScreenState extends State<ChatAiScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: List.generate(rowCount, (row) {
                 final rowItems = <Widget>[];
-                for (int col = 0; col * rowCount + row < _dbKomoditas.length; col++) {
+                for (
+                  int col = 0;
+                  col * rowCount + row < _dbKomoditas.length;
+                  col++
+                ) {
                   final nama = _dbKomoditas[col * rowCount + row];
                   final isSelected = _selectedKomSet.contains(nama);
                   rowItems.add(
@@ -673,16 +777,19 @@ class _ChatAiScreenState extends State<ChatAiScreen>
                       padding: const EdgeInsets.only(right: 8, bottom: 6),
                       child: GestureDetector(
                         onTap: () => setState(() {
-                          if (isSelected) _selectedKomSet.remove(nama);
-                          else _selectedKomSet.add(nama);
+                          if (isSelected)
+                            _selectedKomSet.remove(nama);
+                          else
+                            _selectedKomSet.add(nama);
                         }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? _blue
-                                : _chipBg(isDark),
+                            color: isSelected ? _blue : _chipBg(isDark),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isSelected ? _blue : _chipBorder(isDark),
@@ -692,8 +799,12 @@ class _ChatAiScreenState extends State<ChatAiScreen>
                             nama,
                             style: TextStyle(
                               fontSize: 12,
-                              color: isSelected ? Colors.white : _chipText(isDark),
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                              color: isSelected
+                                  ? Colors.white
+                                  : _chipText(isDark),
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
                         ),
@@ -714,8 +825,12 @@ class _ChatAiScreenState extends State<ChatAiScreen>
             onPressed: _selectedKomSet.isEmpty ? null : _confirmKomoditas,
             style: ElevatedButton.styleFrom(
               backgroundColor: _blue,
-              disabledBackgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              disabledBackgroundColor: isDark
+                  ? Colors.grey[700]
+                  : Colors.grey[300],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(vertical: 12),
               elevation: 0,
             ),
@@ -723,7 +838,10 @@ class _ChatAiScreenState extends State<ChatAiScreen>
               _selectedKomSet.isEmpty
                   ? 'Pilih minimal 1 komoditas'
                   : '✓ Lanjutkan (${_selectedKomSet.length} dipilih)',
-              style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
           ),
         ),

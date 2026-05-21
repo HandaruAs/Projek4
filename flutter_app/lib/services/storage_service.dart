@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class StorageService {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   static const String _tokenKey = 'auth_token';
-  static const String _userKey = 'user_data';
+  static const String _userKey  = 'user_data';
 
   // Token management
   Future<void> saveToken(String token) async {

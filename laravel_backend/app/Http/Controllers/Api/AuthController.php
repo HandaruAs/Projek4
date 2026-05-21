@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Carbon\Carbon;
@@ -22,14 +23,12 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
-
         if (!$user) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Akun tidak ditemukan'
             ], 404);
         }
-
 
         if ($user->role === 'admin') {
             return response()->json([
@@ -38,7 +37,6 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // ❌ kalau password salah
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status'  => 'error',
@@ -51,14 +49,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'data'   => [
-                'user' => [
-                    'id'    => (string) $user->_id,
-                    'name'  => $user->name,
-                    'email' => $user->email,
-                    'role'  => $user->role,
-                    'phone' => $user->phone ?? '',
-                    'address' => $user->address ?? '',
-                ],
+                'user'  => $this->formatUser($user),
                 'token' => $token
             ]
         ]);
@@ -69,14 +60,15 @@ class AuthController extends Controller
     // REGISTER USER
     // ─────────────────────────────────────────────
     public function registerUser(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'name'     => 'required|string|max:255',
-        'email'    => ['required', 'email', 'unique:users,email', 'regex:/^[a-zA-Z0-9._%+\-]+@gmail\.com$/'],
-        'password' => 'required|string|min:6',
-    ], [
-        'email.regex' => 'Email harus menggunakan @gmail.com',
-    ]);
+    {
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string|max:255',
+            'email'    => ['required', 'email', 'unique:users,email', 'regex:/^[a-zA-Z0-9._%+\-]+@gmail\.com$/'],
+            'password' => 'required|string|min:6',
+        ], [
+            'email.regex' => 'Email harus menggunakan @gmail.com',
+        ]);
+
         if ($validator->fails()) {
             return response()->json([
                 'status'  => 'error',
@@ -96,12 +88,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'data'   => [
-                'user'  => [
-                    'id'    => (string) $user->_id,
-                    'name'  => $user->name,
-                    'email' => $user->email,
-                    'role'  => $user->role, // ✅ pastikan role ikut di response
-                ],
+                'user'  => $this->formatUser($user),
                 'token' => $token,
             ],
         ]);
@@ -111,26 +98,26 @@ class AuthController extends Controller
     // ─────────────────────────────────────────────
     // REGISTER ADMIN
     // ─────────────────────────────────────────────
-  public function registerAdmin(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'name'     => 'required|string|max:255',
-        'email'    => ['required', 'email', 'unique:users,email', 'regex:/^[a-zA-Z0-9._%+\-]+@gmail\.com$/'],
-        'password' => 'required|string|min:6',
-    ], [
-        'email.regex' => 'Email harus menggunakan @gmail.com',
-    ]);
+    public function registerAdmin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string|max:255',
+            'email'    => ['required', 'email', 'unique:users,email', 'regex:/^[a-zA-Z0-9._%+\-]+@gmail\.com$/'],
+            'password' => 'required|string|min:6',
+        ], [
+            'email.regex' => 'Email harus menggunakan @gmail.com',
+        ]);
 
-    if ($validator->fails()) {
-        return back()->withErrors($validator)->withInput();
-    }
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
 
-    $user = User::create([
-        'name'     => $request->name,
-        'email'    => $request->email,
-        'password' => Hash::make($request->password),
-        'role'     => 'admin'
-    ]);
+        $user = User::create([
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+            'role'     => 'admin'
+        ]);
 
     return response()->json([
         'status'  => 'success',
@@ -171,7 +158,6 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        // Selalu kembalikan sukses agar email tidak bisa di-enumerate
         if (!$user) {
             return response()->json([
                 'status'  => 'success',
@@ -179,14 +165,12 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Generate OTP 6 digit
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         $user->otp_code       = $otp;
-        $user->otp_expires_at = Carbon::now()->addMinutes(10); // berlaku 10 menit
+        $user->otp_expires_at = Carbon::now()->addMinutes(10);
         $user->save();
 
-        // Kirim OTP via email
         Mail::send([], [], function ($message) use ($user, $otp) {
             $message->to($user->email)
                     ->subject('Kode OTP Reset Password SIMOPANG')
@@ -247,7 +231,6 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Tandai OTP telah diverifikasi — perpanjang window 10 menit untuk reset
         $user->otp_expires_at = Carbon::now()->addMinutes(10);
         $user->save();
 
@@ -293,7 +276,6 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Update password & hapus OTP
         $user->password       = Hash::make($request->password);
         $user->otp_code       = null;
         $user->otp_expires_at = null;
@@ -305,25 +287,24 @@ class AuthController extends Controller
         ]);
     }
 
+
     // ─────────────────────────────────────────────
     // GET PROFILE
     // ─────────────────────────────────────────────
     public function getProfile()
     {
         $user = auth()->user();
+
         return response()->json([
             'status' => 'success',
-            'data'   => [
-                'id'      => (string) $user->_id,
-                'name'    => $user->name,
-                'email'   => $user->email,
-                'phone'   => $user->phone   ?? '',
-                'address' => $user->address ?? '',
-                'role'    => $user->role,
-            ]
+            'data'   => $this->formatUser($user),
         ]);
     }
 
+
+    // ─────────────────────────────────────────────
+    // UPDATE PROFILE (nama, email, phone, address, avatar)
+    // ─────────────────────────────────────────────
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
@@ -333,6 +314,7 @@ class AuthController extends Controller
             'email'   => 'sometimes|email|unique:users,email,' . $user->_id . ',_id',
             'phone'   => 'sometimes|nullable|string|max:20',
             'address' => 'sometimes|nullable|string|max:500',
+            'avatar'  => 'sometimes|nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -342,26 +324,63 @@ class AuthController extends Controller
             ], 422);
         }
 
-        if ($request->filled('name'))    $user->name    = $request->name;
-        if ($request->filled('email'))   $user->email   = $request->email;
-        if ($request->has('phone'))      $user->phone   = $request->phone;
-        if ($request->has('address'))    $user->address = $request->address;
+        // ── Update field teks ──────────────────────────────
+        if ($request->filled('name'))  $user->name = $request->name;
+        if ($request->filled('email')) $user->email = $request->email;
+
+        if ($request->has('phone')) {
+            $user->phone   = $request->phone; // ← field Flutter
+            $user->telepon = $request->phone; // ← sync ke field web
+        }
+        if ($request->has('address')) {
+            $user->address = $request->address; // ← field Flutter
+            $user->alamat  = $request->address; // ← sync ke field web
+        }
+
+        // ── Upload avatar baru ─────────────────────────────
+        if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
+            if (!empty($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $path = $request->file('avatar')->store(
+                'avatars/' . (string) $user->_id,
+                'public'
+            );
+
+            $user->avatar = $path;
+        }
 
         $user->save();
 
         return response()->json([
             'status'  => 'success',
             'message' => 'Profil berhasil diperbarui',
-            'data'    => [
-                'id'      => (string) $user->_id,
-                'name'    => $user->name,
-                'email'   => $user->email,
-                'phone'   => $user->phone   ?? '',
-                'address' => $user->address ?? '',
-                'role'    => $user->role,
-            ]
+            'data'    => $this->formatUser($user),
         ]);
     }
+
+
+    // ─────────────────────────────────────────────
+    // REMOVE AVATAR — hapus foto profil
+    // ─────────────────────────────────────────────
+    public function removeAvatar()
+    {
+        $user = auth()->user();
+
+        if (!empty($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+            $user->avatar = null;
+            $user->save();
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Foto profil berhasil dihapus',
+            'data'    => $this->formatUser($user),
+        ]);
+    }
+
 
     // ─────────────────────────────────────────────
     // CHANGE PASSWORD (user harus login)
@@ -369,8 +388,8 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'old_password' => 'required|string',
-            'password'     => 'required|string|min:6',
+            'old_password'          => 'required|string',
+            'password'              => 'required|string|min:6',
             'password_confirmation' => 'required|same:password',
         ]);
 
@@ -397,5 +416,30 @@ class AuthController extends Controller
             'status'  => 'success',
             'message' => 'Password berhasil diubah',
         ]);
+    }
+
+
+    // ─────────────────────────────────────────────
+    // HELPER — format data user untuk response
+    // ─────────────────────────────────────────────
+    private function formatUser(User $user): array
+    {
+        $avatarUrl = '';
+        if (!empty($user->avatar)) {
+            $baseUrl   = request()->getSchemeAndHttpHost();
+            $avatarUrl = $baseUrl . '/storage/' . $user->avatar;
+        }
+
+        return [
+            'id'         => (string) $user->_id,
+            'name'       => $user->name,
+            'email'      => $user->email,
+            'role'       => $user->role,
+            // ← baca kedua kemungkinan field, prioritas phone/address (Flutter)
+            // fallback ke telepon/alamat (web) jika belum pernah diupdate via Flutter
+            'phone'      => $user->phone   ?? $user->telepon ?? '',
+            'address'    => $user->address ?? $user->alamat  ?? '',
+            'avatar_url' => $avatarUrl,
+        ];
     }
 }

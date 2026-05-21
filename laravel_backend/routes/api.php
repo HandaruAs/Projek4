@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\StatisticsController;
 use App\Http\Controllers\Api\PredictionController;
 use App\Http\Controllers\Api\PriceLatestController;
 use App\Http\Controllers\Web\UserChatAiController;
+use App\Http\Controllers\Web\NotificationController;
 
 // ── Chat AI ─────────────────────────────────────────────
 Route::get('/chatai/komoditas',    [UserChatAiController::class, 'komoditas']);
@@ -50,6 +51,11 @@ Route::post('/chatai/followup',    [UserChatAiController::class, 'followup']);
 Route::middleware('auth:api')->group(function () {
     Route::get('/profile',  [AuthController::class, 'getProfile']);
     Route::put('/profile',  [AuthController::class, 'updateProfile']);
+    Route::post('/profile', [AuthController::class, 'updateProfile']); 
+    Route::delete('profile/avatar', [AuthController::class, 'removeAvatar']);
+    Route::get('/notifications',             [NotificationController::class, 'index']);
+    Route::post('/notifications/read-all',   [NotificationController::class, 'markAllRead']);
+    Route::post('/notifications/{id}/read',  [NotificationController::class, 'markRead']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout',  [AuthController::class, 'logout']);
 });

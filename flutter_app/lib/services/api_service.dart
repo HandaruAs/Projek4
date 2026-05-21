@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_app/services/storage_service.dart';
@@ -9,7 +10,7 @@ class ApiService {
 
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: 'http://10.10.180.5:8000/api',
+      baseUrl: 'http://10.10.183.93:8000/api',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {
@@ -19,9 +20,12 @@ class ApiService {
     ),
   );
 
+  Dio get dio => _dio;
+
   final StorageService _storageService = StorageService();
 
-  Future<void> _addAuthHeader() async {
+  // ← Hapus underscore agar bisa dipakai service lain
+  Future<void> addAuthHeader() async {
     final token = await _storageService.getToken();
     if (token != null && token.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Bearer $token';
@@ -125,7 +129,7 @@ class ApiService {
 
   Future<void> logout() async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       await _dio.post('/logout');
     } on DioException catch (e) {
       if (kDebugMode) print('Logout error: ${e.message}');
@@ -138,7 +142,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> getProfile() async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       final response = await _dio.get('/profile');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
@@ -153,18 +157,52 @@ class ApiService {
     String? email,
     String? phone,
     String? address,
+    File? avatarFile,
   }) async {
     try {
-      await _addAuthHeader();
-      final response = await _dio.put(
-        '/profile',
-        data: {
+      await addAuthHeader(); // ← updated
+
+      if (avatarFile != null) {
+        final formData = FormData.fromMap({
           if (name != null) 'name': name,
           if (email != null) 'email': email,
           if (phone != null) 'phone': phone,
           if (address != null) 'address': address,
-        },
-      );
+          '_method': 'PUT',
+          'avatar': await MultipartFile.fromFile(
+            avatarFile.path,
+            filename: avatarFile.path.split('/').last,
+          ),
+        });
+        final response = await _dio.post(
+          '/profile',
+          data: formData,
+          options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+        );
+        return Map<String, dynamic>.from(response.data);
+      } else {
+        final response = await _dio.put(
+          '/profile',
+          data: {
+            if (name != null) 'name': name,
+            if (email != null) 'email': email,
+            if (phone != null) 'phone': phone,
+            if (address != null) 'address': address,
+          },
+        );
+        return Map<String, dynamic>.from(response.data);
+      }
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> removeAvatar() async {
+    try {
+      await addAuthHeader(); // ← updated
+      final response = await _dio.delete('/profile/avatar');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
       if (e.response != null)
@@ -178,7 +216,7 @@ class ApiService {
     required String newPassword,
   }) async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       final response = await _dio.post(
         '/change-password',
         data: {
@@ -242,7 +280,6 @@ class ApiService {
     String period,
   ) async {
     try {
-      // Tentukan jumlah data berdasarkan periode
       int perPage;
       switch (period) {
         case '7days':
@@ -273,10 +310,6 @@ class ApiService {
     }
   }
 
-  /// GET /api/prices/latest
-  /// Harga terbaru semua komoditas.
-  /// [category] opsional untuk filter kategori.
-  /// [search] opsional untuk filter nama komoditas.
   Future<Map<String, dynamic>> getLatestPrices({
     String? category,
     String? search,
@@ -299,8 +332,6 @@ class ApiService {
     }
   }
 
-  /// GET /api/prices/top?limit=3
-  /// Top N komoditas dengan harga tertinggi.
   Future<Map<String, dynamic>> getTopPrices({int limit = 3}) async {
     try {
       final response = await _dio.get(
@@ -315,8 +346,6 @@ class ApiService {
     }
   }
 
-  /// GET /api/prices/categories
-  /// Daftar kategori unik dari seluruh komoditas.
   Future<Map<String, dynamic>> getPriceCategories() async {
     try {
       final response = await _dio.get('/prices/categories');
@@ -341,16 +370,29 @@ class ApiService {
       return [];
     }
   }
+
   // ══════════════════════════════════════════════════════════
   // PREDICTIONS
   // ══════════════════════════════════════════════════════════
+
+  Future<Map<String, dynamic>> getPrediction(String komoditas) async {
+    try {
+      final encoded = Uri.encodeComponent(komoditas);
+      final response = await _dio.get('/predictions/$encoded');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
 
   Future<Map<String, dynamic>> predictPrice(
     String commodityName,
     double quantity,
   ) async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       final response = await _dio.post(
         '/predictions/generate',
         data: {'komoditas': commodityName, 'steps': 30},
