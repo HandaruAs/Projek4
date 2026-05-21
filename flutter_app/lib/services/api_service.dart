@@ -7,15 +7,17 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://127.0.0.1:8000/api',
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: 'http://10.10.180.5:8000/api',
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    ),
+  );
 
   final StorageService _storageService = StorageService();
 
@@ -52,12 +54,15 @@ class ApiService {
   }) async {
     try {
       final endpoint = role == 'admin' ? '/register/admin' : '/register/user';
-      final response = await _dio.post(endpoint, data: {
-        'name': name,
-        'email': email,
-        'password': password,
-        'password_confirmation': password,
-      });
+      final response = await _dio.post(
+        endpoint,
+        data: {
+          'name': name,
+          'email': email,
+          'password': password,
+          'password_confirmation': password,
+        },
+      );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
       if (e.response != null)
@@ -101,12 +106,15 @@ class ApiService {
     String passwordConfirmation,
   ) async {
     try {
-      final response = await _dio.post('/reset-password', data: {
-        'email': email,
-        'otp': otp,
-        'password': password,
-        'password_confirmation': passwordConfirmation,
-      });
+      final response = await _dio.post(
+        '/reset-password',
+        data: {
+          'email': email,
+          'otp': otp,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+      );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
       if (e.response != null)
@@ -148,12 +156,15 @@ class ApiService {
   }) async {
     try {
       await _addAuthHeader();
-      final response = await _dio.put('/profile', data: {
-        if (name != null) 'name': name,
-        if (email != null) 'email': email,
-        if (phone != null) 'phone': phone,
-        if (address != null) 'address': address,
-      });
+      final response = await _dio.put(
+        '/profile',
+        data: {
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
+          if (phone != null) 'phone': phone,
+          if (address != null) 'address': address,
+        },
+      );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
       if (e.response != null)
@@ -168,11 +179,14 @@ class ApiService {
   }) async {
     try {
       await _addAuthHeader();
-      final response = await _dio.post('/change-password', data: {
-        'old_password': oldPassword,
-        'password': newPassword,
-        'password_confirmation': newPassword,
-      });
+      final response = await _dio.post(
+        '/change-password',
+        data: {
+          'old_password': oldPassword,
+          'password': newPassword,
+          'password_confirmation': newPassword,
+        },
+      );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
       if (e.response != null)
@@ -195,7 +209,8 @@ class ApiService {
         debugPrint('=== TOTAL COMMODITIES: ${list.length}');
         list.take(3).forEach((item) {
           debugPrint(
-              '=== item: name=${item['name']}, category=${item['category']}');
+            '=== item: name=${item['name']}, category=${item['category']}',
+          );
         });
       }
 
@@ -227,43 +242,27 @@ class ApiService {
     String period,
   ) async {
     try {
-      final now = DateTime.now();
-      final endDate = now.toIso8601String().substring(0, 10);
-      late String startDate;
-
+      // Tentukan jumlah data berdasarkan periode
+      int perPage;
       switch (period) {
         case '7days':
-          startDate = now
-              .subtract(const Duration(days: 7))
-              .toIso8601String()
-              .substring(0, 10);
+          perPage = 7;
           break;
         case '30days':
-          startDate = now
-              .subtract(const Duration(days: 30))
-              .toIso8601String()
-              .substring(0, 10);
+          perPage = 30;
           break;
         case '3months':
-          startDate = now
-              .subtract(const Duration(days: 90))
-              .toIso8601String()
-              .substring(0, 10);
+          perPage = 90;
           break;
         default:
-          startDate = now
-              .subtract(const Duration(days: 7))
-              .toIso8601String()
-              .substring(0, 10);
+          perPage = 30;
       }
 
       final response = await _dio.get(
         '/price-histories',
         queryParameters: {
           'commodity_id': commodityId,
-          'start_date': startDate,
-          'end_date': endDate,
-          'per_page': '200',
+          'per_page': perPage.toString(),
         },
       );
       return Map<String, dynamic>.from(response.data);
@@ -329,19 +328,32 @@ class ApiService {
     }
   }
 
+  Future<List<String>> getPredictableCommodities() async {
+    try {
+      final response = await _dio.get('/predictions');
+      final data = response.data;
+      if (data['success'] == true && data['data'] != null) {
+        return List<String>.from(data['data']);
+      }
+      return [];
+    } on DioException catch (e) {
+      if (kDebugMode) print('getPredictableCommodities error: $e');
+      return [];
+    }
+  }
   // ══════════════════════════════════════════════════════════
   // PREDICTIONS
   // ══════════════════════════════════════════════════════════
 
   Future<Map<String, dynamic>> predictPrice(
-    String commodityId,
+    String commodityName,
     double quantity,
   ) async {
     try {
       await _addAuthHeader();
       final response = await _dio.post(
         '/predictions/generate',
-        data: {'commodity_id': commodityId, 'quantity': quantity},
+        data: {'komoditas': commodityName, 'steps': 30},
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {

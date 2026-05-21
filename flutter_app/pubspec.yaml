@@ -31,11 +31,23 @@ dependencies:
   
   # Image
   cached_network_image: ^3.3.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/LOGO-2.png"
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
+
+
+  assets:
+    - assets/images/

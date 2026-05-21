@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/screens/user/notification_screen.dart';
 import 'package:flutter_app/screens/user/settings_screen.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_app/screens/user/home_screen.dart';
 import 'package:flutter_app/screens/user/prediction_screen.dart';
 import 'package:flutter_app/screens/user/statistics_screen.dart';
 import 'package:flutter_app/screens/user/profile_screen.dart';
+import 'package:flutter_app/screens/user/chat_ai_screen.dart';
 
 class UserMainScreen extends StatefulWidget {
   const UserMainScreen({super.key});
@@ -14,15 +16,15 @@ class UserMainScreen extends StatefulWidget {
   State<UserMainScreen> createState() => _UserMainScreenState();
 }
 
-class _UserMainScreenState extends State<UserMainScreen> {
+class _UserMainScreenState extends State<UserMainScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
 
+  late AnimationController _pulseController;
+  late Animation<double>   _pulseAnim;
+
   final List<String> _titles = [
-    'Beranda',
-    'Prediksi',
-    'Statistik',
-    'Simulasi',
-    'Profil',
+    'Beranda', 'Prediksi', 'Statistik', 'Simulasi', 'Profil',
   ];
 
   final List<Widget> _screens = const [
@@ -33,8 +35,45 @@ class _UserMainScreenState extends State<UserMainScreen> {
     ProfileScreen(),
   ];
 
-  // Jumlah notif belum dibaca — nantinya bisa dari provider/state management
   int _unreadCount = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _pulseAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  void _openChatAI() {
+    final size = MediaQuery.of(context).size;
+
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, animation, __) => const ChatAiScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return _CircularRevealTransition(
+            animation: animation,
+            centerOffset: Offset(size.width, size.height),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +81,6 @@ class _UserMainScreenState extends State<UserMainScreen> {
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
         actions: [
-
           // ── Notifikasi ──
           Stack(
             children: [
@@ -51,87 +89,203 @@ class _UserMainScreenState extends State<UserMainScreen> {
                 onPressed: () async {
                   await Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const NotificationScreen()),
                   );
-                  // Setelah kembali, update badge (nanti dari provider)
                   setState(() => _unreadCount = 0);
                 },
               ),
               if (_unreadCount > 0)
                 Positioned(
-                  right: 8,
-                  top: 8,
+                  right: 8, top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(3),
                     decoration: const BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(
-                        minWidth: 16, minHeight: 16),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                     child: Text(
                       '$_unreadCount',
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold),
+                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
                 ),
             ],
           ),
-
           // ── Pengaturan ──
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const SettingsScreen()),
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
             ),
           ),
         ],
       ),
+
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        selectedItemColor: const Color(0xFF1976D2),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Beranda',
+
+      // ── Floating Button AI ──────────────────────────────
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: ScaleTransition(
+          scale: _pulseAnim,
+          child: GestureDetector(
+            onTap: _openChatAI,
+            child: Container(
+              width: 58, height: 58,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Color.fromRGBO(21, 101, 192, 0.45),
+                    blurRadius: 16,
+                    offset: Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: Color.fromRGBO(255, 255, 255, 0.2),
+                    blurRadius: 4,
+                    offset: Offset(-2, -2),
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: Color.fromRGBO(255, 255, 255, 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ],
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.trending_up_outlined),
-            activeIcon: Icon(Icons.trending_up),
-            label: 'Prediksi',
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+      // ── Bottom Navigation ────────────────────────────────
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 6,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              _buildNavItem(0, Icons.home_outlined,        Icons.home,        'Beranda'),
+              _buildNavItem(1, Icons.trending_up_outlined,  Icons.trending_up, 'Prediksi'),
+              _buildNavItem(2, Icons.bar_chart_outlined,    Icons.bar_chart,   'Statistik'),
+              _buildNavItem(3, Icons.calculate_outlined,    Icons.calculate,   'Simulasi'),
+              _buildNavItem(4, Icons.person_outline,        Icons.person,      'Profil'),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Statistik',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calculate_outlined),
-            activeIcon: Icon(Icons.calculate),
-            label: 'Simulasi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
+        ),
       ),
     );
   }
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isActive = _selectedIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              size: 22,
+              color: isActive ? const Color(0xFF1976D2) : Colors.grey[500],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: isActive ? const Color(0xFF1976D2) : Colors.grey[500],
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CIRCULAR REVEAL TRANSITION
+// ═══════════════════════════════════════════════════════════════
+class _CircularRevealTransition extends StatelessWidget {
+  final Animation<double> animation;
+  final Offset centerOffset;
+  final Widget child;
+
+  const _CircularRevealTransition({
+    required this.animation,
+    required this.centerOffset,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        return ClipPath(
+          clipper: _CircularRevealClipper(
+            fraction: animation.value,
+            centerOffset: centerOffset,
+          ),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+class _CircularRevealClipper extends CustomClipper<Path> {
+  final double fraction;
+  final Offset centerOffset;
+
+  _CircularRevealClipper({
+    required this.fraction,
+    required this.centerOffset,
+  });
+
+  @override
+  Path getClip(Size size) {
+    // Hitung jarak dari pojok kanan bawah ke pojok kiri atas (diagonal)
+    final double maxRadius = sqrt(
+      pow(centerOffset.dx, 2) + pow(centerOffset.dy, 2),
+    );
+    final double radius = maxRadius * fraction;
+
+    return Path()
+      ..addOval(Rect.fromCircle(center: centerOffset, radius: radius));
+  }
+
+  @override
+  bool shouldReclip(_CircularRevealClipper oldClipper) =>
+      oldClipper.fraction != fraction;
 }

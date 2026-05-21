@@ -3,6 +3,7 @@ from pymongo import MongoClient, DESCENDING
 from groq import Groq
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+import traceback  # TAMBAHAN
 import os
 
 load_dotenv()
@@ -169,7 +170,7 @@ def chat():
     try:
         body = request.get_json()
         pertanyaan = body.get("pertanyaan", "").strip()
-        history    = body.get("history", [])   # riwayat percakapan sebelumnya
+        history    = body.get("history", [])
 
         if not pertanyaan:
             return jsonify({"success": False, "error": "Pertanyaan tidak boleh kosong"}), 400
@@ -187,7 +188,7 @@ def chat():
             {"role": "system", "content": build_system_prompt(ctx_ringkasan, ctx_tren)}
         ]
 
-        # Tambahkan history percakapan (maks 6 pesan terakhir agar tidak terlalu panjang)
+        # Tambahkan history percakapan (maks 6 pesan terakhir)
         for msg in history[-6:]:
             if msg.get("role") in ("user", "assistant"):
                 messages.append({"role": msg["role"], "content": msg["content"]})
@@ -213,6 +214,7 @@ def chat():
         })
 
     except Exception as e:
+        traceback.print_exc()  # TAMBAHAN: print detail error ke terminal
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -223,10 +225,6 @@ def chat():
 
 @ai_bp.route('/api/ai/pertanyaan-sistem', methods=['GET'])
 def pertanyaan_sistem():
-    """
-    Mengembalikan daftar pertanyaan yang sudah disiapkan sistem.
-    Laravel tinggal fetch endpoint ini lalu tampilkan ke user.
-    """
     pertanyaan = [
         {
             "id": 1,
@@ -276,15 +274,10 @@ def pertanyaan_sistem():
 
 @ai_bp.route('/api/ai/tanya-sistem', methods=['POST'])
 def tanya_sistem():
-    """
-    Laravel kirim ID pertanyaan → Flask cari pertanyaannya →
-    tanya ke Groq dengan data MongoDB → kembalikan jawaban
-    """
     try:
         body = request.get_json()
         pertanyaan_id = body.get("pertanyaan_id")
 
-        # Map ID ke teks pertanyaan
         peta_pertanyaan = {
             1: "Komoditas apa yang mengalami kenaikan harga tertinggi saat ini? Sebutkan nama komoditas, harga, dan persentase kenaikannya.",
             2: "Bagaimana tren harga pangan di Jember dalam 7 hari terakhir? Berikan analisis singkat.",
@@ -298,7 +291,6 @@ def tanya_sistem():
         if not pertanyaan:
             return jsonify({"success": False, "error": "ID pertanyaan tidak valid"}), 400
 
-        # Ambil data MongoDB
         ringkasan   = get_ringkasan_harga()
         data_7_hari = get_data_7_hari()
 
@@ -328,6 +320,7 @@ def tanya_sistem():
         })
 
     except Exception as e:
+        traceback.print_exc()  # TAMBAHAN: print detail error ke terminal
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -348,4 +341,5 @@ def status():
             "timestamp": datetime.now().isoformat(),
         })
     except Exception as e:
+        traceback.print_exc()  # TAMBAHAN: print detail error ke terminal
         return jsonify({"success": False, "status": "error", "error": str(e)}), 500

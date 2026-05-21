@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
-import 'package:flutter_app/screens/User/main_screen.dart'; // ✅ hanya import UserMainScreen
+import 'package:flutter_app/screens/User/main_screen.dart';
 import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -41,7 +41,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _animationController.forward();
-
     _checkLoginStatus();
   }
 
@@ -55,7 +54,6 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    // ✅ Tidak perlu cek role — semua user langsung ke UserMainScreen
     if (authProvider.isAuthenticated) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const UserMainScreen()),
@@ -85,37 +83,32 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+
+                // ── Logo SIMOPANG ──────────────────────────────
                 Container(
-                  width: 120,
-                  height: 120,
+                  width: 140,
+                  height: 140,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF1976D2),
-                        Color(0xFF64B5F6),
-                      ],
-                    ),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1976D2).withValues(alpha: 0.3),
-                        blurRadius: 20,
+                        color: const Color(0xFF1976D2).withValues(alpha: 0.25),
+                        blurRadius: 24,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.agriculture,
-                      size: 60,
-                      color: Colors.white,
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/LOGO-2.png',
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 32),
 
+                // ── Nama Aplikasi ──────────────────────────────
                 const Text(
                   'Monitoring Harga Pangan',
                   style: TextStyle(
@@ -126,6 +119,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 8),
 
+                // ── Badge Lokasi ───────────────────────────────
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -144,8 +138,10 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 48),
 
+                // ── Loading Indicator ──────────────────────────
                 Column(
                   children: [
                     SizedBox(
