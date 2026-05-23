@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_app/services/storage_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -9,7 +10,7 @@ class ApiService {
   ApiService._internal();
 
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.10.183.93:8000/api',
+    baseUrl: dotenv.env['BASE_URL'] ?? 'http://localhost:8000/api',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -22,7 +23,6 @@ class ApiService {
 
   final StorageService _storageService = StorageService();
 
-  // ← Hapus underscore agar bisa dipakai service lain
   Future<void> addAuthHeader() async {
     final token = await _storageService.getToken();
     if (token != null && token.isNotEmpty) {
@@ -121,7 +121,7 @@ class ApiService {
 
   Future<void> logout() async {
     try {
-      await addAuthHeader(); // ← updated
+      await addAuthHeader();
       await _dio.post('/logout');
     } on DioException catch (e) {
       if (kDebugMode) print('Logout error: ${e.message}');
@@ -134,7 +134,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> getProfile() async {
     try {
-      await addAuthHeader(); // ← updated
+      await addAuthHeader();
       final response = await _dio.get('/profile');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
@@ -152,7 +152,7 @@ class ApiService {
     File? avatarFile,
   }) async {
     try {
-      await addAuthHeader(); // ← updated
+      await addAuthHeader();
 
       if (avatarFile != null) {
         final formData = FormData.fromMap({
@@ -190,7 +190,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> removeAvatar() async {
     try {
-      await addAuthHeader(); // ← updated
+      await addAuthHeader();
       final response = await _dio.delete('/profile/avatar');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
@@ -205,7 +205,7 @@ class ApiService {
     required String newPassword,
   }) async {
     try {
-      await addAuthHeader(); // ← updated
+      await addAuthHeader();
       final response = await _dio.post('/change-password', data: {
         'old_password': oldPassword,
         'password': newPassword,
@@ -377,7 +377,7 @@ class ApiService {
     double quantity,
   ) async {
     try {
-      await addAuthHeader(); // ← updated
+      await addAuthHeader();
       final response = await _dio.post(
         '/predictions/generate',
         data: {
