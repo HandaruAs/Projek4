@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="{{ asset('images/LOGO-2.png') }}"> 
+    <link rel="icon" type="image/png" href="{{ asset('images/LOGO-2.png') }}">
     <title>Reset Password — SIMOPANG</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ asset('css/auth-base.css') }}" rel="stylesheet">
@@ -12,9 +12,9 @@
 <body>
 
 <nav class="navbar">
-    <a href="/" class="navbar-brand">
-        <div class="brand-icon"><i class="fas fa-chart-line"></i></div>
-        <span class="brand-name">SIMOPANG</span>
+   <a href="/" class="navbar-brand">
+    <img src="{{ asset('images/LOGO-2.png') }}" alt="SIMOPANG Logo" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
+    <span class="brand-name">SIMOPANG</span>
     </a>
     <div class="navbar-links">
         <a href="/" class="btn-back">
@@ -28,7 +28,7 @@
             <span>Ke Login</span>
         </a>
     </div>
-        
+
 </nav>
 
 <div class="page-wrapper">
@@ -86,7 +86,7 @@
             <div class="form-heading">Reset Password</div>
             <div class="form-subheading">
                 Buat password baru yang kuat untuk akun<br>
-                <strong>{{ session('email') ?? 'Anda' }}</strong>.
+                <strong>{{ $email ?? session('email') ?? 'Anda' }}</strong>.
             </div>
 
             <div class="form-divider"></div>
@@ -105,7 +105,7 @@
 
             <form method="POST" action="/reset-password" id="reset-form">
                 @csrf
-                <input type="hidden" name="email" value="{{ session('email') }}">
+                <input type="hidden" name="email" value="{{ $email ?? session('email') }}">
 
                 <div class="form-group">
                     <label class="form-label" for="password">Password Baru</label>
