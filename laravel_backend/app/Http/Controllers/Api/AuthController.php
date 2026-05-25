@@ -315,7 +315,6 @@ class AuthController extends Controller
             'email'   => 'sometimes|email|unique:users,email,' . $user->_id . ',_id',
             'phone'   => 'sometimes|nullable|string|max:20',
             'address' => 'sometimes|nullable|string|max:500',
-            // Validasi file foto: maks 2 MB, hanya jpg/jpeg/png/webp
             'avatar'  => 'sometimes|nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
@@ -327,25 +326,30 @@ class AuthController extends Controller
         }
 
         // ── Update field teks ──────────────────────────────
-        if ($request->filled('name'))    $user->name    = $request->name;
-        if ($request->filled('email'))   $user->email   = $request->email;
-        if ($request->has('phone'))      $user->phone   = $request->phone;
-        if ($request->has('address'))    $user->address = $request->address;
+        if ($request->filled('name'))  $user->name = $request->name;
+        if ($request->filled('email')) $user->email = $request->email;
+
+        if ($request->has('phone')) {
+            $user->phone   = $request->phone; // ← field Flutter
+            $user->telepon = $request->phone; // ← sync ke field web
+        }
+        if ($request->has('address')) {
+            $user->address = $request->address; // ← field Flutter
+            $user->alamat  = $request->address; // ← sync ke field web
+        }
 
         // ── Upload avatar baru ─────────────────────────────
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-            // Hapus foto lama jika ada
-            if (!empty($user->avatar_path)) {
-                Storage::disk('public')->delete($user->avatar_path);
+            if (!empty($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
             }
 
-            // Simpan file baru ke storage/app/public/avatars/{userId}/
             $path = $request->file('avatar')->store(
                 'avatars/' . (string) $user->_id,
                 'public'
             );
 
-            $user->avatar_path = $path;   // simpan path relatif di DB
+            $user->avatar = $path;
         }
 
         $user->save();
@@ -365,9 +369,9 @@ class AuthController extends Controller
     {
         $user = auth()->user();
 
-        if (!empty($user->avatar_path)) {
-            Storage::disk('public')->delete($user->avatar_path);
-            $user->avatar_path = null;
+        if (!empty($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+            $user->avatar = null;
             $user->save();
         }
 
@@ -422,9 +426,9 @@ class AuthController extends Controller
     private function formatUser(User $user): array
     {
         $avatarUrl = '';
-        if (!empty($user->avatar_path)) {
-            $baseUrl   = request()->getSchemeAndHttpHost(); // otomatis ikut IP request
-            $avatarUrl = $baseUrl . '/storage/' . $user->avatar_path;
+        if (!empty($user->avatar)) {
+            $baseUrl   = request()->getSchemeAndHttpHost();
+            $avatarUrl = $baseUrl . '/storage/' . $user->avatar;
         }
 
         return [
@@ -432,8 +436,10 @@ class AuthController extends Controller
             'name'       => $user->name,
             'email'      => $user->email,
             'role'       => $user->role,
-            'phone'      => $user->phone   ?? '',
-            'address'    => $user->address ?? '',
+            // ← baca kedua kemungkinan field, prioritas phone/address (Flutter)
+            // fallback ke telepon/alamat (web) jika belum pernah diupdate via Flutter
+            'phone'      => $user->phone   ?? $user->telepon ?? '',
+            'address'    => $user->address ?? $user->alamat  ?? '',
             'avatar_url' => $avatarUrl,
         ];
     }

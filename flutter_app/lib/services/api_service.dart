@@ -9,7 +9,11 @@ class ApiService {
   ApiService._internal();
 
   final Dio _dio = Dio(BaseOptions(
+<<<<<<< HEAD
     baseUrl: 'http://10.10.181.162:8000/api',
+=======
+    baseUrl: 'http://10.10.183.93:8000/api',
+>>>>>>> 89e33609f6fe0ae3332f1e969ca41cf44d6bcfd0
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -18,9 +22,12 @@ class ApiService {
     },
   ));
 
+  Dio get dio => _dio;
+
   final StorageService _storageService = StorageService();
 
-  Future<void> _addAuthHeader() async {
+  // ← Hapus underscore agar bisa dipakai service lain
+  Future<void> addAuthHeader() async {
     final token = await _storageService.getToken();
     if (token != null && token.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Bearer $token';
@@ -118,7 +125,7 @@ class ApiService {
 
   Future<void> logout() async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       await _dio.post('/logout');
     } on DioException catch (e) {
       if (kDebugMode) print('Logout error: ${e.message}');
@@ -131,7 +138,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> getProfile() async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       final response = await _dio.get('/profile');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
@@ -149,16 +156,15 @@ class ApiService {
     File? avatarFile,
   }) async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
 
       if (avatarFile != null) {
-        // Kirim sebagai multipart/form-data jika ada file foto
         final formData = FormData.fromMap({
-          if (name != null)    'name':    name,
-          if (email != null)   'email':   email,
-          if (phone != null)   'phone':   phone,
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
+          if (phone != null) 'phone': phone,
           if (address != null) 'address': address,
-          '_method': 'PUT',              // ← Laravel method spoofing
+          '_method': 'PUT',
           'avatar': await MultipartFile.fromFile(
             avatarFile.path,
             filename: avatarFile.path.split('/').last,
@@ -171,11 +177,10 @@ class ApiService {
         );
         return Map<String, dynamic>.from(response.data);
       } else {
-        // Tanpa foto, tetap pakai PUT + JSON seperti semula
         final response = await _dio.put('/profile', data: {
-          if (name != null)    'name':    name,
-          if (email != null)   'email':   email,
-          if (phone != null)   'phone':   phone,
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
+          if (phone != null) 'phone': phone,
           if (address != null) 'address': address,
         });
         return Map<String, dynamic>.from(response.data);
@@ -189,7 +194,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> removeAvatar() async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       final response = await _dio.delete('/profile/avatar');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
@@ -204,7 +209,7 @@ class ApiService {
     required String newPassword,
   }) async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       final response = await _dio.post('/change-password', data: {
         'old_password': oldPassword,
         'password': newPassword,
@@ -376,7 +381,7 @@ class ApiService {
     double quantity,
   ) async {
     try {
-      await _addAuthHeader();
+      await addAuthHeader(); // ← updated
       final response = await _dio.post(
         '/predictions/generate',
         data: {
