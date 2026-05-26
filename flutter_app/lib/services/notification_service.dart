@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_app/services/storage_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class NotificationApiService {
   static final NotificationApiService _instance =
@@ -9,7 +10,7 @@ class NotificationApiService {
 
   // Pakai baseUrl yang sama dengan api_service.dart
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.10.183.93:8000/api',
+    baseUrl: dotenv.env['BASE_URL'] ?? 'http://localhost:8000/api',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
