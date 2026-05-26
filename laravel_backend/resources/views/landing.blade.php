@@ -6,6 +6,7 @@
 
 {{-- ==================== NAVBAR ==================== --}}
 <nav class="fixed top-0 left-0 w-full z-50 bg-white/40 backdrop-blur-sm border-b border-white/30">
+    <div class="max-w-screen-2xl mx-auto px-6 md:px-12">
         <div class="flex justify-between items-center h-16 md:h-20">
 
             {{-- Logo & Brand --}}
