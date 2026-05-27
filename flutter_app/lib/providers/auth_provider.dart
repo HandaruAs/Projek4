@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/user_model.dart';
+import 'package:flutter_app/services/api_service.dart';
 import 'package:flutter_app/services/auth_service.dart';
 import 'package:flutter_app/services/storage_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  final AuthService    _authService    = AuthService();
   final StorageService _storageService = StorageService();
+  final ApiService     _apiService     = ApiService(); // ← tambah
 
   UserModel? _currentUser;
-  bool _isLoading = false;
-  String? _errorMessage;
+  bool       _isLoading = false;
+  String?    _errorMessage;
 
-  UserModel? get currentUser => _currentUser;
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
-  bool get isAuthenticated => _currentUser != null;
+  UserModel? get currentUser    => _currentUser;
+  bool       get isLoading      => _isLoading;
+  String?    get errorMessage   => _errorMessage;
+  bool       get isAuthenticated => _currentUser != null;
 
   Future<bool> login(String email, String password) async {
     _setLoading(true);
@@ -114,6 +116,26 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ─────────────────────────────────────────────
+  // REFRESH PROFILE — fetch ulang dari server (untuk sync foto dari web)
+  // ─────────────────────────────────────────────
+  Future<void> refreshProfile() async {
+  try {
+    final response = await _apiService.getProfile();
+    print('=== refreshProfile response: $response'); // ← tambah ini
+    if (response['status'] == 'success' && response['data'] != null) {
+      final updatedUser = UserModel.fromJson(
+        Map<String, dynamic>.from(response['data']),
+      );
+      print('=== phone: ${updatedUser.phone}');     // ← tambah ini
+      print('=== address: ${updatedUser.address}'); // ← tambah ini
+      await updateCurrentUser(updatedUser);
+    }
+  } catch (e) {
+    print('=== refreshProfile error: $e'); // ← tambah ini
+  }
+}
+
   Future<void> logout() async {
     _setLoading(true);
     try {
@@ -132,7 +154,11 @@ class AuthProvider extends ChangeNotifier {
     try {
       final isLoggedIn = await _authService.isLoggedIn();
       if (isLoggedIn) {
+        // Load dari storage dulu (cepat, untuk UI awal)
         _currentUser = await _authService.getCurrentUser();
+        notifyListeners();
+        // Lalu fetch dari server (untuk sync avatar terbaru dari web)
+        await refreshProfile(); // ← tambah
       }
     } catch (e) {
       _errorMessage = e.toString();

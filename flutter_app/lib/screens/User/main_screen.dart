@@ -1,6 +1,8 @@
 import 'dart:math';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/screens/user/notification_screen.dart';
+import 'package:flutter_app/services/notification_service.dart';
 import 'package:flutter_app/screens/user/settings_screen.dart';
 import 'package:flutter_app/screens/user/simulation_screen.dart';
 import 'package:flutter_app/screens/user/home_screen.dart';
@@ -39,7 +41,9 @@ class _UserMainScreenState extends State<UserMainScreen>
     ProfileScreen(),
   ];
 
-  int _unreadCount = 3;
+  int _unreadCount = 0; // mulai 0, fetch dari API
+  Timer? _badgeTimer;
+  final _notifService = NotificationApiService();
 
   @override
   void initState() {
@@ -52,11 +56,29 @@ class _UserMainScreenState extends State<UserMainScreen>
     _pulseAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    // Fetch badge saat pertama buka
+    _fetchUnreadCount();
+    // Polling badge tiap 30 detik
+    _badgeTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _fetchUnreadCount(),
+    );
+  }
+
+  Future<void> _fetchUnreadCount() async {
+    final notifs = await _notifService.fetchNotifications();
+    if (mounted) {
+      setState(() {
+        _unreadCount = notifs.where((n) => n['isRead'] == false).length;
+      });
+    }
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _badgeTimer?.cancel();
     super.dispose();
   }
 
@@ -86,18 +108,16 @@ class _UserMainScreenState extends State<UserMainScreen>
       MaterialPageRoute(builder: (_) => const NotificationScreen()),
     );
 
-    // Tandai semua sudah dibaca setelah kembali
-    setState(() => _unreadCount = 0);
+    // Fetch ulang badge dari API setelah kembali
+    await _fetchUnreadCount();
 
     if (result != null && mounted) {
       final action = result['action'] as String?;
       final tabIndex = result['tabIndex'] as int?;
 
       if (action == 'navigate_tab' && tabIndex != null) {
-        // Pindah ke tab yang diminta (Prediksi = 1, Simulasi = 3)
         setState(() => _selectedIndex = tabIndex);
       } else if (action == 'open_ai') {
-        // Buka AI Chat dengan transisi circular reveal
         _openChatAI();
       }
     }

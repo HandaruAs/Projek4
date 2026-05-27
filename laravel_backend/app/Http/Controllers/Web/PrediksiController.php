@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\PrediksiService;
+use App\Services\NotificationService;
 use App\Models\Prediction;
 use App\Models\PriceHistory;
 use Illuminate\Http\Request;
@@ -140,6 +141,16 @@ class PrediksiController extends Controller
                         'payload'        => $payload,
                     ]);
 
+                    // Kirim notifikasi ke semua user
+                    try {
+                        NotificationService::prediksiBaruDibuat(
+                            $nama,
+                            "Prediksi harga {$nama} untuk {$steps} hari ke depan telah diperbarui oleh admin."
+                        );
+                    } catch (\Exception $ne) {
+                        Log::warning("Notifikasi gagal untuk [{$nama}]: " . $ne->getMessage());
+                    }
+
                     $berhasil[] = $nama;
                 } catch (\Exception $e) {
                     Log::error("Generate all - gagal untuk [{$nama}]: " . $e->getMessage());
@@ -193,6 +204,16 @@ class PrediksiController extends Controller
                 'accuracy_mape'  => $acc['mape'] ?? null,
                 'payload'        => $payload,
             ]);
+
+            // Kirim notifikasi ke semua user
+            try {
+                NotificationService::prediksiBaruDibuat(
+                    $komoditas,
+                    "Prediksi harga {$komoditas} untuk {$steps} hari ke depan telah diperbarui oleh admin."
+                );
+            } catch (\Exception $ne) {
+                Log::warning("Notifikasi gagal untuk [{$komoditas}]: " . $ne->getMessage());
+            }
 
             if ($warning) {
                 return redirect()->route('prediksi.index', ['komoditas' => $komoditas])

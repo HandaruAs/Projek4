@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/services/notification_service.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -8,66 +10,79 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'id': 1,
-      'title': 'Harga Cabai Merah Naik!',
-      'body': 'Harga cabai merah naik 12.5% dalam 7 hari terakhir.',
-      'type': 'price_alert',
-      'commodity': 'Cabai Merah',
-      'time': '2 jam lalu',
-      'isRead': false,
-    },
-    {
-      'id': 2,
-      'title': 'Prediksi Beras Minggu Ini',
-      'body':
-          'Model memproyeksikan kenaikan harga beras 3.2% dalam 30 hari ke depan.',
-      'type': 'prediction',
-      'commodity': 'Beras',
-      'time': '5 jam lalu',
-      'isRead': false,
-    },
-    {
-      'id': 3,
-      'title': 'Simulasi Anggaran Tersedia',
-      'body': 'Coba simulasi anggaran belanja untuk komoditas minggu ini.',
-      'type': 'simulation',
-      'commodity': null,
-      'time': '1 hari lalu',
-      'isRead': false,
-    },
-    {
-      'id': 4,
-      'title': 'Harga Minyak Goreng Turun',
-      'body': 'Harga minyak goreng turun 5.8% dibanding minggu lalu.',
-      'type': 'price_alert',
-      'commodity': 'Minyak Goreng',
-      'time': '1 hari lalu',
-      'isRead': true,
-    },
-    {
-      'id': 5,
-      'title': 'Prediksi Gula Pasir',
-      'body': 'Harga gula pasir diprediksi stabil selama 2 minggu ke depan.',
-      'type': 'prediction',
-      'commodity': 'Gula Pasir',
-      'time': '2 hari lalu',
-      'isRead': true,
-    },
-  ];
+  final _service = NotificationApiService();
 
-  void _markAllRead() {
-    setState(() {
-      for (final n in _notifications) {
-        n['isRead'] = true;
-      }
-    });
+  List<Map<String, dynamic>> _notifications = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  Timer? _pollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+    // Polling tiap 30 detik
+    _pollingTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _loadNotifications(silent: true),
+    );
   }
 
-  void _showActionSheet(Map<String, dynamic> notif) {
-    final type = notif['type'] as String;
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadNotifications({bool silent = false}) async {
+    if (!silent && mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
+    try {
+      final data = await _service.fetchNotifications();
+      if (mounted) {
+        setState(() {
+          _notifications = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Gagal memuat notifikasi. Coba lagi.';
+        });
+      }
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    await _service.markAllRead();
+    await _loadNotifications(silent: true);
+  }
+
+  // ── Helper: parse isRead secara aman ─────────────────────
+  bool _parseIsRead(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value.toLowerCase() == 'true';
+    return false;
+  }
+
+  void _showActionSheet(Map<String, dynamic> notif) async {
+    // Mark read di backend
+    await _service.markRead(notif['id'] as String);
+    if (mounted) setState(() => notif['isRead'] = true);
+
+    final type = (notif['type'] as String?) ?? 'general';
     final commodity = notif['commodity'] as String?;
+
+    if (!mounted) return;
 
     showModalBottomSheet(
       context: context,
@@ -111,7 +126,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    notif['title'],
+                    (notif['title'] as String?) ?? '-',
                     style: const TextStyle(
                         fontWeight: FontWeight.w700, fontSize: 15),
                     textAlign: TextAlign.center,
@@ -121,7 +136,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    notif['body'],
+                    (notif['body'] as String?) ?? '-',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     textAlign: TextAlign.center,
                   ),
@@ -267,7 +282,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final unreadCount =
-        _notifications.where((n) => n['isRead'] == false).length;
+        _notifications.where((n) => !_parseIsRead(n['isRead'])).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -302,173 +317,228 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ),
         ],
       ),
-      body: _notifications.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_none,
-                      size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 12),
-                  Text('Tidak ada notifikasi',
-                      style: TextStyle(color: Colors.grey.shade500)),
-                ],
-              ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _notifications.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) {
-                final notif = _notifications[i];
-                final isRead = notif['isRead'] as bool;
-                final type = notif['type'] as String;
-                final accentColor = _typeColor(type);
-                final accentIcon = _typeIcon(type);
-
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => notif['isRead'] = true);
-                    _showActionSheet(notif);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isRead
-                          ? (isDark ? const Color(0xFF1E1E1E) : Colors.white)
-                          : accentColor.withOpacity(isDark ? 0.12 : 0.06),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isRead
-                            ? (isDark
-                                ? Colors.grey.shade800
-                                : Colors.grey.shade200)
-                            : accentColor.withOpacity(0.35),
-                        width: isRead ? 1 : 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Ikon tipe
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.15),
-                            shape: BoxShape.circle,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: () => _loadNotifications(),
+              child: _errorMessage != null
+                  // ── Tampilan error ──────────────────────────────
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline,
+                              size: 64, color: Colors.red.shade300),
+                          const SizedBox(height: 12),
+                          Text(
+                            _errorMessage!,
+                            style: TextStyle(color: Colors.grey.shade600),
+                            textAlign: TextAlign.center,
                           ),
-                          child: Icon(accentIcon, color: accentColor, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-
-                        Expanded(
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: () => _loadNotifications(),
+                            icon: const Icon(Icons.refresh, size: 16),
+                            label: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _notifications.isEmpty
+                      // ── Tampilan kosong ─────────────────────────
+                      ? Center(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      notif['title'],
-                                      style: TextStyle(
-                                        fontWeight: isRead
-                                            ? FontWeight.w500
-                                            : FontWeight.w700,
-                                        fontSize: 13,
-                                        color: isDark
-                                            ? Colors.white
-                                            : const Color(0xFF1A1A2E),
-                                      ),
-                                    ),
-                                  ),
-                                  if (!isRead)
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: accentColor,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
+                              Icon(Icons.notifications_none,
+                                  size: 64, color: Colors.grey.shade400),
+                              const SizedBox(height: 12),
                               Text(
-                                notif['body'],
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                  height: 1.4,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                                'Tidak ada notifikasi',
+                                style: TextStyle(color: Colors.grey.shade500),
                               ),
                               const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(Icons.access_time,
-                                      size: 11, color: Colors.grey.shade400),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    notif['time'],
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade500),
+                              TextButton.icon(
+                                onPressed: () => _loadNotifications(),
+                                icon: const Icon(Icons.refresh, size: 16),
+                                label: const Text('Refresh'),
+                              ),
+                            ],
+                          ),
+                        )
+                      // ── List notifikasi ─────────────────────────
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _notifications.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (_, i) {
+                            final notif = _notifications[i];
+
+                            // FIX: parse isRead secara aman, tidak langsung cast
+                            final isRead = _parseIsRead(notif['isRead']);
+                            final type =
+                                (notif['type'] as String?) ?? 'general';
+                            final accentColor = _typeColor(type);
+                            final accentIcon = _typeIcon(type);
+
+                            return GestureDetector(
+                              onTap: () => _showActionSheet(notif),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isRead
+                                      ? (isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.white)
+                                      : accentColor
+                                          .withOpacity(isDark ? 0.12 : 0.06),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isRead
+                                        ? (isDark
+                                            ? Colors.grey.shade800
+                                            : Colors.grey.shade200)
+                                        : accentColor.withOpacity(0.35),
+                                    width: isRead ? 1 : 1.5,
                                   ),
-                                  const Spacer(),
-                                  // Chip aksi cepat
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() => notif['isRead'] = true);
-                                      _showActionSheet(notif);
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 4),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.04),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Ikon tipe
+                                    Container(
+                                      width: 42,
+                                      height: 42,
                                       decoration: BoxDecoration(
-                                        color: accentColor.withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: accentColor.withOpacity(0.25),
-                                        ),
+                                        color: accentColor.withOpacity(0.15),
+                                        shape: BoxShape.circle,
                                       ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
+                                      child: Icon(accentIcon,
+                                          color: accentColor, size: 20),
+                                    ),
+                                    const SizedBox(width: 12),
+
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Icon(Icons.bolt,
-                                              size: 11, color: accentColor),
-                                          const SizedBox(width: 3),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  (notif['title'] as String?) ??
+                                                      '-',
+                                                  style: TextStyle(
+                                                    fontWeight: isRead
+                                                        ? FontWeight.w500
+                                                        : FontWeight.w700,
+                                                    fontSize: 13,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : const Color(
+                                                            0xFF1A1A2E),
+                                                  ),
+                                                ),
+                                              ),
+                                              if (!isRead)
+                                                Container(
+                                                  width: 8,
+                                                  height: 8,
+                                                  decoration: BoxDecoration(
+                                                    color: accentColor,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
                                           Text(
-                                            'Lihat Aksi',
+                                            (notif['body'] as String?) ?? '-',
                                             style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: accentColor,
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                              height: 1.4,
                                             ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Icon(Icons.access_time,
+                                                  size: 11,
+                                                  color: Colors.grey.shade400),
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                (notif['time'] as String?) ??
+                                                    '-',
+                                                style: TextStyle(
+                                                    fontSize: 10,
+                                                    color:
+                                                        Colors.grey.shade500),
+                                              ),
+                                              const Spacer(),
+                                              GestureDetector(
+                                                onTap: () =>
+                                                    _showActionSheet(notif),
+                                                child: Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: accentColor
+                                                        .withOpacity(0.12),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    border: Border.all(
+                                                      color: accentColor
+                                                          .withOpacity(0.25),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.bolt,
+                                                          size: 11,
+                                                          color: accentColor),
+                                                      const SizedBox(width: 3),
+                                                      Text(
+                                                        'Lihat Aksi',
+                                                        style: TextStyle(
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: accentColor,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              },
             ),
     );
   }

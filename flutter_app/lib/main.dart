@@ -3,11 +3,14 @@ import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/providers/commodity_provider.dart';
 import 'package:flutter_app/providers/price_provider.dart';
 import 'package:flutter_app/providers/theme_provider.dart';
-import 'package:flutter_app/router.dart'; // ← tambahan
+import 'package:flutter_app/router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -26,10 +29,9 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp.router(
-            // ← ganti MaterialApp
             title: 'Monitoring Harga Pangan',
             debugShowCheckedModeBanner: false,
-            routerConfig: appRouter, // ← tambahan
+            routerConfig: appRouter,
             themeMode:
                 themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
@@ -163,8 +165,6 @@ class MyApp extends StatelessWidget {
                 ),
               ),
             ),
-
-            // home: const SplashScreen(), ← dihapus, sudah ditangani router
           );
         },
       ),
