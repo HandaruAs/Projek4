@@ -26,11 +26,13 @@ class UserProfilController extends Controller
             'telepon' => 'nullable|string|max:20',
             'alamat'  => 'nullable|string|max:255',
             'avatar'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            
+
         ]);
 
-        $user->name  = $request->nama;
-        $user->telepon = $request->telepon;
+        $user->name    = $request->nama;
+        $user->phone   = $request->telepon;  
+        $user->address = $request->alamat;   
+        $user->telepon = $request->telepon;   
         $user->alamat  = $request->alamat;
 
 

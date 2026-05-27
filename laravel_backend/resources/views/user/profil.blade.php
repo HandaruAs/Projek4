@@ -53,11 +53,22 @@
       {{-- Avatar Card --}}
       <div class="u-avatar-card">
         <div class="u-avatar-wrap">
-          <div class="u-avatar">
+          <div class="u-avatar"
+               id="avatarWrapper"
+               onclick="openAvatarModal()"
+               title="Klik untuk melihat foto"
+               style="cursor:pointer; transition:opacity .2s;"
+               onmouseover="this.style.opacity='.8'"
+               onmouseout="this.style.opacity='1'">
             @if($user->avatar)
-              <img src="{{ Storage::url($user->avatar) }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+              <img id="avatarPreview"
+                   src="{{ asset('storage/' . $user->avatar) }}"
+                   alt="Avatar"
+                   style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
             @else
-              {{ strtoupper(substr($user->name ?? 'U', 0, 1)) }}
+              <span id="avatarInitial">
+                {{ strtoupper(substr($user->name ?? 'U', 0, 1)) }}
+              </span>
             @endif
           </div>
           <div class="u-avatar-ring"></div>
@@ -125,7 +136,8 @@
             </div>
             <div>
               <div class="u-quick-info-list__label">No. Telepon</div>
-              <div class="u-quick-info-list__val">{{ $user->telepon ?? '—' }}</div>
+              {{-- Baca phone dulu, fallback ke telepon (data lama) --}}
+              <div class="u-quick-info-list__val">{{ $user->phone ?? $user->telepon ?? '—' }}</div>
             </div>
           </li>
           <li>
@@ -138,7 +150,8 @@
             </div>
             <div>
               <div class="u-quick-info-list__label">Alamat</div>
-              <div class="u-quick-info-list__val">{{ $user->alamat ?? '—' }}</div>
+              {{-- Baca address dulu, fallback ke alamat (data lama) --}}
+              <div class="u-quick-info-list__val">{{ $user->address ?? $user->alamat ?? '—' }}</div>
             </div>
           </li>
         </ul>
@@ -166,16 +179,20 @@
               <label class="u-profil-field__label" for="avatar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
                 </svg>
                 Foto Profil
                 <span class="u-profil-field__optional">Opsional</span>
               </label>
               <input type="file" id="avatar" name="avatar"
                      class="u-profil-input @error('avatar') is-error @enderror"
-                     accept="image/jpeg,image/png,image/webp">
-              <small class="u-profil-field__helper">Format: JPG, PNG, WEBP. Maks: 2MB</small>
+                     accept="image/jpeg,image/png,image/webp"
+                     style="padding: 6px 10px; cursor: pointer;">
+              <div style="font-size: 12px; color: var(--text-muted, #6b7280); margin-top: 4px;">
+                Format: JPG, PNG, WEBP. Maks: 2MB
+              </div>
               @error('avatar')
                 <div class="u-profil-field__error">{{ $message }}</div>
               @enderror
@@ -191,11 +208,11 @@
                 </svg>
                 Nama Lengkap
               </label>
+              {{-- required dihapus dari HTML, validasi ditangani Laravel --}}
               <input type="text" id="nama" name="nama"
                      class="u-profil-input @error('nama') is-error @enderror"
                      value="{{ old('nama', $user->name ?? '') }}"
-                     placeholder="Masukkan nama lengkap"
-                     required>
+                     placeholder="Masukkan nama lengkap">
               @error('nama')
                 <div class="u-profil-field__error">{{ $message }}</div>
               @enderror
@@ -211,17 +228,13 @@
                 </svg>
                 Alamat Email
               </label>
-              <input type="email" id="email" name="email"
-                     class="u-profil-input @error('email') is-error @enderror"
-                     value="{{ old('email', $user->email ?? '') }}"
+              {{-- disabled = tidak terkirim, tidak perlu hidden input karena controller tidak proses email --}}
+              <input type="email" id="email"
+                     class="u-profil-input"
+                     value="{{ $user->email ?? '' }}"
                      placeholder="nama@email.com"
-                     readonly
                      disabled
                      style="background-color: #f5f5f5; color: #9ca3af; cursor: not-allowed; opacity: 1;">
-              <input type="hidden" name="email" value="{{ $user->email ?? '' }}">
-              @error('email')
-                <div class="u-profil-field__error">{{ $message }}</div>
-              @enderror
             </div>
 
             {{-- Telepon --}}
@@ -234,9 +247,10 @@
                 No. Telepon
                 <span class="u-profil-field__optional">Opsional</span>
               </label>
+              {{-- value baca phone dulu, fallback ke telepon (data lama) --}}
               <input type="tel" id="telepon" name="telepon"
                      class="u-profil-input @error('telepon') is-error @enderror"
-                     value="{{ old('telepon', $user->telepon ?? '') }}"
+                     value="{{ old('telepon', $user->phone ?? $user->telepon ?? '') }}"
                      placeholder="08xx-xxxx-xxxx">
               @error('telepon')
                 <div class="u-profil-field__error">{{ $message }}</div>
@@ -254,9 +268,10 @@
                 Alamat Lengkap
                 <span class="u-profil-field__optional">Opsional</span>
               </label>
+              {{-- value baca address dulu, fallback ke alamat (data lama) --}}
               <textarea id="alamat" name="alamat" rows="3"
                         class="u-profil-input u-profil-textarea @error('alamat') is-error @enderror"
-                        placeholder="Jl. Contoh No. 1, Kota, Provinsi">{{ old('alamat', $user->alamat ?? '') }}</textarea>
+                        placeholder="Jl. Contoh No. 1, Kota, Provinsi">{{ old('alamat', $user->address ?? $user->alamat ?? '') }}</textarea>
               @error('alamat')
                 <div class="u-profil-field__error">{{ $message }}</div>
               @enderror
@@ -287,4 +302,65 @@
 
   </div>
   {{-- / profil grid --}}
+
+  {{-- ── MODAL PREVIEW AVATAR ──────────────────────── --}}
+  <div id="avatarModal"
+       onclick="closeAvatarModal()"
+       style="display:none; position:fixed; inset:0; z-index:9999;
+              background:rgba(15,23,42,.72); backdrop-filter:blur(6px);
+              align-items:center; justify-content:center; cursor:zoom-out;">
+    <div onclick="event.stopPropagation()"
+         style="position:relative; max-width:420px; width:90%;">
+      <img id="avatarModalImg" src=""
+           style="width:100%; border-radius:16px;
+                  box-shadow:0 20px 60px rgba(0,0,0,.4); display:block;">
+      <button onclick="closeAvatarModal()"
+              style="position:absolute; top:-14px; right:-14px; width:32px; height:32px;
+                     border-radius:50%; border:none; background:#fff; cursor:pointer;
+                     font-size:14px; color:#64748b;
+                     box-shadow:0 2px 8px rgba(0,0,0,.15);
+                     display:flex; align-items:center; justify-content:center;">
+        &#x2715;
+      </button>
+    </div>
+  </div>
+
 @endsection
+
+@push('scripts')
+<script>
+// Preview avatar sebelum upload
+document.getElementById('avatar').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const wrapper = document.getElementById('avatarWrapper');
+        wrapper.innerHTML = `<img src="${ev.target.result}"
+            style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+        document.getElementById('avatarModalImg').src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+
+// Buka modal lihat foto
+function openAvatarModal() {
+    const img = document.querySelector('#avatarWrapper img');
+    if (!img) return;
+    document.getElementById('avatarModalImg').src = img.src;
+    const modal = document.getElementById('avatarModal');
+    modal.style.display = 'flex';
+}
+
+// Tutup modal
+function closeAvatarModal() {
+    document.getElementById('avatarModal').style.display = 'none';
+}
+
+// Tutup dengan Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAvatarModal();
+});
+</script>
+@endpush
