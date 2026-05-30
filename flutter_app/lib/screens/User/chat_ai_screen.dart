@@ -58,6 +58,7 @@ class _ChatAiScreenState extends State<ChatAiScreen>
   Set<String> _selectedKomSet = {};
   bool _loadingKomoditas = false;
   bool _isLoadingAI = false;
+  String? _totalEstimasi; // total biaya hasil parse dari reply AI
 
   final List<Map<String, String>> _periodeChoices = [
     {'label': '📅 1 Minggu', 'value': '1 minggu'},
@@ -248,6 +249,56 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     });
   }
 
+  // ── Parse total estimasi dari markdown tabel ────────────────
+  String? _parseTotalEstimasi(String reply) {
+    // Cari semua angka harga di kolom terakhir tiap baris tabel
+    // Format: | ... | ... | Rp X.XXX ... |
+    // Ambil angka pertama dari setiap cell harga
+    final tableRowRe = RegExp(r'\|([^|]+)\|([^|]+)\|([^|]+)\|');
+    final hargaRe = RegExp(r'Rp\s?([\d\.]+)');
+
+    int total = 0;
+    bool foundAny = false;
+    bool isFirstRow = true; // skip header
+
+    for (final line in reply.split('\n')) {
+      final trimmed = line.trim();
+      if (!trimmed.startsWith('|')) continue;
+      // Skip separator baris ---
+      if (trimmed.replaceAll(RegExp(r'[|\-:\s]'), '').isEmpty) continue;
+
+      final match = tableRowRe.firstMatch(trimmed);
+      if (match == null) continue;
+
+      // Skip baris header (kolom terakhir biasanya "Estimasi Harga" atau sejenisnya)
+      final lastCell = match.group(3)?.trim() ?? '';
+      if (isFirstRow) {
+        isFirstRow = false;
+        continue;
+      }
+      // Skip separator row
+      if (lastCell.replaceAll(RegExp(r'[-:\s]'), '').isEmpty) continue;
+
+      // Ambil angka PERTAMA dari cell harga (harga terendah jika ada range)
+      final hargaMatch = hargaRe.firstMatch(lastCell);
+      if (hargaMatch != null) {
+        final angkaStr = hargaMatch.group(1)!.replaceAll('.', '');
+        final angka = int.tryParse(angkaStr) ?? 0;
+        total += angka;
+        foundAny = true;
+      }
+    }
+
+    if (!foundAny || total == 0) return null;
+
+    // Format angka ke Rupiah
+    final formatted = total.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '\${m[1]}.',
+        );
+    return 'Rp $formatted';
+  }
+
   Future<void> _generateRekomendasi() async {
     _addBotMessage('Sedang menganalisis data harga pangan...', isLoading: true);
     setState(() => _isLoadingAI = true);
@@ -261,10 +312,14 @@ class _ChatAiScreenState extends State<ChatAiScreen>
         'prioritas': _prioritas,
       });
       _removeLastMessage();
-      _addBotMessage(res.data['reply'] ?? 'Maaf, tidak ada jawaban dari AI.');
+      final reply = res.data['reply'] ?? 'Maaf, tidak ada jawaban dari AI.';
+      _addBotMessage(reply);
+      // Parse total estimasi dari reply
+      final total = _parseTotalEstimasi(reply);
+      setState(() => _totalEstimasi = total);
     } on DioException catch (e) {
       _removeLastMessage();
-      _addBotMessage('⚠️ Gagal mendapatkan rekomendasi: ${e.message}');
+      _addBotMessage('⚠️ Gagal mendapatkan rekomendasi: \${e.message}');
     } catch (_) {
       _removeLastMessage();
       _addBotMessage('⚠️ Gagal terhubung ke server.');
@@ -320,6 +375,7 @@ class _ChatAiScreenState extends State<ChatAiScreen>
       _prioritas = null;
       _selectedKomSet = {};
       _isLoadingAI = false;
+      _totalEstimasi = null;
     });
     _startWizard();
   }
@@ -345,6 +401,7 @@ class _ChatAiScreenState extends State<ChatAiScreen>
               itemBuilder: (_, i) => _buildMessageBubble(_messages[i], isDark),
             ),
           ),
+          if (_totalEstimasi != null) _buildTotalCard(_totalEstimasi!, isDark),
           _buildInputArea(isDark),
         ],
       ),
@@ -570,6 +627,94 @@ class _ChatAiScreenState extends State<ChatAiScreen>
             ),
           ),
           if (!msg.isBot) const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+
+  // ── TOTAL ESTIMASI CARD ──────────────────────────────────────
+  Widget _buildTotalCard(String total, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1565C0).withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.receipt_long_rounded,
+                color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Total Estimasi Biaya',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  total,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'estimasi minimum',
+                style: TextStyle(fontSize: 9, color: Colors.white54),
+              ),
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'dari tabel AI',
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
