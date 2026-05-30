@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/price_latest_model.dart';
 import 'package:flutter_app/providers/price_provider.dart';
-import 'package:flutter_app/screens/User/commodity_detail_screen.dart';
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class UserHomeScreen extends StatefulWidget {
-  const UserHomeScreen({super.key});
+  // ── BARU: callback dari UserMainScreen ──
+  final void Function(String commodityId)? onOpenCommodity;
+
+  const UserHomeScreen({
+    super.key,
+    this.onOpenCommodity,
+  });
 
   @override
   State<UserHomeScreen> createState() => _UserHomeScreenState();
@@ -92,6 +97,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     ]);
   }
 
+  // ── BARU: helper untuk tap komoditas → panggil callback ──
+  void _onTapCommodity(String commodityId) {
+    widget.onOpenCommodity?.call(commodityId);
+  }
+
   List<PriceLatestModel> _filtered(PriceProvider p) {
     var list = p.latestPrices;
     if (_selectedCategory != 'Semua') {
@@ -120,15 +130,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
     return Consumer<PriceProvider>(
       builder: (context, provider, _) {
-        final filtered  = _filtered(provider);
-        final paginated = _paginated(filtered);
+        final filtered   = _filtered(provider);
+        final paginated  = _paginated(filtered);
         final totalPages = (filtered.length / _perPage).ceil();
 
         return RefreshIndicator(
           onRefresh: () => _loadAll(force: true),
           child: CustomScrollView(
             slivers: [
-
               SliverToBoxAdapter(child: _buildHeader(isDark)),
 
               if (provider.categories.isNotEmpty)
@@ -366,6 +375,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               itemCount: provider.topPrices.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
+              // ── UBAH: pakai _onTapCommodity ──
               itemBuilder: (_, i) => _buildFeaturedCard(provider.topPrices[i], isDark),
             ),
           ),
@@ -382,12 +392,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     final cardBg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CommodityDetailScreen(commodityId: item.commodityId),
-        ),
-      ),
+      // ── UBAH: Navigator.push → callback ──
+      onTap: () => _onTapCommodity(item.commodityId),
       child: Container(
         width: 140,
         padding: const EdgeInsets.all(12),
@@ -479,12 +485,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     final cardBg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CommodityDetailScreen(commodityId: item.commodityId),
-        ),
-      ),
+      // ── UBAH: Navigator.push → callback ──
+      onTap: () => _onTapCommodity(item.commodityId),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

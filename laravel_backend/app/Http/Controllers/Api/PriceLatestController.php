@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Commodity;
 use App\Models\PriceHistory;
 use App\Models\Prediction;
 use Illuminate\Http\Request;
@@ -11,15 +12,28 @@ use Carbon\Carbon;
 class PriceLatestController extends Controller
 {
     // ─────────────────────────────────────────────────────────────
+    // HELPER: build map commodity_name => commodity _id
+    // ─────────────────────────────────────────────────────────────
+    private function buildCommodityIdMap(): \Illuminate\Support\Collection
+    {
+        return Commodity::all()->mapWithKeys(
+            fn($c) => [strtolower(trim($c->name)) => (string) $c->_id]
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // HELPER: bangun map commodity_name => data dari Prediction
     // ─────────────────────────────────────────────────────────────
     private function buildPredictionMap(): \Illuminate\Support\Collection
     {
+        // ✅ Build commodity ID map sekali untuk semua prediction
+        $commodityIdMap = $this->buildCommodityIdMap();
+
         return Prediction::where('status', 'completed')
             ->orderBy('created_at', 'desc')
             ->get()
             ->unique('commodity_name')
-            ->mapWithKeys(function ($pred) {
+            ->mapWithKeys(function ($pred) use ($commodityIdMap) {
                 $forecast      = $pred->payload['forecast']     ?? [];
                 $tanggal       = $pred->payload['tanggal_pred'] ?? [];
                 $hargaTerakhir = (float) ($pred->payload['harga_terakhir'] ?? 0);
@@ -34,9 +48,14 @@ class PriceLatestController extends Controller
                     ? round(($selisih / $hargaTerakhir) * 100, 2)
                     : 0;
 
+                // ✅ Ambil commodity _id yang benar berdasarkan nama
+                $commodityId = $commodityIdMap->get(
+                    strtolower(trim($pred->commodity_name)), ''
+                );
+
                 return [
                     $pred->commodity_name => [
-                        'commodity_id'   => (string) ($pred->id ?? ''),
+                        'commodity_id'   => $commodityId, // ✅ ID commodity, bukan ID prediction
                         'commodity_name' => $pred->commodity_name,
                         'category'       => $pred->payload['kategori'] ?? '',
                         'satuan'         => $pred->payload['satuan']   ?? 'kg',
@@ -44,10 +63,10 @@ class PriceLatestController extends Controller
                         'date'           => $maxTanggal
                             ? Carbon::parse($maxTanggal)->toDateString()
                             : null,
-                        'harga_sekarang' => $maxHarga,
+                        'harga_sekarang' => (float) $maxHarga,
                         'harga_lama'     => $hargaTerakhir,
-                        'selisih'        => $selisih,
-                        'persen'         => $persen,
+                        'selisih'        => (float) $selisih,
+                        'persen'         => (float) $persen,
                         'is_prediction'  => true,
                     ],
                 ];
@@ -105,8 +124,11 @@ class PriceLatestController extends Controller
         // ── 2. Build prediction map ──────────────────────────────
         $predMap = $this->buildPredictionMap();
 
-        // ── 3. Merge: prediction override history jika ada ───────
-        $result = collect($latest)->map(function ($item) use ($predMap) {
+        // ── 3. Build commodity ID map untuk fallback history ─────
+        $commodityIdMap = $this->buildCommodityIdMap();
+
+        // ── 4. Merge: prediction override history jika ada ───────
+        $result = collect($latest)->map(function ($item) use ($predMap, $commodityIdMap) {
             $name = $item['commodity_name'] ?? '';
 
             // Jika ada prediction untuk komoditas ini → pakai prediction
@@ -114,9 +136,16 @@ class PriceLatestController extends Controller
                 return $predMap->get($name);
             }
 
-            // Fallback ke data history
+            // ✅ Fallback ke data history dengan commodity_id yang benar
+            $commodityId = $commodityIdMap->get(strtolower(trim($name)), '');
+
+            // Jika tidak ketemu di map, coba cast dari field history
+            if (empty($commodityId) && isset($item['commodity_id'])) {
+                $commodityId = (string) $item['commodity_id'];
+            }
+
             return [
-                'commodity_id'   => (string) ($item['commodity_id'] ?? ''),
+                'commodity_id'   => $commodityId,
                 'commodity_name' => $name,
                 'category'       => $item['category'] ?? '',
                 'satuan'         => $item['satuan'] ?? '',
@@ -132,7 +161,7 @@ class PriceLatestController extends Controller
             ];
         });
 
-        // ── 4. Tambahkan komoditas prediction yang tidak ada di history ──
+        // ── 5. Tambahkan komoditas prediction yang tidak ada di history ──
         $historyNames = collect($latest)->pluck('commodity_name');
         $predOnly = $predMap->filter(
             fn($_, $name) => !$historyNames->contains($name)
@@ -162,7 +191,6 @@ class PriceLatestController extends Controller
 
     // ─────────────────────────────────────────────────────────────
     // GET /api/prices/categories
-    // Tetap dari PriceHistory — sudah lengkap
     // ─────────────────────────────────────────────────────────────
     public function categories()
     {
@@ -178,7 +206,6 @@ class PriceLatestController extends Controller
 
     // ─────────────────────────────────────────────────────────────
     // GET /api/prices/top?limit=3
-    // Sepenuhnya dari Prediction — harga forecast tertinggi
     // ─────────────────────────────────────────────────────────────
     public function top(Request $request)
     {
@@ -199,6 +226,8 @@ class PriceLatestController extends Controller
         }
 
         // Fallback ke PriceHistory jika belum ada prediction sama sekali
+        $commodityIdMap = $this->buildCommodityIdMap();
+
         $top = PriceHistory::raw(function ($collection) use ($limit) {
             return $collection->aggregate([
                 ['$sort' => ['date' => -1]],
@@ -220,18 +249,28 @@ class PriceLatestController extends Controller
             ]);
         });
 
-        $result = collect($top)->map(fn($item) => [
-            'commodity_id'   => (string) ($item['commodity_id'] ?? ''),
-            'commodity_name' => $item['commodity_name'] ?? '',
-            'category'       => $item['category'] ?? '',
-            'satuan'         => $item['satuan'] ?? '',
-            'unit'           => $item['satuan'] ?? 'kg',
-            'harga_sekarang' => (float) ($item['harga_sekarang'] ?? 0),
-            'harga_lama'     => (float) ($item['harga_lama'] ?? 0),
-            'selisih'        => (float) ($item['selisih'] ?? 0),
-            'persen'         => (float) ($item['persen'] ?? 0),
-            'is_prediction'  => false,
-        ])->values();
+        $result = collect($top)->map(function ($item) use ($commodityIdMap) {
+            $name = $item['commodity_name'] ?? '';
+
+            // ✅ Ambil commodity _id yang benar
+            $commodityId = $commodityIdMap->get(strtolower(trim($name)), '');
+            if (empty($commodityId) && isset($item['commodity_id'])) {
+                $commodityId = (string) $item['commodity_id'];
+            }
+
+            return [
+                'commodity_id'   => $commodityId,
+                'commodity_name' => $name,
+                'category'       => $item['category'] ?? '',
+                'satuan'         => $item['satuan'] ?? '',
+                'unit'           => $item['satuan'] ?? 'kg',
+                'harga_sekarang' => (float) ($item['harga_sekarang'] ?? 0),
+                'harga_lama'     => (float) ($item['harga_lama'] ?? 0),
+                'selisih'        => (float) ($item['selisih'] ?? 0),
+                'persen'         => (float) ($item['persen'] ?? 0),
+                'is_prediction'  => false,
+            ];
+        })->values();
 
         return response()->json([
             'success' => true,
