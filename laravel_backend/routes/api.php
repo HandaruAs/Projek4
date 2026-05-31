@@ -31,6 +31,7 @@ Route::get('/commodities',          [CommodityController::class, 'index']);
 Route::get('/commodities/{id}',     [CommodityController::class, 'show']);
 Route::get('/categories',           [CategoryController::class, 'index']);
 Route::get('/price-histories',      [PriceHistoryController::class, 'index']);
+Route::get('/price-histories/flask/{commodityName}', [PriceHistoryController::class, 'fromFlask']);
 Route::get('/price-histories/{id}', [PriceHistoryController::class, 'show']);
 Route::get('/statistics',           [StatisticsController::class, 'index']);
 Route::post('/predictions/generate', [PredictionController::class, 'generate']);
@@ -51,7 +52,7 @@ Route::post('/chatai/followup',    [UserChatAiController::class, 'followup']);
 Route::middleware('auth:api')->group(function () {
     Route::get('/profile',  [AuthController::class, 'getProfile']);
     Route::put('/profile',  [AuthController::class, 'updateProfile']);
-    Route::post('/profile', [AuthController::class, 'updateProfile']); 
+    Route::post('/profile', [AuthController::class, 'updateProfile']);
     Route::delete('profile/avatar', [AuthController::class, 'removeAvatar']);
     Route::get('/notifications',             [NotificationController::class, 'index']);
     Route::post('/notifications/read-all',   [NotificationController::class, 'markAllRead']);

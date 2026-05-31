@@ -95,7 +95,7 @@ class CommodityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.getPriceHistory(commodityId, period);
+      final response = await _apiService.getPriceHistory(commodityId, period, commodityName: _selectedCommodity?.name,);
 
       if (response['success'] == true && response['data'] != null) {
         final List data = response['data'];

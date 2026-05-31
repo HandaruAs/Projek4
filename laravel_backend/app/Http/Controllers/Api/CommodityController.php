@@ -5,11 +5,20 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Commodity;
 use App\Models\Category;
+use App\Services\PrediksiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use MongoDB\BSON\ObjectId;
 
 class CommodityController extends Controller
 {
+    private PrediksiService $prediksiService;
+
+    public function __construct(PrediksiService $prediksiService)
+    {
+        $this->prediksiService = $prediksiService;
+    }
+
     public function index(Request $request)
     {
         $query = Commodity::orderBy('name', 'asc');
@@ -29,16 +38,15 @@ class CommodityController extends Controller
             $currentPrice  = $prices->first()?->harga_sekarang ?? 0;
             $previousPrice = $prices->skip(1)->first()?->harga_sekarang ?? 0;
 
-            // getAttributes() ambil semua field dari MongoDB tanpa dibatasi $fillable
             $raw = $commodity->getAttributes();
 
             return [
                 '_id'            => (string) $commodity->_id,
-                'name'           => $raw['name']        ?? '',
-                'category'       => $raw['category']    ?? '',
-                'unit'           => $raw['unit']         ?? '',
-                'stok_unit'      => $raw['stok_unit']    ?? '',
-                'description'    => $raw['description']  ?? '',
+                'name'           => $raw['name']       ?? '',
+                'category'       => $raw['category']   ?? '',
+                'unit'           => $raw['unit']        ?? '',
+                'stok_unit'      => $raw['stok_unit']   ?? '',
+                'description'    => $raw['description'] ?? '',
                 'current_price'  => $currentPrice,
                 'previous_price' => $previousPrice,
             ];
@@ -52,7 +60,16 @@ class CommodityController extends Controller
 
     public function show(string $id)
     {
-        $commodity = Commodity::find($id);
+        try {
+            $objectId = new ObjectId($id);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Format ID tidak valid',
+            ], 400);
+        }
+
+        $commodity = Commodity::where('_id', $objectId)->first();
 
         if (!$commodity) {
             return response()->json([
@@ -61,23 +78,39 @@ class CommodityController extends Controller
             ], 404);
         }
 
-        $recentPrices = $commodity->priceHistories()
+        $prices = $commodity->priceHistories()
             ->orderBy('date', 'desc')
-            ->limit(30)
-            ->get(['date', 'price', 'stok']);
+            ->limit(2)
+            ->get();
+
+        $currentPrice  = $prices->first()?->harga_sekarang ?? 0;
+        $previousPrice = $prices->skip(1)->first()?->harga_sekarang ?? 0;
+
+        // ── Fallback ke Flask kalau price history kosong ──
+        if ($currentPrice == 0) {
+            try {
+                $flaskData = $this->prediksiService->generate(strtoupper($commodity->name), 2);
+                $currentPrice  = $flaskData['harga_terakhir'] ?? 0;
+                $forecast      = $flaskData['forecast'] ?? [];
+                $previousPrice = !empty($forecast) ? (float) $forecast[0] : $currentPrice;
+            } catch (\Exception $e) {
+                // Flask gagal, biarkan tetap 0
+            }
+        }
 
         $raw = $commodity->getAttributes();
 
         return response()->json([
             'success' => true,
             'data'    => [
-                '_id'           => (string) $commodity->_id,
-                'name'          => $raw['name']       ?? '',
-                'category'      => $raw['category']   ?? '',
-                'unit'          => $raw['unit']        ?? '',
-                'stok_unit'     => $raw['stok_unit']   ?? '',
-                'description'   => $raw['description'] ?? '',
-                'recent_prices' => $recentPrices,
+                '_id'            => (string) $commodity->_id,
+                'name'           => $raw['name']       ?? '',
+                'category'       => $raw['category']   ?? '',
+                'unit'           => $raw['unit']        ?? '',
+                'stok_unit'      => $raw['stok_unit']   ?? '',
+                'description'    => $raw['description'] ?? '',
+                'current_price'  => $currentPrice,
+                'previous_price' => $previousPrice,
             ],
         ]);
     }
