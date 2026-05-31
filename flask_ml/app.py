@@ -1,17 +1,23 @@
 """
-PanganWatch Jember — Flask + MongoDB + Holt-Winters Time Series
-Koleksi MongoDB: price_histories, commodities, categories, predictions, users, simulations
+SIMOPANG Flask ML Service — Pure ML/Prediction API
+Koleksi MongoDB: price_histories, predictions
+
+Endpoint yang tersedia (semua butuh X-API-Key header):
+  GET  /api/external/komoditas               → daftar nama komoditas
+  GET  /api/external/prediksi/<komoditas>    → prediksi + akurasi (cache 24 jam)
+  POST /api/external/rekomendasi             → rekomendasi beli/tunda
+  POST /api/admin/run_prediksi               → paksa regenerasi prediksi
+  GET  /api/admin/prediction_logs            → riwayat log prediksi
 """
 
-import os, warnings, hashlib, secrets
-import bcrypt
+import os, warnings, secrets
 from datetime import datetime, timedelta
 from functools import wraps
 
 import numpy as np
 import pandas as pd
 from bson import ObjectId
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, request, jsonify
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from dotenv import load_dotenv
 
@@ -30,11 +36,13 @@ except ImportError:
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
-from routes.ai_route import ai_bp
-app.register_blueprint(ai_bp)
-
 FLASK_API_KEY = os.getenv("FLASK_API_KEY", "")
 
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+DB_NAME   = os.getenv("DB_NAME", "monitoring_harga_pangan")
+
+from routes.ai_route import ai_bp
+app.register_blueprint(ai_bp)
 
 def api_key_required(f):
     @wraps(f)
@@ -46,9 +54,6 @@ def api_key_required(f):
     return decorated
 
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-DB_NAME   = os.getenv("DB_NAME", "monitoring_harga_pangan")
-
 # ═══════════════════════════════════════════════════════════════════
 # DATABASE CONNECTION
 # ═══════════════════════════════════════════════════════════════════
@@ -56,11 +61,7 @@ client = MongoClient(MONGO_URI)
 db     = client[DB_NAME]
 
 col_price      = db["price_histories"]
-col_commodity  = db["commodities"]
-col_category   = db["categories"]
 col_prediction = db["predictions"]
-col_user       = db["users"]
-col_simulation = db["simulations"]
 
 col_price.create_index([("commodity_name", ASCENDING), ("date", ASCENDING)])
 col_price.create_index([("category", ASCENDING), ("date", ASCENDING)])
@@ -68,55 +69,10 @@ col_prediction.create_index([("commodity_name", ASCENDING), ("created_at", DESCE
 
 
 # ═══════════════════════════════════════════════════════════════════
-# AUTH HELPERS
-# ═══════════════════════════════════════════════════════════════════
-def hash_pw(pw: str) -> str:
-    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
-
-
-def verify_pw(plain: str, stored: str) -> bool:
-    if not plain or not stored:
-        return False
-    if stored.startswith(("$2y$", "$2b$", "$2a$")):
-        try:
-            normalized = stored.replace("$2y$", "$2b$").encode()
-            return bcrypt.checkpw(plain.encode(), normalized)
-        except Exception:
-            return False
-    if len(stored) == 64:
-        return hashlib.sha256(plain.encode()).hexdigest() == stored
-    return stored == plain
-
-
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get("user_id"):
-            return redirect(url_for("login_page"))
-        return f(*args, **kwargs)
-    return decorated
-
-
-def admin_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get("user_id"):
-            return redirect(url_for("login_page"))
-        if session.get("role") != "admin":
-            return jsonify({"error": "Akses ditolak"}), 403
-        return f(*args, **kwargs)
-    return decorated
-
-
-# ═══════════════════════════════════════════════════════════════════
 # DATA HELPERS
 # ═══════════════════════════════════════════════════════════════════
 def get_komoditas_list() -> list[str]:
     return sorted(col_price.distinct("commodity_name"))
-
-
-def get_categories_list() -> list[str]:
-    return sorted(col_price.distinct("category"))
 
 
 def get_series(commodity_name: str, days: int = None) -> pd.Series:
@@ -160,39 +116,92 @@ def get_category(commodity_name: str) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# ML: HOLT-WINTERS EXPONENTIAL SMOOTHING
+# ML: OUTLIER REMOVAL
+# ═══════════════════════════════════════════════════════════════════
+def _remove_outliers(series: pd.Series, window: int = 7, threshold: float = 2.5) -> pd.Series:
+    """
+    CRISP-DM — Data Preparation:
+    Bersihkan spike harga ekstrem menggunakan rolling median.
+    Nilai yang jauh > threshold × std dari median rolling diganti dengan median rolling.
+    Berguna untuk komoditas volatile seperti tomat, cabai, dll.
+    """
+    rolling_median = series.rolling(window, center=True, min_periods=1).median()
+    rolling_std    = series.rolling(window, center=True, min_periods=1).std().fillna(0)
+    mask    = np.abs(series - rolling_median) > threshold * rolling_std
+    cleaned = series.copy()
+    cleaned[mask] = rolling_median[mask]
+    return cleaned
+
+
+# ═══════════════════════════════════════════════════════════════════
+# ML: HOLT-WINTERS AUTO-CONFIG
+# ═══════════════════════════════════════════════════════════════════
+def _fit_best_hw(train: pd.Series):
+    """
+    CRISP-DM — Modeling:
+    Coba beberapa konfigurasi Holt-Winters, pilih yang menghasilkan AIC terkecil.
+    Konfigurasi yang dicoba (dari paling kompleks ke paling sederhana):
+      1. Trend + Seasonal 7 hari  (pola mingguan)
+      2. Trend + Seasonal 30 hari (pola bulanan)
+      3. Trend saja, tanpa seasonal
+      4. Tanpa trend dan seasonal  (Simple Exponential Smoothing)
+    Fallback: None → caller akan gunakan regresi linear.
+    """
+    best_model = None
+    best_aic   = float("inf")
+
+    configs = [
+        {"trend": "add", "seasonal": "add",  "seasonal_periods": 7},
+        {"trend": "add", "seasonal": "add",  "seasonal_periods": 30},
+    ]
+
+    for cfg in configs:
+        try:
+            m = ExponentialSmoothing(
+                train,
+                trend=cfg["trend"],
+                seasonal=cfg["seasonal"],
+                seasonal_periods=cfg.get("seasonal_periods"),
+                initialization_method="estimated",
+            )
+            fitted = m.fit(optimized=True, use_brute=False)
+            if fitted.aic < best_aic:
+                best_aic   = fitted.aic
+                best_model = fitted
+        except Exception:
+            continue
+
+    return best_model
+
+
+# ═══════════════════════════════════════════════════════════════════
+# ML: HOLT-WINTERS FORECAST
 # ═══════════════════════════════════════════════════════════════════
 def hw_forecast(series: pd.Series, steps: int = 30):
     """
+    CRISP-DM — Modeling:
     Model utama: Holt-Winters Triple Exponential Smoothing
-    - trend="add"         : komponen tren aditif
-    - seasonal="add"      : komponen musiman aditif
-    - seasonal_periods=7  : pola mingguan (7 hari)
+    - Auto-select konfigurasi terbaik via _fit_best_hw()
+    - Confidence interval ±1.5σ dari residual
 
     Syarat: HAS_HW=True dan data >= 30 hari.
     Jika tidak terpenuhi → fallback ke regresi linear (numpy polyfit).
 
     Return:
         fc_values : array hasil prediksi N hari ke depan
-        ci        : dict {"lower": [...], "upper": [...]} confidence interval ±1.5σ
+        ci        : dict {"lower": [...], "upper": [...]} confidence interval
                     atau None jika pakai fallback
     """
     if HAS_HW and len(series) >= 30:
         try:
-            m = ExponentialSmoothing(
-                series,
-                trend="add",
-                seasonal="add",
-                seasonal_periods=7,
-                initialization_method="estimated",
-            )
-            f = m.fit(optimized=True, use_brute=False)
-            fc  = f.forecast(steps)
-            std = float(np.std(f.resid.dropna()))
-            return fc.values, {
-                "lower": (fc - 1.5 * std).tolist(),
-                "upper": (fc + 1.5 * std).tolist(),
-            }
+            fitted = _fit_best_hw(series)
+            if fitted is not None:
+                fc  = fitted.forecast(steps)
+                std = float(np.std(fitted.resid.dropna()))
+                return fc.values, {
+                    "lower": (fc - 1.5 * std).tolist(),
+                    "upper": (fc + 1.5 * std).tolist(),
+                }
         except Exception:
             pass
 
@@ -203,17 +212,31 @@ def hw_forecast(series: pd.Series, steps: int = 30):
     return fc, None
 
 
+# ═══════════════════════════════════════════════════════════════════
+# ML: EVALUASI AKURASI (CRISP-DM — Evaluation)
+# ═══════════════════════════════════════════════════════════════════
 def compute_accuracy(series: pd.Series) -> dict:
     """
+    CRISP-DM — Evaluation:
     Evaluasi akurasi model dengan metode walk-forward 80/20 split:
     - 80% data awal  → training
     - 20% data akhir → testing (maks 30 hari)
 
+    Pipeline sebelum evaluasi:
+    1. Outlier removal — spike harga ekstrem diganti median rolling
+       (window=7, threshold=2.5σ). Mencegah MAPE meledak akibat data anomali.
+
+    2. Auto-select konfigurasi Holt-Winters terbaik (berdasarkan AIC):
+       seasonal_periods=7 → 30 → trend-only → SES.
+
+    3. MAPE dihitung hanya pada baris di mana actual > 100 (Rupiah),
+       menghindari division-by-zero atau distorsi dari harga tidak wajar.
+
     Metrik yang dihitung:
-    - MAE  : Mean Absolute Error (satuan Rupiah)
-    - MAPE : Mean Absolute Percentage Error (%)
-    - RMSE : Root Mean Squared Error
-    - Accuracy = 100 - MAPE
+    - MAE      : Mean Absolute Error (satuan Rupiah)
+    - MAPE     : Mean Absolute Percentage Error (%)
+    - RMSE     : Root Mean Squared Error
+    - Accuracy : 100 - MAPE  (diclamp ke 0 jika MAPE > 100)
     """
     if len(series) < 60:
         return {
@@ -224,20 +247,21 @@ def compute_accuracy(series: pd.Series) -> dict:
             "note": "Data kurang dari 60 hari",
         }
 
+    # Step 1: bersihkan outlier
+    series = _remove_outliers(series)
+
     split = int(len(series) * 0.8)
     train = series.iloc[:split]
     test  = series.iloc[split : split + 30]
 
     try:
         if HAS_HW and len(train) >= 30:
-            m = ExponentialSmoothing(
-                train,
-                trend="add",
-                seasonal="add",
-                seasonal_periods=7,
-                initialization_method="estimated",
-            )
-            pred = m.fit(optimized=True, use_brute=False).forecast(len(test)).values
+            # Step 2: pilih konfigurasi HW terbaik
+            fitted = _fit_best_hw(train)
+            if fitted is not None:
+                pred = fitted.forecast(len(test)).values
+            else:
+                raise ValueError("Semua konfigurasi HW gagal, pakai fallback")
         else:
             y    = train.values[-30:]
             coef = np.polyfit(np.arange(len(y)), y, 1)
@@ -245,15 +269,22 @@ def compute_accuracy(series: pd.Series) -> dict:
 
         actual = test.values
         mae    = float(np.mean(np.abs(actual - pred)))
-        mape   = float(np.mean(np.abs((actual - pred) / (actual + 1e-9))) * 100)
         rmse   = float(np.sqrt(np.mean((actual - pred) ** 2)))
+
+        # Step 3: MAPE robust
+        mask = actual > 100
+        if mask.sum() == 0:
+            mask = np.ones(len(actual), dtype=bool)
+        mape = float(
+            np.mean(np.abs((actual[mask] - pred[mask]) / actual[mask])) * 100
+        )
 
         return {
             "accuracy": round(max(0, 100 - mape), 1),
             "mae":      round(mae, 0),
             "mape":     round(mape, 2),
             "rmse":     round(rmse, 0),
-            "note":     "Holt-Winters, walk-forward 80/20 split",
+            "note":     "Holt-Winters auto-config + outlier removal, walk-forward 80/20 split",
         }
     except Exception as e:
         return {
@@ -266,7 +297,7 @@ def compute_accuracy(series: pd.Series) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# SISTEM REKOMENDASI PEMBELIAN (Rule-Based Scoring)
+# ML: REKOMENDASI PEMBELIAN (Rule-Based Scoring)
 # ═══════════════════════════════════════════════════════════════════
 def buat_rekomendasi(series: pd.Series, fc_vals, konsumsi: float, satuan: str) -> dict:
     """
@@ -316,9 +347,7 @@ def buat_rekomendasi(series: pd.Series, fc_vals, konsumsi: float, satuan: str) -
     d_d30 = (h_d30 - h_kini) / h_kini * 100 if h_kini else 0
     d_7d  = (h_7d  - h_kini) / h_kini * 100 if h_kini else 0
 
-    # ── Scoring ──────────────────────────────────────────────────
     skor = 50
-
     if d_d30 > 5:    skor -= 25
     elif d_d30 > 2:  skor -= 12
     elif d_d30 < -5: skor += 25
@@ -338,7 +367,6 @@ def buat_rekomendasi(series: pd.Series, fc_vals, konsumsi: float, satuan: str) -
 
     skor = max(0, min(100, skor))
 
-    # ── Mapping skor → label rekomendasi ─────────────────────────
     if skor <= 30:
         rek, warna, emoji, headline = (
             "BELI SEKARANG", "buy", "🛒",
@@ -360,7 +388,6 @@ def buat_rekomendasi(series: pd.Series, fc_vals, konsumsi: float, satuan: str) -
             "Harga diprediksi turun dalam 30 hari ke depan — tunda jika stok masih ada",
         )
 
-    # ── Alasan teks otomatis ──────────────────────────────────────
     alasan = []
     if abs(d_d30) >= 0.05:
         arah = "naik" if d_d30 > 0 else "turun"
@@ -418,532 +445,24 @@ def buat_rekomendasi(series: pd.Series, fc_vals, konsumsi: float, satuan: str) -
     }
 
 
-def _status(d7, dp):
-    if d7 > 5 or dp > 5:    return "naik_signifikan"
-    if d7 > 2 or dp > 2:    return "naik"
-    if d7 < -5 or dp < -5:  return "turun_signifikan"
-    if d7 < -2 or dp < -2:  return "turun"
-    return "stabil"
-
-
 # ═══════════════════════════════════════════════════════════════════
-# AUTH ROUTES
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/login", methods=["GET"])
-def login_page():
-    if session.get("user_id"):
-        return redirect(url_for("index"))
-    return render_template("login.html")
-
-
-@app.route("/api/auth/login", methods=["POST"])
-def api_login():
-    body     = request.get_json()
-    email    = body.get("email", "").strip().lower()
-    password = body.get("password", "")
-
-    if not email or not password:
-        return jsonify({"error": "Email dan password wajib diisi"}), 400
-
-    user = col_user.find_one({"email": email})
-    if not user:
-        return jsonify({"error": "Email atau password salah"}), 401
-    if not user.get("is_active", True):
-        return jsonify({"error": "Akun tidak aktif"}), 403
-    if not verify_pw(password, user.get("password", "")):
-        return jsonify({"error": "Email atau password salah"}), 401
-
-    session["user_id"]  = str(user["_id"])
-    session["username"] = user.get("name") or user.get("username") or email.split("@")[0]
-    session["email"]    = email
-    session["role"]     = user.get("role", "user")
-    return jsonify({"role": session["role"], "username": session["username"]})
-
-
-@app.route("/api/auth/register", methods=["POST"])
-def api_register():
-    body     = request.get_json()
-    email    = body.get("email", "").strip().lower()
-    password = body.get("password", "")
-    nama     = body.get("nama", "").strip()
-
-    if not email or not password:
-        return jsonify({"error": "Email dan password wajib diisi"}), 400
-    if len(password) < 6:
-        return jsonify({"error": "Password minimal 6 karakter"}), 400
-    if col_user.find_one({"email": email}):
-        return jsonify({"error": "Email sudah terdaftar"}), 409
-
-    doc = {
-        "name":       nama or email.split("@")[0],
-        "email":      email,
-        "password":   hash_pw(password),
-        "role":       "user",
-        "is_active":  True,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-    }
-    result = col_user.insert_one(doc)
-    session["user_id"]  = str(result.inserted_id)
-    session["username"] = doc["name"]
-    session["email"]    = email
-    session["role"]     = "user"
-    return jsonify({"role": "user", "username": doc["name"]}), 201
-
-
-@app.route("/api/auth/logout", methods=["POST"])
-def api_logout():
-    session.clear()
-    return jsonify({"ok": True})
-
-
-@app.route("/api/auth/me")
-def api_me():
-    if not session.get("user_id"):
-        return jsonify({"logged_in": False})
-    return jsonify({
-        "logged_in": True,
-        "username":  session.get("username"),
-        "email":     session.get("email", ""),
-        "role":      session.get("role"),
-        "user_id":   session.get("user_id"),
-    })
-
-
-# ═══════════════════════════════════════════════════════════════════
-# PAGE ROUTES
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/")
-def index():
-    komoditas_list = get_komoditas_list()
-    categories     = get_categories_list()
-    total_records  = col_price.count_documents({})
-    return render_template(
-        "index.html",
-        komoditas_list=komoditas_list,
-        categories=categories,
-        total_records=total_records,
-    )
-
-
-@app.route("/admin")
-@login_required
-def admin():
-    if session.get("role") != "admin":
-        return redirect(url_for("user_page"))
-    return render_template("admin.html", komoditas_list=get_komoditas_list())
-
-
-@app.route("/user")
-@login_required
-def user_page():
-    return render_template("user.html", komoditas_list=get_komoditas_list())
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: KOMODITAS & KATEGORI
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/komoditas")
-def api_komoditas():
-    return jsonify(get_komoditas_list())
-
-
-@app.route("/api/categories")
-def api_categories():
-    cats = []
-    for cat in get_categories_list():
-        koms = sorted(col_price.distinct("commodity_name", {"category": cat}))
-        cats.append({"category": cat, "komoditas": koms})
-    return jsonify(cats)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: HISTORIS
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/historis/<komoditas>")
-@login_required
-def api_historis(komoditas):
-    days = int(request.args.get("days", 90))
-    s    = get_series(komoditas, days=days)
-    if s.empty:
-        return jsonify({"error": "Data tidak ditemukan"}), 404
-
-    stats = {
-        "min":         round(float(s.min())),
-        "max":         round(float(s.max())),
-        "mean":        round(float(s.mean())),
-        "std":         round(float(s.std())),
-        "latest":      round(float(s.iloc[-1])),
-        "latest_date": s.index[-1].strftime("%Y-%m-%d"),
-    }
-    return jsonify({
-        "tanggal": s.index.strftime("%Y-%m-%d").tolist(),
-        "harga":   [round(float(v)) for v in s.values],
-        "satuan":  get_satuan(komoditas),
-        "stats":   stats,
-    })
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: PREDIKSI
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/prediksi/<komoditas>")
-def api_prediksi(komoditas):
-    steps     = int(request.args.get("steps", 30))
-    use_cache = request.args.get("cache", "1") == "1"
-    sat       = get_satuan(komoditas)
-
-    if use_cache:
-        cached = col_prediction.find_one(
-            {"commodity_name": komoditas, "steps": steps},
-            sort=[("created_at", DESCENDING)],
-        )
-        if cached:
-            age = (datetime.utcnow() - cached["created_at"]).total_seconds()
-            if age < 86400:
-                return jsonify(cached["payload"])
-
-    s = get_series(komoditas)
-    if s.empty:
-        return jsonify({"error": "Data tidak ditemukan"}), 404
-
-    fc, ci  = hw_forecast(s, steps)
-    acc     = compute_accuracy(s)
-    today   = s.index[-1]
-    dates   = [(today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(steps)]
-
-    payload = {
-        "tanggal_pred":    dates,
-        "forecast":        [round(float(v)) for v in fc],
-        "ci_lower":        [round(float(v)) for v in ci["lower"]] if ci else None,
-        "ci_upper":        [round(float(v)) for v in ci["upper"]] if ci else None,
-        "accuracy":        acc,
-        "satuan":          sat,
-        "harga_terakhir":  round(float(s.iloc[-1])),
-        "tanggal_terakhir": s.index[-1].strftime("%Y-%m-%d"),
-        "kategori":        get_category(komoditas),
-    }
-    return jsonify(payload)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: REKOMENDASI (user)
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/rekomendasi", methods=["POST"])
-@login_required
-def api_rekomendasi():
-    body      = request.get_json()
-    komoditas = body.get("komoditas", "")
-    konsumsi  = float(body.get("konsumsi", 1))
-    user_id   = session.get("user_id")
-
-    s = get_series(komoditas)
-    if s.empty:
-        return jsonify({"error": "Data tidak ditemukan"}), 404
-
-    fc, ci = hw_forecast(s, 30)
-    sat    = get_satuan(komoditas)
-    rek    = buat_rekomendasi(s, fc, konsumsi, sat)
-
-    h30   = s.iloc[-30:]
-    today = s.index[-1]
-    pred_dates = [
-        (today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(14)
-    ]
-
-    rek["chart"] = {
-        "hist_tanggal": h30.index.strftime("%Y-%m-%d").tolist(),
-        "hist_harga":   [round(float(v)) for v in h30.values],
-        "pred_tanggal": pred_dates,
-        "pred_harga":   [round(float(v)) for v in fc[:14]],
-        "ci_lower":     [round(float(v)) for v in ci["lower"][:14]] if ci else None,
-        "ci_upper":     [round(float(v)) for v in ci["upper"][:14]] if ci else None,
-        "hist_avg": (
-            round(float(s.iloc[-90:].mean())) if len(s) >= 90
-            else round(float(s.mean()))
-        ),
-    }
-
-    col_simulation.insert_one({
-        "user_id":        user_id,
-        "username":       session.get("username"),
-        "komoditas":      komoditas,
-        "konsumsi":       konsumsi,
-        "satuan":         sat,
-        "rekomendasi":    rek["rekomendasi"],
-        "skor":           rek["skor"],
-        "harga_kini":     rek["harga_kini"],
-        "harga_7hari":    rek["harga_7hari"],
-        "budget_sekarang":rek["budget_sekarang"],
-        "budget_7hari":   rek["budget_7hari"],
-        "delta_pct_7":    rek["delta_pct_7"],
-        "alasan":         rek["alasan"],
-        "created_at":     datetime.utcnow(),
-    })
-
-    return jsonify(rek)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: DASHBOARD (admin)
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/dashboard")
-@login_required
-def api_dashboard():
-    result = []
-    for k in get_komoditas_list():
-        s = get_series(k, days=60)
-        if len(s) < 7:
-            continue
-        h  = float(s.iloc[-1])
-        h7 = float(s.iloc[-7])
-        d7 = (h - h7) / h7 * 100
-        fc, _ = hw_forecast(s, 7)
-        dp = (float(np.mean(fc)) - h) / h * 100
-        result.append({
-            "komoditas":  k,
-            "kategori":   get_category(k),
-            "satuan":     get_satuan(k),
-            "harga_kini": round(h),
-            "delta_7":    round(d7, 1),
-            "pred_7hari": round(float(np.mean(fc))),
-            "delta_pred": round(dp, 1),
-            "status":     _status(d7, dp),
-        })
-    return jsonify(result)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: STATS ADMIN
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/admin/stats")
-@login_required
-def api_admin_stats():
-    total_records   = col_price.count_documents({})
-    total_komoditas = len(get_komoditas_list())
-    total_users     = col_user.count_documents({})
-    total_active    = col_user.count_documents({"is_active": True})
-    total_sim       = col_simulation.count_documents({})
-    total_pred      = col_prediction.count_documents({})
-
-    pipeline = [
-        {"$group": {"_id": "$komoditas", "count": {"$sum": 1}}},
-        {"$sort":  {"count": -1}},
-        {"$limit": 5},
-    ]
-    top_komoditas = [
-        {"komoditas": d["_id"], "count": d["count"]}
-        for d in col_simulation.aggregate(pipeline)
-    ]
-
-    latest      = col_price.find_one({}, sort=[("date", DESCENDING)])
-    latest_date = latest["date"].strftime("%Y-%m-%d") if latest else "-"
-
-    return jsonify({
-        "total_records":    total_records,
-        "total_komoditas":  total_komoditas,
-        "total_users":      total_users,
-        "total_active":     total_active,
-        "total_simulasi":   total_sim,
-        "total_prediksi":   total_pred,
-        "latest_date":      latest_date,
-        "top_komoditas":    top_komoditas,
-    })
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: RIWAYAT SIMULASI USER
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/simulasi/riwayat")
-@login_required
-def api_riwayat():
-    uid   = session.get("user_id")
-    limit = int(request.args.get("limit", 10))
-    docs  = list(
-        col_simulation.find({"user_id": uid}, {"_id": 0, "user_id": 0})
-        .sort("created_at", DESCENDING)
-        .limit(limit)
-    )
-    for d in docs:
-        if isinstance(d.get("created_at"), datetime):
-            d["created_at"] = d["created_at"].strftime("%Y-%m-%d %H:%M")
-    return jsonify(docs)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: PRICE HISTORY RAW (admin)
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/admin/price_histories")
-@login_required
-def api_price_histories():
-    komoditas = request.args.get("komoditas", "")
-    limit     = int(request.args.get("limit", 100))
-    page      = int(request.args.get("page", 1))
-    skip      = (page - 1) * limit
-
-    query = {}
-    if komoditas:
-        query["commodity_name"] = komoditas
-
-    total = col_price.count_documents(query)
-    docs  = list(
-        col_price.find(query, {"_id": 0, "commodity_id": 0, "category_id": 0})
-        .sort("date", DESCENDING)
-        .skip(skip)
-        .limit(limit)
-    )
-    for d in docs:
-        if isinstance(d.get("date"), datetime):
-            d["date"] = d["date"].strftime("%Y-%m-%d")
-        if isinstance(d.get("created_at"), datetime):
-            d["created_at"] = d["created_at"].strftime("%Y-%m-%d %H:%M")
-
-    return jsonify({"total": total, "page": page, "limit": limit, "data": docs})
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: KELOLA KOMODITAS (admin CRUD)
-# ═══════════════════════════════════════════════════════════════════
-@app.route("/api/admin/komoditas_detail")
-@login_required
-def api_komoditas_detail():
-    pipeline = [
-        {"$sort": {"date": -1}},
-        {
-            "$group": {
-                "_id":       "$commodity_name",
-                "harga_kini":{"$first": "$harga_sekarang"},
-                "satuan":    {"$first": "$satuan"},
-                "category":  {"$first": "$category"},
-                "last_date": {"$first": "$date"},
-                "total_rec": {"$sum": 1},
-            }
-        },
-        {"$sort": {"_id": 1}},
-    ]
-    docs   = list(col_price.aggregate(pipeline))
-    result = []
-    for d in docs:
-        result.append({
-            "nama":      d["_id"],
-            "kategori":  d.get("category", "—"),
-            "satuan":    d.get("satuan", "kg"),
-            "harga_kini":round(float(d.get("harga_kini", 0))),
-            "last_date": d["last_date"].strftime("%Y-%m-%d") if d.get("last_date") else "—",
-            "total_rec": d.get("total_rec", 0),
-        })
-    return jsonify(result)
-
-
-@app.route("/api/admin/run_prediksi", methods=["POST"])
-@login_required
-def api_run_prediksi():
-    if session.get("role") != "admin":
-        return jsonify({"error": "Akses ditolak"}), 403
-
-    body  = request.get_json()
-    k     = body.get("komoditas", "")
-    steps = int(body.get("steps", 30))
-
-    s = get_series(k)
-    if s.empty:
-        return jsonify({"error": "Data tidak ditemukan"}), 404
-
-    fc, ci = hw_forecast(s, steps)
-    acc    = compute_accuracy(s)
-    today  = s.index[-1]
-    dates  = [(today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(steps)]
-
-    payload = {
-        "tanggal_pred":     dates,
-        "forecast":         [round(float(v)) for v in fc],
-        "ci_lower":         [round(float(v)) for v in ci["lower"]] if ci else None,
-        "ci_upper":         [round(float(v)) for v in ci["upper"]] if ci else None,
-        "accuracy":         acc,
-        "satuan":           get_satuan(k),
-        "harga_terakhir":   round(float(s.iloc[-1])),
-        "tanggal_terakhir": s.index[-1].strftime("%Y-%m-%d"),
-        "kategori":         get_category(k),
-    }
-
-    col_prediction.delete_many({"commodity_name": k, "steps": steps})
-    col_prediction.insert_one({
-        "commodity_name": k,
-        "steps":          steps,
-        "created_at":     datetime.utcnow(),
-        "created_by":     session.get("username"),
-        "status":         "completed",
-        "accuracy_mae":   acc.get("mae"),
-        "accuracy_rmse":  acc.get("rmse"),
-        "accuracy_mape":  acc.get("mape"),
-        "payload":        payload,
-    })
-    return jsonify({"ok": True, "accuracy": acc, "steps": steps, "komoditas": k})
-
-
-@app.route("/api/admin/prediction_logs")
-@login_required
-def api_prediction_logs():
-    limit = int(request.args.get("limit", 20))
-    docs  = list(
-        col_prediction.find({}, {"payload": 0})
-        .sort("created_at", DESCENDING)
-        .limit(limit)
-    )
-    result = []
-    for d in docs:
-        result.append({
-            "id":            str(d["_id"]),
-            "commodity":     d.get("commodity_name", "—"),
-            "steps":         d.get("steps", 0),
-            "status":        d.get("status", "completed"),
-            "accuracy_mae":  d.get("accuracy_mae"),
-            "accuracy_rmse": d.get("accuracy_rmse"),
-            "accuracy_mape": d.get("accuracy_mape"),
-            "created_by":    d.get("created_by", "system"),
-            "created_at": (
-                d["created_at"].strftime("%b %d, %Y %H:%M")
-                if d.get("created_at") else "—"
-            ),
-        })
-    return jsonify(result)
-
-
-@app.route("/api/admin/users_list")
-@login_required
-def api_users_list():
-    if session.get("role") != "admin":
-        return jsonify({"error": "Akses ditolak"}), 403
-
-    docs   = list(col_user.find({}, {"password": 0}).sort("created_at", DESCENDING))
-    result = []
-    for d in docs:
-        result.append({
-            "id":        str(d["_id"]),
-            "name":      d.get("name") or d.get("nama") or d.get("username") or "—",
-            "email":     d.get("email", "—"),
-            "role":      d.get("role", "user"),
-            "is_active": d.get("is_active", True),
-            "created_at": (
-                d["created_at"].strftime("%Y-%m-%d %H:%M")
-                if d.get("created_at") else "—"
-            ),
-        })
-    return jsonify(result)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# API: ENDPOINT UNTUK LARAVEL
+# API ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════
 @app.route("/api/external/komoditas")
 @api_key_required
 def api_external_komoditas():
+    """Daftar semua nama komoditas yang tersedia di database."""
     return jsonify(get_komoditas_list())
 
 
 @app.route("/api/external/prediksi/<komoditas>")
 @api_key_required
 def api_external_prediksi(komoditas):
+    """
+    Prediksi harga N hari ke depan untuk satu komoditas.
+    Cache 24 jam — jika ada prediksi yang masih fresh, langsung return tanpa recompute.
+    Query param: steps (default 30)
+    """
     steps  = int(request.args.get("steps", 30))
     cached = col_prediction.find_one(
         {"commodity_name": komoditas, "steps": steps},
@@ -992,6 +511,10 @@ def api_external_prediksi(komoditas):
 @app.route("/api/external/rekomendasi", methods=["POST"])
 @api_key_required
 def api_external_rekomendasi():
+    """
+    Rekomendasi beli/tunda berdasarkan prediksi harga + konsumsi user.
+    Body JSON: { "komoditas": str, "konsumsi": float }
+    """
     body      = request.get_json()
     komoditas = body.get("komoditas", "")
     konsumsi  = float(body.get("konsumsi", 1))
@@ -1021,39 +544,95 @@ def api_external_rekomendasi():
         "ci_lower":     [round(float(v)) for v in ci["lower"][:14]] if ci else None,
         "ci_upper":     [round(float(v)) for v in ci["upper"][:14]] if ci else None,
     }
-
     rek["komoditas"] = komoditas
     return jsonify(rek)
 
 
-# ═══════════════════════════════════════════════════════════════════
-# INISIALISASI ADMIN OTOMATIS
-# ═══════════════════════════════════════════════════════════════════
-def auto_seed_admin():
-    """Buat akun admin pertama kali jika belum ada di database."""
-    if col_user.count_documents({"role": "admin"}) == 0:
-        username    = os.getenv("ADMIN_USERNAME", "admin")
-        password    = os.getenv("ADMIN_PASSWORD", "admin123")
-        email_admin = os.getenv("ADMIN_EMAIL", "admin@gmail.com")
-        col_user.insert_one({
-            "name":       "Administrator",
-            "email":      email_admin,
-            "password":   hash_pw(password),
-            "role":       "admin",
-            "is_active":  True,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+@app.route("/api/admin/run_prediksi", methods=["POST"])
+@api_key_required
+def api_run_prediksi():
+    """
+    Paksa regenerasi prediksi untuk satu komoditas (hapus cache lama).
+    Body JSON: { "komoditas": str, "steps": int }
+    Dipanggil dari Laravel saat admin klik 'Generate Prediksi'.
+    """
+    body  = request.get_json()
+    k     = body.get("komoditas", "")
+    steps = int(body.get("steps", 30))
+
+    if not k:
+        return jsonify({"error": "Field 'komoditas' wajib diisi"}), 400
+
+    s = get_series(k)
+    if s.empty:
+        return jsonify({"error": "Data tidak ditemukan"}), 404
+
+    fc, ci = hw_forecast(s, steps)
+    acc    = compute_accuracy(s)
+    today  = s.index[-1]
+    dates  = [(today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(steps)]
+
+    payload = {
+        "tanggal_pred":     dates,
+        "forecast":         [round(float(v)) for v in fc],
+        "ci_lower":         [round(float(v)) for v in ci["lower"]] if ci else None,
+        "ci_upper":         [round(float(v)) for v in ci["upper"]] if ci else None,
+        "accuracy":         acc,
+        "satuan":           get_satuan(k),
+        "harga_terakhir":   round(float(s.iloc[-1])),
+        "tanggal_terakhir": s.index[-1].strftime("%Y-%m-%d"),
+        "kategori":         get_category(k),
+    }
+
+    col_prediction.delete_many({"commodity_name": k, "steps": steps})
+    col_prediction.insert_one({
+        "commodity_name": k,
+        "steps":          steps,
+        "created_at":     datetime.utcnow(),
+        "created_by":     "admin",
+        "status":         "completed",
+        "accuracy_mae":   acc.get("mae"),
+        "accuracy_rmse":  acc.get("rmse"),
+        "accuracy_mape":  acc.get("mape"),
+        "payload":        payload,
+    })
+    return jsonify({"ok": True, "accuracy": acc, "steps": steps, "komoditas": k})
+
+
+@app.route("/api/admin/prediction_logs")
+@api_key_required
+def api_prediction_logs():
+    """
+    Riwayat log prediksi (tanpa payload) untuk ditampilkan di tabel admin Laravel.
+    Query param: limit (default 20)
+    """
+    limit = int(request.args.get("limit", 20))
+    docs  = list(
+        col_prediction.find({}, {"payload": 0})
+        .sort("created_at", DESCENDING)
+        .limit(limit)
+    )
+    result = []
+    for d in docs:
+        result.append({
+            "id":            str(d["_id"]),
+            "commodity":     d.get("commodity_name", "—"),
+            "steps":         d.get("steps", 0),
+            "status":        d.get("status", "completed"),
+            "accuracy_mae":  d.get("accuracy_mae"),
+            "accuracy_rmse": d.get("accuracy_rmse"),
+            "accuracy_mape": d.get("accuracy_mape"),
+            "created_by":    d.get("created_by", "system"),
+            "created_at": (
+                d["created_at"].strftime("%b %d, %Y %H:%M")
+                if d.get("created_at") else "—"
+            ),
         })
-        print("\n" + "=" * 50)
-        print("  Akun admin dibuat otomatis!")
-        print(f"  Username : {username}")
-        print(f"  Password : {password}")
-        print(f"  URL      : http://localhost:5001/login")
-        print("=" * 50 + "\n")
-    else:
-        print("  Akun admin sudah ada di database.")
+    return jsonify(result)
 
 
+# ═══════════════════════════════════════════════════════════════════
+# ENTRY POINT
+# ═══════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
-    auto_seed_admin()
     app.run(debug=True, port=5001)
