@@ -20,7 +20,7 @@ class PrediksiController extends Controller
     }
 
     /**
-     * Hanya komoditas dengan ≥ 20 data historis yang layak diprediksi.
+     * Hanya komoditas dengan >= 20 data historis yang layak diprediksi.
      */
     private function getEligibleCommodities(): array
     {
@@ -59,6 +59,7 @@ class PrediksiController extends Controller
 
         if ($selectedNama && $selectedNama !== 'all') {
             try {
+                // index() hanya tampil — pakai cache Flask (tidak recompute)
                 $prediksiData = $this->prediksiService->generate($selectedNama, 30);
 
                 $payload   = $prediksiData;
@@ -122,8 +123,12 @@ class PrediksiController extends Controller
 
             foreach ($eligible as $nama) {
                 try {
+                    // Paksa recompute via run_prediksi → dapat accuracy fresh
+                    $result  = $this->prediksiService->runPrediksi($nama, $steps);
+                    $acc     = $result['accuracy'] ?? [];
+
+                    // Ambil payload lengkap (sudah fresh setelah runPrediksi)
                     $payload = $this->prediksiService->generate($nama, $steps);
-                    $acc     = $payload['accuracy'] ?? [];
 
                     Prediction::where('commodity_name', $nama)
                         ->where('steps', $steps)
@@ -141,7 +146,6 @@ class PrediksiController extends Controller
                         'payload'        => $payload,
                     ]);
 
-                    // Kirim notifikasi ke semua user
                     try {
                         NotificationService::prediksiBaruDibuat(
                             $nama,
@@ -181,8 +185,12 @@ class PrediksiController extends Controller
         }
 
         try {
+            // Paksa recompute via run_prediksi → dapat accuracy fresh
+            $result  = $this->prediksiService->runPrediksi($komoditas, $steps);
+            $acc     = $result['accuracy'] ?? [];
+
+            // Ambil payload lengkap (sudah fresh setelah runPrediksi)
             $payload = $this->prediksiService->generate($komoditas, $steps);
-            $acc     = $payload['accuracy'] ?? [];
 
             $warning = null;
             if (empty($acc['mae'])) {
@@ -205,7 +213,6 @@ class PrediksiController extends Controller
                 'payload'        => $payload,
             ]);
 
-            // Kirim notifikasi ke semua user
             try {
                 NotificationService::prediksiBaruDibuat(
                     $komoditas,
@@ -292,4 +299,4 @@ class PrediksiController extends Controller
         return redirect()->route('prediksi.index')
             ->with('error', 'Data prediksi tidak ditemukan.');
     }
-}
+}   

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\PrediksiService;
+use App\Models\Prediction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -23,9 +24,23 @@ class PredictionController extends Controller
         $steps     = (int) $request->get('steps', 30);
 
         if (!$komoditas) {
-            // Kembalikan daftar komoditas jika tidak ada filter
-            $list = PrediksiService::getCommodities();
-            return response()->json(['success' => true, 'data' => $list]);
+            // Hanya kembalikan komoditas yang sudah punya accuracy valid
+            // (accuracy_mae null = belum di-generate atau data kurang)
+            try {
+                $list = Prediction::whereNotNull('accuracy_mae')
+                    ->whereNotNull('accuracy_mape')
+                    ->orderBy('commodity_name', 'asc')
+                    ->get()
+                    ->groupBy('commodity_name')
+                    ->map(fn($group) => $group->sortByDesc('created_at')->first()->commodity_name)
+                    ->values()
+                    ->toArray();
+
+                return response()->json(['success' => true, 'data' => $list]);
+            } catch (\Exception $e) {
+                Log::error('predictions index error: ' . $e->getMessage());
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
         }
 
         try {
