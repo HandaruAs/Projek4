@@ -1,25 +1,20 @@
 <?php
 namespace App\Services;
-
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-
 class PrediksiService
 {
     private string $baseUrl;
     private string $apiKey;
-
     public function __construct()
     {
         $this->baseUrl = config('services.flask.url');
         $this->apiKey  = config('services.flask.key');
     }
-
     private function headers(): array
     {
         return ['X-API-Key' => $this->apiKey];
     }
-
     // Ambil daftar komoditas dari Flask
     public static function getCommodities(): array
     {
@@ -28,15 +23,13 @@ class PrediksiService
             $res = Http::withHeaders($instance->headers())
                 ->timeout(10)
                 ->get("{$instance->baseUrl}/api/external/komoditas");
-
             return $res->successful() ? $res->json() : [];
         } catch (\Exception $e) {
             Log::error('PrediksiService::getCommodities - ' . $e->getMessage());
             return [];
         }
     }
-
-    // Generate prediksi dari Flask
+    // Ambil prediksi dari Flask (pakai cache 24 jam jika ada)
     public function generate(string $komoditas, int $steps = 30): array
     {
         try {
@@ -45,18 +38,35 @@ class PrediksiService
                 ->get("{$this->baseUrl}/api/external/prediksi/" . rawurlencode($komoditas), [
                     'steps' => $steps,
                 ]);
-
             if (!$res->successful()) {
                 throw new \Exception($res->json('error', 'Flask error'));
             }
-
             return $res->json();
         } catch (\Exception $e) {
             Log::error('PrediksiService::generate - ' . $e->getMessage());
             throw new \Exception('Gagal ambil prediksi dari Flask: ' . $e->getMessage());
         }
     }
-
+    // Paksa recompute prediksi — hapus cache lama, hitung ulang accuracy
+    public function runPrediksi(string $komoditas, int $steps = 30): array
+    {
+        try {
+            $res = Http::withHeaders($this->headers())
+                ->timeout(60)
+                ->post("{$this->baseUrl}/api/admin/run_prediksi", [
+                    'komoditas' => $komoditas,
+                    'steps'     => $steps,
+                ]);
+            if (!$res->successful()) {
+                throw new \Exception($res->json('error', 'Flask error'));
+            }
+            // Return: { ok, accuracy: {mae, rmse, mape, accuracy, note}, steps, komoditas }
+            return $res->json();
+        } catch (\Exception $e) {
+            Log::error('PrediksiService::runPrediksi - ' . $e->getMessage());
+            throw new \Exception('Gagal run prediksi dari Flask: ' . $e->getMessage());
+        }
+    }
     // Ambil rekomendasi dari Flask
     public function rekomendasi(string $komoditas, float $konsumsi = 1.0): array
     {
@@ -67,11 +77,9 @@ class PrediksiService
                     'komoditas' => $komoditas,
                     'konsumsi'  => $konsumsi,
                 ]);
-
             if (!$res->successful()) {
                 throw new \Exception($res->json('error', 'Flask error'));
             }
-
             return $res->json();
         } catch (\Exception $e) {
             Log::error('PrediksiService::rekomendasi - ' . $e->getMessage());

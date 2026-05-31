@@ -204,7 +204,6 @@
                      class="u-profil-input @error('name') is-error @enderror"
                      value="{{ old('name', $user->name ?? '') }}"
                      placeholder="Masukkan nama lengkap"
-                     required>
               @error('name')
                 <div class="u-profil-field__error">{{ $message }}</div>
               @enderror

@@ -153,28 +153,16 @@
 
   </div>
 
-  {{-- ── CSS CAROUSEL KOMODITAS ───────────────────────── --}}
+  {{-- ── CSS ───────────────────────────────────────────── --}}
   <style>
-    .komoditas-carousel-wrap {
-      width: 100%;
-      margin-top: 8px;
-    }
+    /* ── Komoditas Carousel ── */
+    .komoditas-carousel-wrap { width: 100%; margin-top: 8px; }
     .komoditas-carousel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      padding: 0 2px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px; padding: 0 2px;
     }
-    .komoditas-carousel-hint {
-      font-size: 11px;
-      color: #94a3b8;
-    }
-    .komoditas-selected-count {
-      font-size: 11px;
-      color: #3b82f6;
-      font-weight: 600;
-    }
+    .komoditas-carousel-hint  { font-size: 11px; color: #94a3b8; }
+    .komoditas-selected-count { font-size: 11px; color: #3b82f6; font-weight: 600; }
     .komoditas-carousel {
       display: grid;
       grid-template-rows: repeat(3, auto);
@@ -184,75 +172,71 @@
       padding-bottom: 8px;
       scroll-behavior: smooth;
       -webkit-overflow-scrolling: touch;
-      /* Sembunyikan scrollbar tapi tetap bisa scroll */
       scrollbar-width: thin;
       scrollbar-color: #e2e8f0 transparent;
     }
-    .komoditas-carousel::-webkit-scrollbar {
-      height: 4px;
-    }
-    .komoditas-carousel::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .komoditas-carousel::-webkit-scrollbar-thumb {
-      background: #e2e8f0;
-      border-radius: 4px;
-    }
-    .komoditas-carousel::-webkit-scrollbar-thumb:hover {
-      background: #cbd5e1;
-    }
+    .komoditas-carousel::-webkit-scrollbar       { height: 4px; }
+    .komoditas-carousel::-webkit-scrollbar-track  { background: transparent; }
+    .komoditas-carousel::-webkit-scrollbar-thumb  { background: #e2e8f0; border-radius: 4px; }
+    .komoditas-carousel::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
     .komoditas-btn {
-      white-space: nowrap;
-      padding: 6px 12px;
-      border-radius: 20px;
-      border: 1.5px solid #e2e8f0;
-      background: #fff;
-      color: #475569;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      user-select: none;
+      white-space: nowrap; padding: 6px 12px; border-radius: 20px;
+      border: 1.5px solid #e2e8f0; background: #fff; color: #475569;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: all 0.15s ease; user-select: none;
     }
-    .komoditas-btn:hover {
-      border-color: #94a3b8;
-      background: #f8fafc;
-    }
-    .komoditas-btn.selected {
-      border-color: #3b82f6;
-      background: #eff6ff;
-      color: #1d4ed8;
-      font-weight: 600;
-    }
-    .komoditas-confirm-row {
-      margin-top: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .komoditas-btn:hover    { border-color: #94a3b8; background: #f8fafc; }
+    .komoditas-btn.selected { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+    .komoditas-confirm-row  { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
     .komoditas-confirm-btn {
-      padding: 8px 20px;
-      border-radius: 20px;
-      border: none;
-      background: #3b82f6;
-      color: #fff;
+      padding: 8px 20px; border-radius: 20px; border: none;
+      background: #3b82f6; color: #fff; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .komoditas-confirm-btn:hover    { background: #2563eb; }
+    .komoditas-confirm-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .komoditas-loading { color: #94a3b8; font-size: 13px; padding: 12px 0; }
+
+    /* ── AI Reply Table ── */
+    .ai-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .ai-table {
+      width: 100%;
+      border-collapse: collapse;
       font-size: 13px;
+      min-width: 280px;
+    }
+    .ai-table thead tr {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    }
+    .ai-table thead th {
+      color: #1e293b;
       font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
+      padding: 10px 14px;
+      text-align: left;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
     }
-    .komoditas-confirm-btn:hover {
-      background: #2563eb;
-    }
-    .komoditas-confirm-btn:disabled {
-      background: #cbd5e1;
-      cursor: not-allowed;
-    }
-    .komoditas-loading {
-      color: #94a3b8;
-      font-size: 13px;
-      padding: 12px 0;
-    }
+    .ai-table thead th:first-child { border-radius: 10px 0 0 0; }
+    .ai-table thead th:last-child  { border-radius: 0 10px 0 0; }
+    .ai-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.12s; }
+    .ai-table tbody tr:last-child  { border-bottom: none; }
+    .ai-table tbody tr:nth-child(even) { background: #f8fafc; }
+    .ai-table tbody tr:hover       { background: #eff6ff; }
+    .ai-table tbody td             { padding: 8px 14px; color: #1e293b; vertical-align: middle; }
+    .ai-table tbody td:first-child { font-weight: 500; color: #334155; }
+
+    /* ── AI Reply Body ── */
+    .ai-reply-body p  { margin: 0 0 6px; }
+    .ai-reply-heading { display: block; font-size: 13.5px; color: #1e293b; margin: 12px 0 5px; }
+    .ai-reply-list    { margin: 4px 0 8px 0; padding-left: 18px; }
+    .ai-reply-list li { margin-bottom: 4px; font-size: 13px; color: #334155; line-height: 1.5; }
   </style>
 
 @endsection
@@ -271,7 +255,6 @@ const wizard = {
   }
 };
 
-// Cache daftar komoditas dari DB
 let dbKomoditas = [];
 
 // ── STEP DEFINITIONS ─────────────────────────────────
@@ -312,7 +295,7 @@ const steps = {
   4: {
     key: 'komoditas',
     question: 'Budget <strong>{[budget]}</strong>. Bagus!<br><br>Komoditas pangan apa saja yang biasanya Anda beli? <em>(Pilih satu atau lebih, geser → untuk lihat semua)</em>',
-    type: 'komoditas_carousel', // tipe khusus dari DB
+    type: 'komoditas_carousel',
   },
   5: {
     key: 'prioritas',
@@ -328,7 +311,7 @@ const steps = {
 };
 
 // ── ROUTE URLs ────────────────────────────────────────
-const CSRF_TOKEN      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const CSRF_TOKEN        = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const ROUTE_REKOMENDASI = document.getElementById('app-routes').dataset.rekomendasi;
 const ROUTE_FOLLOWUP    = document.getElementById('app-routes').dataset.followup;
 const ROUTE_KOMODITAS   = document.getElementById('app-routes').dataset.komoditas;
@@ -497,11 +480,8 @@ function renderChoices(stepDef) {
 // ── CAROUSEL KOMODITAS DARI DB ────────────────────────
 async function renderKomoditasCarousel(container) {
   multiSelected.clear();
-
-  // Tampilkan loading dulu
   container.innerHTML = `<div class="komoditas-loading">⏳ Memuat daftar komoditas...</div>`;
 
-  // Fetch dari DB jika belum di-cache
   if (!dbKomoditas.length) {
     try {
       const res  = await fetch(ROUTE_KOMODITAS);
@@ -514,12 +494,9 @@ async function renderKomoditasCarousel(container) {
   }
 
   container.innerHTML = '';
-
-  // Buat wrapper carousel
   const wrap = document.createElement('div');
   wrap.className = 'komoditas-carousel-wrap';
 
-  // Header: hint geser + counter terpilih
   const header = document.createElement('div');
   header.className = 'komoditas-carousel-header';
   header.innerHTML = `
@@ -527,7 +504,6 @@ async function renderKomoditasCarousel(container) {
     <span class="komoditas-selected-count" id="komCountLabel">0 dipilih</span>`;
   wrap.appendChild(header);
 
-  // Grid carousel (3 baris, scroll horizontal)
   const grid = document.createElement('div');
   grid.className = 'komoditas-carousel';
 
@@ -544,10 +520,8 @@ async function renderKomoditasCarousel(container) {
         multiSelected.add(nama);
         btn.classList.add('selected');
       }
-      // Update counter
       const label = document.getElementById('komCountLabel');
       if (label) label.textContent = `${multiSelected.size} dipilih`;
-      // Enable/disable confirm
       const confirmBtn = document.getElementById('komConfirmBtn');
       if (confirmBtn) confirmBtn.disabled = multiSelected.size === 0;
     };
@@ -556,7 +530,6 @@ async function renderKomoditasCarousel(container) {
 
   wrap.appendChild(grid);
 
-  // Baris konfirmasi
   const confirmRow = document.createElement('div');
   confirmRow.className = 'komoditas-confirm-row';
   confirmRow.innerHTML = `
@@ -578,7 +551,6 @@ function confirmKomoditas() {
   wizard.answers.komoditas = Array.from(multiSelected);
   multiSelected.clear();
 
-  // Tampilkan di bubble: maks 5 nama + "dan X lainnya"
   const list = wizard.answers.komoditas;
   const preview = list.length > 5
     ? list.slice(0, 5).join(', ') + ` dan ${list.length - 5} lainnya`
@@ -679,42 +651,104 @@ async function kirimKeGroq(loadingDiv) {
 
 // ── FORMAT REPLY ─────────────────────────────────────
 function formatReply(text) {
-  let formatted = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/^#{1,3} (.+)$/gm, '<strong style="font-size:13.5px;color:#1e293b;display:block;margin:10px 0 4px">$1</strong>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>');
 
-  formatted = formatted.replace(/(\|.+\|\n?)+/g, tableBlock => {
-    const rawLines = tableBlock.trim().split('\n').map(l => l.trim()).filter(l => l);
-    let headerCells = [], dataRows = [];
-    rawLines.forEach((line, idx) => {
-      const cells = line.split('|').map(c => c.trim()).filter(c => c !== '');
-      if (idx === 0) headerCells = cells;
-      else if (cells.every(c => /^[-:\s]+$/.test(c))) { /* skip separator */ }
-      else dataRows.push(cells);
+  // STEP 1 — Normalisasi newline & spasi unicode
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  text = text.replace(/[\u00A0\u202F\u2007]/g, ' ');
+
+  // STEP 2 — Konversi blok tabel SEBELUM escape apapun
+  //          Proses baris per baris agar tidak bergantung pada pola \n yang ketat
+  function convertTables(src) {
+    const lines  = src.split('\n');
+    const out    = [];
+    let tableLines = [];
+
+    const esc = s => s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    const flushTable = () => {
+      if (!tableLines.length) return;
+
+      // Parse setiap baris: hapus pipe pertama & terakhir, lalu split
+      const rows = tableLines.map(l =>
+        l.replace(/^\s*\|/, '').replace(/\|\s*$/, '')
+         .split('|').map(c => c.trim())
+      );
+
+      // Baris pertama = header, skip separator, sisanya = data
+      const header   = rows[0] ?? [];
+      const dataRows = rows.slice(1).filter(r =>
+        !r.every(c => /^[-:\s]*$/.test(c))
+      );
+
+      tableLines = [];
+
+      if (!header.length || !dataRows.length) return;
+
+      const thead = '<thead><tr>'
+        + header.map(h => `<th>${esc(h)}</th>`).join('')
+        + '</tr></thead>';
+
+      const tbody = '<tbody>'
+        + dataRows.map(row =>
+            '<tr>' + header.map((_, i) =>
+              `<td>${esc(row[i] ?? '')}</td>`
+            ).join('') + '</tr>'
+          ).join('')
+        + '</tbody>';
+
+      out.push(
+        `<div class="ai-table-wrap"><table class="ai-table">${thead}${tbody}</table></div>`
+      );
+    };
+
+    lines.forEach(line => {
+      // Baris tabel = diawali opsional-spasi lalu "|"
+      if (/^\s*\|/.test(line)) {
+        tableLines.push(line);
+      } else {
+        flushTable();
+        out.push(line);
+      }
     });
-    if (!dataRows.length) return tableBlock;
-    const cards = dataRows.map(row => {
-      const items = headerCells.map((header, i) => {
-        const val = row[i] ?? '';
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f1f5f9">
-          <span style="color:#64748b;font-size:12px;font-weight:500">${header}</span>
-          <span style="color:#1e293b;font-size:13px;font-weight:600;text-align:right;max-width:60%">${val}</span>
-        </div>`;
-      }).join('');
-      return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:8px">${items}</div>`;
-    }).join('');
-    return `<div style="margin:8px 0">${cards}</div>`;
+    flushTable();
+
+    return out.join('\n');
+  }
+
+  let formatted = convertTables(text);
+
+  // STEP 3 — Escape HTML hanya teks biasa (lewati tag yang sudah dibuat)
+  formatted = formatted.replace(/(<[\s\S]*?>)|([^<]+)/g, (m, tag, txt) => {
+    if (tag) return tag;
+    return txt
+      .replace(/&(?!amp;|lt;|gt;|quot;|#)/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   });
 
-  formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
-  formatted = formatted.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, lis => `<ul>${lis}</ul>`);
-  return `<div>${formatted}</div>`;
+  // STEP 4 — Markdown inline
+  formatted = formatted
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,     '<em>$1</em>')
+    .replace(/^#{1,3}\s+(.+)$/gm, '<strong class="ai-reply-heading">$1</strong>')
+    .replace(/^[\-\*]\s+(.+)$/gm, '<li>$1</li>');
+
+  // STEP 5 — Wrap list items
+  formatted = formatted.replace(
+    /(<li>[\s\S]*?<\/li>\n?)+/g,
+    m => `<ul class="ai-reply-list">${m}</ul>`
+  );
+
+  // STEP 6 — Paragraf & line break
+  formatted = formatted
+    .replace(/\n\n+/g, '__PARA__')
+    .replace(/\n/g,    '<br>')
+    .replace(/__PARA__/g, '</p><p>');
+
+  return `<div class="ai-reply-body"><p>${formatted}</p></div>`;
 }
 
 // ── FOLLOW UP BUTTONS ─────────────────────────────────

@@ -382,4 +382,44 @@ class PriceHistoryController extends Controller
             ],
         ]);
     }
+
+    // GET /api/price-histories/flask/{commodityName}
+    public function fromFlask(string $commodityName, Request $request)
+    {
+        $period  = $request->get('period', '30days');
+        $steps   = match ($period) {
+            '7days'   => 7,
+            '3months' => 90,
+            default   => 30,
+        };
+
+        try {
+            $prediksiService = app(\App\Services\PrediksiService::class);
+            $flaskData       = $prediksiService->generate(strtoupper($commodityName), $steps);
+
+            $forecast  = $flaskData['forecast']      ?? [];
+            $tanggals  = $flaskData['tanggal_pred']  ?? [];
+            $hargaKini = $flaskData['harga_terakhir'] ?? 0;
+
+            // Bentuk data seperti format priceHistories biasa
+            $result = [];
+            foreach ($forecast as $i => $harga) {
+                $result[] = [
+                    'date'           => $tanggals[$i] ?? now()->addDays($i)->toDateString(),
+                    'harga_sekarang' => (float) $harga,
+                    'harga_kemarin'  => $i === 0 ? (float) $hargaKini : (float) $forecast[$i - 1],
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data'    => $result,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal ambil data dari Flask: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

@@ -6,10 +6,64 @@
 
 @section('content')
 
+{{-- ── BANNER RANGE PREDIKSI ── --}}
+@if(isset($globalTanggalMulai) && $globalTanggalMulai)
+<div style="
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <div style="
+            width: 8px; height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        "></div>
+        <span style="color:white; font-size:13px; font-weight:500;">
+            <i class="fas fa-robot" style="margin-right:6px; opacity:0.8;"></i>
+            Harga diprediksi AI (Holt-Winters) ·
+            Data diperbarui otomatis setiap hari
+        </span>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <span style="
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 4px 14px;
+            color: white;
+            font-size: 12px;
+        ">
+            <i class="fas fa-calendar-day" style="margin-right:5px;"></i>
+            Harga Hari Ini:
+            <strong>{{ $today->locale('id')->isoFormat('DD MMM YYYY') }}</strong>
+        </span>
+        <span style="
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 4px 14px;
+            color: white;
+            font-size: 12px;
+        ">
+            <i class="fas fa-calendar-range" style="margin-right:5px;"></i>
+            Periode prediksi:
+            <strong>{{ $globalTanggalMulai->locale('id')->isoFormat('DD MMM YYYY') }}</strong>
+            →
+            <strong>{{ $globalTanggalAkhir->locale('id')->isoFormat('DD MMM YYYY') }}</strong>
+        </span>
+    </div>
+</div>
+@endif
+
 {{-- ── STAT CARDS ── --}}
 <div class="stats-grid">
 
-    {{-- Card Oranye: Rata-rata Harga Terkini --}}
     <div class="stat-card">
         <div>
             <div class="stat-label">Rata-rata Harga Terkini</div>
@@ -25,7 +79,6 @@
         <div class="stat-icon icon-orange"><i class="fas fa-chart-bar"></i></div>
     </div>
 
-    {{-- Card Hijau: Harga Tertinggi Terkini --}}
     <div class="stat-card">
         <div>
             <div class="stat-label">Harga Tertinggi Terkini</div>
@@ -41,7 +94,6 @@
         <div class="stat-icon icon-orange"><i class="fas fa-arrow-trend-up"></i></div>
     </div>
 
-    {{-- Card Biru: Total Komoditas --}}
     <div class="stat-card">
         <div>
             <div class="stat-label">Total Komoditas</div>
@@ -55,6 +107,7 @@
     </div>
 
 </div>
+
 {{-- ── FILTER BAR ── --}}
 <form method="GET" action="{{ url()->current() }}">
     <x-filter-bar
@@ -77,13 +130,41 @@
     </x-filter-bar>
 </form>
 
-{{-- ── RECENT PRICE TABLE ── --}}
+{{-- ── TABEL HARGA ── --}}
 <div class="table-card">
 
     <div class="table-header">
         <div>
-            <div class="table-title">Riwayat Harga Terkini</div>
-            <div class="table-subtitle">Menampilkan pembaruan harga komoditas terbaru.</div>
+            <div class="table-title">
+                Harga Komoditas
+                <span style="
+                    background: #dcfce7;
+                    color: #166534;
+                    font-size: 11px;
+                    font-weight: 600;
+                    padding: 2px 10px;
+                    border-radius: 20px;
+                    margin-left: 8px;
+                    vertical-align: middle;
+                ">
+                    <span id="liveDot" style="
+                        display:inline-block;
+                        width:6px; height:6px;
+                        background:#16a34a;
+                        border-radius:50%;
+                        margin-right:4px;
+                        animation: pulse-dot 2s infinite;
+                    "></span>
+                    LIVE
+                </span>
+            </div>
+            <div class="table-subtitle">
+                Harga berubah otomatis setiap hari sesuai prediksi AI.
+                @if(isset($globalTanggalAkhir) && $globalTanggalAkhir)
+                    Prediksi tersedia hingga
+                    <strong>{{ $globalTanggalAkhir->locale('id')->isoFormat('DD MMMM YYYY') }}</strong>.
+                @endif
+            </div>
         </div>
         <div class="table-actions">
             <div class="search-box">
@@ -102,45 +183,164 @@
                     <th>Komoditas</th>
                     <th>Kategori</th>
                     <th>Harga (IDR)</th>
+                    <th>
+                        Tanggal Harga
+                        {{-- Tooltip penjelasan kolom --}}
+                        <span style="
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 14px; height: 14px;
+                            background: #e5e7eb;
+                            color: #6b7280;
+                            border-radius: 50%;
+                            font-size: 9px;
+                            font-weight: 700;
+                            cursor: help;
+                            margin-left: 4px;
+                            vertical-align: middle;
+                        " title="Tanggal data aktual = tanggal data nyata terakhir yang diketahui. Tanggal prediksi = tanggal sesuai forecast AI hari ini.">
+                            ?
+                        </span>
+                    </th>
                     <th>Perubahan</th>
+                    <th>Status Prediksi</th>
                 </tr>
             </thead>
-           <tbody>
-    @foreach($recentPrices as $item)
-    <tr>
-        {{-- Komoditas --}}
-        <td class="commodity-name">{{ $item->commodity_name ?? '-' }}</td>
+            <tbody>
+                @foreach($recentPrices as $item)
+                <tr>
+                    {{-- Komoditas --}}
+                    <td class="commodity-name">{{ $item->commodity_name ?? '-' }}</td>
 
-        {{-- Kategori --}}
-        <td class="region-text">{{ $item->kategori ?? '-' }}</td>
+                    {{-- Kategori --}}
+                    <td class="region-text">{{ $item->kategori ?? '-' }}</td>
 
-        {{-- Harga (IDR) --}}
-        <td class="price-text">Rp {{ number_format($item->harga_sekarang ?? 0, 0, ',', '.') }}</td>
+                    {{-- Harga --}}
+                    <td class="price-text">
+                        Rp {{ number_format($item->harga_sekarang ?? 0, 0, ',', '.') }}
+                    </td>
 
-        {{-- Perubahan --}}
-        <td>
-            @php
-                $selisih = $item->selisih ?? 0;
-                $persen  = $item->persen ?? 0;
-            @endphp
-            @if($selisih > 0)
-                <span class="stat-change up" style="font-size:12px">
-                    <i class="fas fa-arrow-up"></i> +{{ number_format(abs($persen), 2) }}%
-                </span>
-            @elseif($selisih < 0)
-                <span class="stat-change down" style="font-size:12px">
-                    <i class="fas fa-arrow-down"></i> -{{ number_format(abs($persen), 2) }}%
-                </span>
-            @else
-                <span class="stat-change neutral" style="font-size:12px">
-                    <i class="fas fa-minus"></i> 0%
-                </span>
-            @endif
-        </td>
-    </tr>
-    @endforeach
-</tbody>
+                    {{-- Tanggal Harga --}}
+                    <td>
+                        @if($item->tanggal_harga)
+                            @if($item->belum_mulai)
+                                {{-- Belum mulai: tampilkan tanggal aktual + label kecil --}}
+                                <div>
+                                    <span style="font-size: 12px; color: #374151; font-weight: 500;">
+                                        <i class="fas fa-calendar-day" style="margin-right:4px; font-size:10px; color:#9ca3af;"></i>
+                                        {{ \Carbon\Carbon::parse($item->tanggal_harga)->locale('id')->isoFormat('DD MMM YYYY') }}
+                                    </span>
+                                    <br>
+                                    <span style="font-size: 10px; color: #9ca3af; font-style: italic;">
+                                        data aktual terakhir
+                                    </span>
+                                </div>
+                            @elseif($item->dalam_range)
+                                {{-- Aktif: tanggal hari ini, warna biru --}}
+                                <span style="font-size: 12px; color: #1d4ed8; font-weight: 600;">
+                                    <i class="fas fa-calendar-day" style="margin-right:4px; font-size:10px;"></i>
+                                    {{ \Carbon\Carbon::parse($item->tanggal_harga)->locale('id')->isoFormat('DD MMM YYYY') }}
+                                </span>
+                            @else
+                                {{-- Kadaluarsa: tanggal akhir prediksi --}}
+                                <span style="font-size: 12px; color: #92400e; font-weight: 400;">
+                                    <i class="fas fa-calendar-day" style="margin-right:4px; font-size:10px;"></i>
+                                    {{ \Carbon\Carbon::parse($item->tanggal_harga)->locale('id')->isoFormat('DD MMM YYYY') }}
+                                </span>
+                            @endif
+                        @else
+                            <span style="color:#9ca3af; font-size:12px;">-</span>
+                        @endif
+                    </td>
 
+                    {{-- Perubahan --}}
+                    <td>
+                        @php
+                            $selisih = $item->selisih ?? 0;
+                            $persen  = $item->persen  ?? 0;
+                        @endphp
+                        @if($selisih > 0)
+                            <span class="stat-change up" style="font-size:12px">
+                                <i class="fas fa-arrow-up"></i> +{{ number_format(abs($persen), 2) }}%
+                            </span>
+                        @elseif($selisih < 0)
+                            <span class="stat-change down" style="font-size:12px">
+                                <i class="fas fa-arrow-down"></i> -{{ number_format(abs($persen), 2) }}%
+                            </span>
+                        @else
+                            <span class="stat-change neutral" style="font-size:12px">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                        @endif
+                    </td>
+
+                    {{-- Status Prediksi --}}
+                    <td>
+                        @if($item->dalam_range)
+                            <span style="
+                                background: #dcfce7;
+                                color: #166534;
+                                font-size: 11px;
+                                font-weight: 600;
+                                padding: 3px 10px;
+                                border-radius: 20px;
+                                white-space: nowrap;
+                            ">
+                                <i class="fas fa-check-circle" style="margin-right:3px;"></i>
+                                Aktif
+                            </span>
+                        @elseif($item->sudah_kadaluarsa)
+                            <span style="
+                                background: #fef3c7;
+                                color: #92400e;
+                                font-size: 11px;
+                                font-weight: 600;
+                                padding: 3px 10px;
+                                border-radius: 20px;
+                                white-space: nowrap;
+                            " title="Prediksi berakhir {{ $item->tanggal_akhir?->locale('id')->isoFormat('DD MMM YYYY') }}">
+                                <i class="fas fa-clock" style="margin-right:3px;"></i>
+                                Kadaluarsa
+                            </span>
+                        @elseif($item->belum_mulai)
+                            {{-- Belum mulai: badge biru + info kapan mulai + keterangan harga aktual --}}
+                            <div>
+                                <span style="
+                                    background: #eff6ff;
+                                    color: #1d4ed8;
+                                    font-size: 11px;
+                                    font-weight: 600;
+                                    padding: 3px 10px;
+                                    border-radius: 20px;
+                                    white-space: nowrap;
+                                    display: inline-block;
+                                " title="Prediksi AI mulai {{ $item->tanggal_mulai?->locale('id')->isoFormat('DD MMM YYYY') }}. Harga sekarang adalah data aktual terakhir.">
+                                    <i class="fas fa-calendar-check" style="margin-right:3px;"></i>
+                                    Mulai {{ $item->tanggal_mulai?->locale('id')->isoFormat('DD MMM') }}
+                                </span>
+                                <br>
+                                <span style="font-size: 10px; color: #9ca3af; font-style: italic; margin-top: 2px; display: inline-block;">
+                                    harga: data aktual
+                                </span>
+                            </div>
+                        @else
+                            <span style="
+                                background: #f3f4f6;
+                                color: #6b7280;
+                                font-size: 11px;
+                                padding: 3px 10px;
+                                border-radius: 20px;
+                                white-space: nowrap;
+                            ">
+                                <i class="fas fa-minus" style="margin-right:3px;"></i>
+                                Tidak ada data
+                            </span>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
         </table>
     </div>
     @else
@@ -193,7 +393,7 @@
         </div>
     </div>
 
-   @if(isset($chartLabels) && count($chartLabels) > 0)
+    @if(isset($chartLabels) && count($chartLabels) > 0)
     <div style="display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; padding: 1.5rem 0;">
         <div style="position: relative; width: 300px; height: 300px; flex-shrink: 0;">
             <canvas id="categoryPieChart"></canvas>
@@ -204,7 +404,6 @@
     <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
         <i class="fas fa-chart-pie" style="font-size: 48px; margin-bottom: 1rem;"></i>
         <p>Belum ada data kategori untuk ditampilkan</p>
-        <small>Pastikan tabel komoditas memiliki data dengan status aktif dan kategori yang terisi, serta memiliki riwayat harga.</small>
     </div>
     @endif
 </div>
@@ -214,6 +413,16 @@
 @push('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
+/* ── Pulse animation ── */
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.5; transform: scale(1.3); }
+    }
+`;
+document.head.appendChild(style);
+
 /* ── Live search tabel ── */
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('tableSearch');
@@ -227,15 +436,50 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+/* ── Auto-refresh tengah malam ── */
+(function () {
+    function msUntilMidnight() {
+        const now  = new Date();
+        const next = new Date(now);
+        next.setHours(24, 0, 0, 0);
+        return next - now;
+    }
+
+    setTimeout(function () {
+        window.location.reload();
+    }, msUntilMidnight());
+
+    const countdownEl = document.createElement('div');
+    countdownEl.id = 'refreshCountdown';
+    countdownEl.style.cssText = `
+        position: fixed; bottom: 16px; right: 16px;
+        background: rgba(0,0,0,0.6); color: white;
+        font-size: 11px; padding: 6px 12px;
+        border-radius: 20px; z-index: 9999;
+        display: none;
+    `;
+    document.body.appendChild(countdownEl);
+
+    setInterval(function () {
+        const ms  = msUntilMidnight();
+        const min = Math.floor(ms / 60000);
+        const sec = Math.floor((ms % 60000) / 1000);
+
+        if (min < 5) {
+            countdownEl.style.display = 'block';
+            countdownEl.textContent = `🔄 Harga diperbarui dalam ${min}m ${sec}s`;
+        } else {
+            countdownEl.style.display = 'none';
+        }
+    }, 1000);
+})();
+
 /* ── Pie Chart ── */
 (function () {
-    // Selalu array PHP plain — dijamin oleh controller
     const labels = @json($chartLabels ?? []);
     const values = @json($chartValues ?? []);
 
-    // Guard: harus array dan tidak kosong
     if (!Array.isArray(labels) || !Array.isArray(values) || labels.length === 0 || values.length === 0) {
-        console.warn('Pie chart: tidak ada data atau format data salah.', { labels, values });
         return;
     }
 
@@ -247,12 +491,8 @@ document.addEventListener('DOMContentLoaded', function () {
     ];
 
     const canvas = document.getElementById('categoryPieChart');
-    if (!canvas) {
-        console.error('Canvas #categoryPieChart tidak ditemukan di DOM.');
-        return;
-    }
+    if (!canvas) return;
 
-    // Destroy chart lama jika ada (mencegah duplikat saat hot-reload)
     if (window.pieChartInstance) {
         window.pieChartInstance.destroy();
         window.pieChartInstance = null;
@@ -290,7 +530,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Custom legend
     const legend = document.getElementById('chartLegend');
     if (!legend) return;
 
@@ -298,8 +537,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const total = values.reduce((a, b) => a + b, 0);
 
     labels.forEach(function (label, i) {
-        const val  = values[i].toLocaleString('id-ID');
-        const pct  = ((values[i] / total) * 100).toFixed(1);
+        const val   = values[i].toLocaleString('id-ID');
+        const pct   = ((values[i] / total) * 100).toFixed(1);
         const color = colors[i % colors.length];
 
         const el = document.createElement('div');
@@ -314,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 })();
 
-/* ── Intercept filter bar submit (reset ke clean URL jika kosong) ── */
+/* ── Intercept filter bar submit ── */
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.querySelector('.filter-bar')?.closest('form');
     if (!form) return;

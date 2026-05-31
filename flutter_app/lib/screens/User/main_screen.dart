@@ -10,6 +10,7 @@ import 'package:flutter_app/screens/user/prediction_screen.dart';
 import 'package:flutter_app/screens/user/statistics_screen.dart';
 import 'package:flutter_app/screens/user/profile_screen.dart';
 import 'package:flutter_app/screens/user/chat_ai_screen.dart';
+import 'package:flutter_app/screens/User/commodity_detail_screen.dart';
 
 class UserMainScreen extends StatefulWidget {
   const UserMainScreen({super.key});
@@ -22,6 +23,9 @@ class _UserMainScreenState extends State<UserMainScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
 
+  // ── BARU: simpan nama komoditas yang dipilih dari detail screen ──
+  String? _initialPredictionCommodity;
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
 
@@ -33,15 +37,19 @@ class _UserMainScreenState extends State<UserMainScreen>
     'Profil',
   ];
 
-  final List<Widget> _screens = const [
-    UserHomeScreen(),
-    UserPredictionScreen(),
-    UserStatisticsScreen(),
-    UserSimulationScreen(),
-    ProfileScreen(),
+  List<Widget> get _screens => [
+    UserHomeScreen(onOpenCommodity: _openCommodityDetail),
+    // ── UBAH: pass initialCommodity + ValueKey agar rebuild saat komoditas beda ──
+    UserPredictionScreen(
+      key: ValueKey(_initialPredictionCommodity ?? '__default__'),
+      initialCommodity: _initialPredictionCommodity,
+    ),
+    const UserStatisticsScreen(),
+    const UserSimulationScreen(),
+    const ProfileScreen(),
   ];
 
-  int _unreadCount = 0; // mulai 0, fetch dari API
+  int _unreadCount = 0;
   Timer? _badgeTimer;
   final _notifService = NotificationApiService();
 
@@ -57,9 +65,7 @@ class _UserMainScreenState extends State<UserMainScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Fetch badge saat pertama buka
     _fetchUnreadCount();
-    // Polling badge tiap 30 detik
     _badgeTimer = Timer.periodic(
       const Duration(seconds: 30),
       (_) => _fetchUnreadCount(),
@@ -82,9 +88,27 @@ class _UserMainScreenState extends State<UserMainScreen>
     super.dispose();
   }
 
+  Future<void> _openCommodityDetail(String commodityId) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CommodityDetailScreen(commodityId: commodityId),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result != null && result['action'] == 'navigate_tab') {
+      setState(() {
+        _selectedIndex = result['tabIndex'] as int;
+        // ── BARU: simpan nama komoditas dari result ──
+        _initialPredictionCommodity = result['initialCommodity'] as String?;
+      });
+    }
+  }
+
   void _openChatAI() {
     final size = MediaQuery.of(context).size;
-
     Navigator.push(
       context,
       PageRouteBuilder(
@@ -101,18 +125,16 @@ class _UserMainScreenState extends State<UserMainScreen>
     );
   }
 
-  // ── Buka notifikasi dan tangani hasil navigasi ──
   Future<void> _openNotifications() async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(builder: (_) => const NotificationScreen()),
     );
 
-    // Fetch ulang badge dari API setelah kembali
     await _fetchUnreadCount();
 
     if (result != null && mounted) {
-      final action = result['action'] as String?;
+      final action   = result['action'] as String?;
       final tabIndex = result['tabIndex'] as int?;
 
       if (action == 'navigate_tab' && tabIndex != null) {
@@ -129,7 +151,6 @@ class _UserMainScreenState extends State<UserMainScreen>
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
         actions: [
-          // ── Notifikasi ──
           Stack(
             children: [
               IconButton(
@@ -161,7 +182,6 @@ class _UserMainScreenState extends State<UserMainScreen>
                 ),
             ],
           ),
-          // ── Pengaturan ──
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.push(
@@ -177,7 +197,6 @@ class _UserMainScreenState extends State<UserMainScreen>
         children: _screens,
       ),
 
-      // ── Floating Button AI ──────────────────────────────
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: ScaleTransition(
@@ -194,7 +213,7 @@ class _UserMainScreenState extends State<UserMainScreen>
                   colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
                 ),
                 shape: BoxShape.circle,
-                boxShadow: [    //INI EFEK GLOW-NYA
+                boxShadow: const [
                   BoxShadow(
                     color: Color.fromRGBO(21, 101, 192, 0.45),    //biru dengan transparansi
                     blurRadius: 16, //seberapa besar efek glow-nya  
@@ -231,7 +250,6 @@ class _UserMainScreenState extends State<UserMainScreen>
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
-      // ── Bottom Navigation ────────────────────────────────
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 6,
@@ -240,12 +258,9 @@ class _UserMainScreenState extends State<UserMainScreen>
           child: Row(
             children: [
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Beranda'),
-              _buildNavItem(
-                  1, Icons.trending_up_outlined, Icons.trending_up, 'Prediksi'),
-              _buildNavItem(
-                  2, Icons.bar_chart_outlined, Icons.bar_chart, 'Statistik'),
-              _buildNavItem(
-                  3, Icons.calculate_outlined, Icons.calculate, 'Simulasi'),
+              _buildNavItem(1, Icons.trending_up_outlined, Icons.trending_up, 'Prediksi'),
+              _buildNavItem(2, Icons.bar_chart_outlined, Icons.bar_chart, 'Statistik'),
+              _buildNavItem(3, Icons.calculate_outlined, Icons.calculate, 'Simulasi'),
               _buildNavItem(4, Icons.person_outline, Icons.person, 'Profil'),
             ],
           ),
@@ -331,7 +346,6 @@ class _CircularRevealClipper extends CustomClipper<Path> {
       pow(centerOffset.dx, 2) + pow(centerOffset.dy, 2),
     );
     final double radius = maxRadius * fraction;
-
     return Path()
       ..addOval(Rect.fromCircle(center: centerOffset, radius: radius));
   }
