@@ -15,97 +15,215 @@ use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
+    // ─────────────────────────────────────────────────────────────
+    // HELPER: Ambil harga untuk tanggal tertentu dari forecast
+    // ─────────────────────────────────────────────────────────────
+    private function getHargaForDate(array $forecast, array $tanggalPred, float $hargaTerakhir, Carbon $targetDate): float
+    {
+        if (empty($forecast) || empty($tanggalPred)) {
+            return $hargaTerakhir;
+        }
+
+        $targetStr = $targetDate->toDateString();
+
+        // Cari exact match dulu
+        $index = array_search($targetStr, $tanggalPred);
+        if ($index !== false && isset($forecast[$index])) {
+            return (float) $forecast[$index];
+        }
+
+        // Kalau tanggal sebelum range prediksi → pakai harga_terakhir
+        if ($targetStr < $tanggalPred[0]) {
+            return $hargaTerakhir;
+        }
+
+        // Kalau tanggal setelah range prediksi → pakai forecast terakhir
+        $lastTanggal = end((array) $tanggalPred);
+        if ($targetStr > $lastTanggal) {
+            $lastForecast = end((array) $forecast);
+            return (float) $lastForecast;
+        }
+
+        // Fallback: cari tanggal terdekat
+        foreach ($tanggalPred as $i => $tgl) {
+            if ($tgl >= $targetStr) {
+                return (float) ($forecast[$i] ?? $hargaTerakhir);
+            }
+        }
+
+        return $hargaTerakhir;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // HELPER: Build item prediksi dengan harga dinamis
+    // ─────────────────────────────────────────────────────────────
+    private function buildPrediksiItem($pred, Carbon $today): object
+    {
+        $payload         = $pred->payload ?? [];
+        $forecast        = $payload['forecast']          ?? [];
+        $tanggalPred     = $payload['tanggal_pred']      ?? [];
+        $hargaTerakhir   = (float) ($payload['harga_terakhir']  ?? 0);
+        $tanggalTerakhir = $payload['tanggal_terakhir']  ?? null;
+        $kategori        = $payload['kategori']          ?? ($pred->kategori ?? '');
+
+        // ── Range prediksi ───────────────────────────────────────
+        $tanggalPredArr = (array) $tanggalPred;
+        $tanggalMulai   = !empty($tanggalPredArr) ? Carbon::parse($tanggalPredArr[0]) : null;
+        $lastTgl        = end($tanggalPredArr);
+        $tanggalAkhir   = !empty($tanggalPredArr) ? Carbon::parse($lastTgl) : null;
+
+        $sudahMulai      = $tanggalMulai  && $today->gte($tanggalMulai);
+        $belumSelesai    = $tanggalAkhir  && $today->lte($tanggalAkhir);
+        $dalamRange      = $sudahMulai    && $belumSelesai;
+        $sudahKadaluarsa = $tanggalAkhir  && $today->gt($tanggalAkhir);
+        $belumMulai      = $tanggalMulai  && $today->lt($tanggalMulai);
+
+        // ── Harga & tanggal harga berdasarkan kondisi ────────────
+        if ($dalamRange) {
+            // Hari ini dalam range → ambil harga forecast hari ini
+            $hargaHariIni = $this->getHargaForDate($forecast, $tanggalPredArr, $hargaTerakhir, $today);
+            $tanggalHarga = $today->toDateString();
+
+        } elseif ($sudahKadaluarsa) {
+            // Prediksi sudah habis → pakai forecast terakhir
+            $lastForecast = end((array) $forecast);
+            $hargaHariIni = (float) ($lastForecast ?: $hargaTerakhir);
+            $tanggalHarga = $tanggalAkhir->toDateString();
+
+        } else {
+            // Belum mulai → pakai harga aktual terakhir
+            $hargaHariIni = $hargaTerakhir;
+            $tanggalHarga = $tanggalTerakhir; // tanggal data aktual terakhir dari Flask
+        }
+
+        // Selisih vs harga aktual terakhir
+        $selisih = $hargaHariIni - $hargaTerakhir;
+        $persen  = $hargaTerakhir > 0 ? ($selisih / $hargaTerakhir) * 100 : 0;
+
+        $item = new \stdClass();
+        $item->commodity_name    = $pred->commodity_name;
+        $item->kategori          = $kategori;
+        $item->harga_sekarang    = $hargaHariIni;
+        $item->harga_terakhir    = $hargaTerakhir;
+        $item->selisih           = $selisih;
+        $item->persen            = $persen;
+        $item->tanggal_mulai     = $tanggalMulai;
+        $item->tanggal_akhir     = $tanggalAkhir;
+        $item->dalam_range       = $dalamRange;
+        $item->sudah_kadaluarsa  = $sudahKadaluarsa;
+        $item->belum_mulai       = $belumMulai;
+        $item->tanggal_harga     = $tanggalHarga;
+        $item->current_price     = $hargaTerakhir;
+        $item->date              = $pred->created_at;
+
+        return $item;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GET /home
+    // ─────────────────────────────────────────────────────────────
     public function home(Request $request)
     {
         $user     = Auth::user();
         $search   = $request->get('search');
-        $category = $request->get('category'); // nama kategori (string)
+        $category = $request->get('category');
         $date     = $request->get('date');
 
-        // ── Ambil semua prediksi terbaru per komoditas ──
-        // Karena MongoDB, kita ambil semua dulu lalu group by commodity_name
-        // untuk mendapatkan prediksi terbaru per komoditas
+        $today = $date ? Carbon::parse($date) : Carbon::today();
+
+        // ── Ambil semua prediksi terbaru per komoditas ──────────
         $allPredictions = Prediction::where('status', 'completed')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Ambil prediksi terbaru per komoditas (deduplicate)
         $latestPerCommodity = $allPredictions
             ->groupBy('commodity_name')
-            ->map(fn($group) => $group->first()) // sudah sorted desc, jadi first = terbaru
+            ->map(fn($group) => $group->first())
             ->values();
 
-        // ── Terapkan filter ──
+        // ── Filter ───────────────────────────────────────────────
         if ($search) {
             $latestPerCommodity = $latestPerCommodity->filter(
                 fn($p) => str_contains(strtolower($p->commodity_name), strtolower($search))
             )->values();
         }
-    
 
         if ($category && $category !== 'Semua') {
-            $latestPerCommodity = $latestPerCommodity->filter(
-                fn($p) => strtolower($p->kategori) === strtolower($category)
-            )->values();
-        }
-
-        if ($date) {
-            $targetDate = Carbon::parse($date)->toDateString();
-            $latestPerCommodity = $latestPerCommodity->filter(function ($p) use ($targetDate) {
-                $createdAt = $p->created_at instanceof Carbon
-                    ? $p->created_at->toDateString()
-                    : Carbon::parse($p->created_at)->toDateString();
-                return $createdAt === $targetDate;
+            $latestPerCommodity = $latestPerCommodity->filter(function ($p) use ($category) {
+                $kat = $p->payload['kategori'] ?? ($p->kategori ?? '');
+                return strtolower($kat) === strtolower($category);
             })->values();
         }
 
-        // ── Hitung selisih harga (harga_terakhir vs forecast pertama) ──
-        foreach ($latestPerCommodity as $item) {
-            $hargaLama        = $item->current_price ?? 0;
-            $forecastPertama  = $item->forecast[0] ?? $hargaLama;
-            $item->selisih    = $forecastPertama - $hargaLama;
-            $item->persen     = $hargaLama > 0 ? ($item->selisih / $hargaLama) * 100 : 0;
-            // Tambah field virtual untuk Blade agar kolom "Harga" tetap bisa tampil
-            $item->harga_sekarang = $hargaLama;
-            $item->date           = $item->created_at;
-        }
+        // ── Build items ──────────────────────────────────────────
+        $items = $latestPerCommodity->map(
+            fn($pred) => $this->buildPrediksiItem($pred, $today)
+        );
 
-        $latestPerCommodity = $latestPerCommodity
-            ->sortByDesc(fn($p) => $p->current_price ?? 0)
-            ->values();
+        $items = $items->sortByDesc(fn($p) => $p->harga_sekarang)->values();
 
-        // ── Manual pagination ──
+        // ── Pagination ───────────────────────────────────────────
         $perPage     = 10;
         $currentPage = (int) $request->get('page', 1);
-        $totalKomoditas = PriceHistory::distinct('commodity_name')->count('commodity_name');
-        $items       = $latestPerCommodity->forPage($currentPage, $perPage);
+        $total       = $items->count();
+        $pageItems   = $items->forPage($currentPage, $perPage);
 
         $recentPrices = new \Illuminate\Pagination\LengthAwarePaginator(
-            $items,
-            $totalKomoditas,
+            $pageItems,
+            $total,
             $perPage,
             $currentPage,
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        // ── Stat cards ──
-
-        $rataRataHarga = (int) round(
-            $latestPerCommodity->avg(fn($p) => $p->current_price ?? 0) ?? 0
-        );
-
-        $komoditasTertinggi     = $latestPerCommodity->first(); // sudah sortByDesc current_price
-        $hargaTertinggi      = $komoditasTertinggi?->current_price ?? 0;
+        // ── Stat cards ───────────────────────────────────────────
+        $rataRataHarga          = (int) round($items->avg(fn($p) => $p->harga_sekarang) ?? 0);
+        $komoditasTertinggi     = $items->first();
+        $hargaTertinggi         = $komoditasTertinggi?->harga_sekarang ?? 0;
         $namaKomoditasTertinggi = $komoditasTertinggi?->commodity_name ?? '-';
+        $totalKomoditas         = Commodity::count();
 
-      $totalKomoditas = Commodity::count();
+        // ── Banner range prediksi global ─────────────────────────
+        $allTanggalMulai    = $items->filter(fn($p) => $p->tanggal_mulai)->map(fn($p) => $p->tanggal_mulai);
+        $allTanggalAkhir    = $items->filter(fn($p) => $p->tanggal_akhir)->map(fn($p) => $p->tanggal_akhir);
+        $globalTanggalMulai = $allTanggalMulai->min();
+        $globalTanggalAkhir = $allTanggalAkhir->max();
 
-        // ── Volatilitas: dari forecast 7 nilai pertama prediksi terbaru ──
-      $last7 = [];
-$komoditasTertinggi = $latestPerCommodity->first(); // sudah sortByDesc, first = harga tertinggi
-if ($komoditasTertinggi) {
-    $last7 = array_slice($komoditasTertinggi->forecast, 0, 7);
-}
+        // ── Category list ────────────────────────────────────────
+        $categoryList = $allPredictions
+            ->pluck('payload')
+            ->map(fn($p) => $p['kategori'] ?? null)
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->map(fn($name) => (object) ['_id' => $name, 'name' => $name]);
+
+        // ── Pie Chart ────────────────────────────────────────────
+        try {
+            $grouped = $items
+                ->filter(fn($p) => !empty($p->kategori) && $p->harga_sekarang > 0)
+                ->groupBy('kategori')
+                ->map(fn($grp) => (int) round($grp->avg(fn($p) => $p->harga_sekarang)))
+                ->filter(fn($val) => $val > 0)
+                ->sortDesc();
+
+            $chartLabels = array_values($grouped->keys()->toArray());
+            $chartValues = array_values($grouped->values()->map(fn($v) => (int) $v)->toArray());
+        } catch (\Exception $e) {
+            Log::error('Pie Chart Error: ' . $e->getMessage());
+            $chartLabels = [];
+            $chartValues = [];
+        }
+
+        // ── Volatilitas ──────────────────────────────────────────
+        $last7 = [];
+        if ($komoditasTertinggi) {
+            $pred7 = $allPredictions->firstWhere('commodity_name', $komoditasTertinggi->commodity_name);
+            if ($pred7) {
+                $last7 = array_slice($pred7->payload['forecast'] ?? [], 0, 7);
+            }
+        }
 
         if (count($last7) > 1) {
             $mean              = array_sum($last7) / count($last7);
@@ -121,42 +239,14 @@ if ($komoditasTertinggi) {
             $indexVolatilitas  = 0;
         }
 
-        // ── Category list untuk filter dropdown ──
-        // Ambil dari kategori unik yang ada di data prediksi
-        $categoryList = $allPredictions
-            ->pluck('kategori')
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values()
-            ->map(fn($name) => (object) ['_id' => $name, 'name' => $name]);
-
-        // ── Pie Chart: rata-rata harga_terakhir per kategori ──
-        try {
-            $grouped = $allPredictions
-                ->groupBy('commodity_name')
-                ->map(fn($group) => $group->first()) // terbaru per komoditas
-                ->values()
-                ->filter(fn($p) => !empty($p->kategori) && ($p->current_price ?? 0) > 0)
-                ->groupBy('kategori')
-                ->map(fn($items) => (int) round($items->avg(fn($p) => $p->current_price ?? 0)))
-                ->filter(fn($val) => $val > 0)
-                ->sortDesc();
-
-            $chartLabels = array_values($grouped->keys()->toArray());
-            $chartValues = array_values($grouped->values()->map(fn($v) => (int) $v)->toArray());
-        } catch (\Exception $e) {
-            Log::error('Pie Chart Error: ' . $e->getMessage());
-            $chartLabels = [];
-            $chartValues = [];
-        }
-
-return view('user.home', compact(
-    'user', 'recentPrices',
-    'rataRataHarga', 'hargaTertinggi', 'namaKomoditasTertinggi', 'totalKomoditas',
-    'statusVolatilitas', 'indexVolatilitas',
-    'categoryList', 'chartLabels', 'chartValues'
-));
+        return view('user.home', compact(
+            'user', 'recentPrices',
+            'rataRataHarga', 'hargaTertinggi', 'namaKomoditasTertinggi', 'totalKomoditas',
+            'statusVolatilitas', 'indexVolatilitas',
+            'categoryList', 'chartLabels', 'chartValues',
+            'globalTanggalMulai', 'globalTanggalAkhir',
+            'today'
+        ));
     }
 
     public function downloadPdf(Request $request)
@@ -164,6 +254,7 @@ return view('user.home', compact(
         $search   = $request->get('search');
         $category = $request->get('category');
         $date     = $request->get('date');
+        $today    = $date ? Carbon::parse($date) : Carbon::today();
 
         $allPredictions = Prediction::where('status', 'completed')
             ->orderBy('created_at', 'desc')
@@ -181,59 +272,45 @@ return view('user.home', compact(
         }
 
         if ($category && $category !== 'Semua') {
-            $latestPerCommodity = $latestPerCommodity->filter(
-                fn($p) => strtolower($p->kategori) === strtolower($category)
-            )->values();
-        }
-
-        if ($date) {
-            $targetDate = Carbon::parse($date)->toDateString();
-            $latestPerCommodity = $latestPerCommodity->filter(function ($p) use ($targetDate) {
-                return Carbon::parse($p->created_at)->toDateString() === $targetDate;
+            $latestPerCommodity = $latestPerCommodity->filter(function ($p) use ($category) {
+                $kat = $p->payload['kategori'] ?? ($p->kategori ?? '');
+                return strtolower($kat) === strtolower($category);
             })->values();
         }
 
-        // Siapkan field virtual untuk Blade PDF (sama dengan home())
-        foreach ($latestPerCommodity as $item) {
-            $hargaLama           = $item->current_price ?? 0;
-            $forecastPertama     = $item->forecast[0] ?? $hargaLama;
-            $item->selisih       = $forecastPertama - $hargaLama;
-            $item->persen        = $hargaLama > 0 ? ($item->selisih / $hargaLama) * 100 : 0;
-            $item->harga_sekarang = $hargaLama;
-            $item->date           = $item->created_at;
-        }
-
-        $recentPrices = $latestPerCommodity->take(500);
+        $recentPrices = $latestPerCommodity
+            ->map(fn($pred) => $this->buildPrediksiItem($pred, $today))
+            ->sortByDesc(fn($p) => $p->harga_sekarang)
+            ->take(500);
 
         $adaFilter = $search || ($category && $category !== 'Semua') || $date;
 
-        if ($adaFilter && $latestPerCommodity->isNotEmpty()) {
-            $hargaTerbaruData = $latestPerCommodity->first();
-            $hargaTerbaru     = $hargaTerbaruData->current_price ?? 0;
+        if ($adaFilter && $recentPrices->isNotEmpty()) {
+            $hargaTerbaruData = $recentPrices->first();
+            $hargaTerbaru     = $hargaTerbaruData->harga_sekarang;
             $namaKomoditas    = $hargaTerbaruData->commodity_name;
         } else {
-            $hargaTerbaru     = (int) round($latestPerCommodity->avg(fn($p) => $p->current_price ?? 0) ?? 0);
+            $hargaTerbaru     = (int) round($recentPrices->avg(fn($p) => $p->harga_sekarang) ?? 0);
             $namaKomoditas    = 'Semua Komoditas';
-            $hargaTerbaruData = $latestPerCommodity->first();
+            $hargaTerbaruData = $recentPrices->first();
         }
 
-        $hargaBulanLalu = $hargaTerbaru;
+        $hargaBulanLalu = $hargaTerbaruData?->harga_terakhir ?? $hargaTerbaru;
+        $hargaKemarin   = $hargaBulanLalu;
+        $hargaChange    = $hargaTerbaru - $hargaBulanLalu;
+        $hargaPercent   = $hargaBulanLalu > 0 ? ($hargaChange / $hargaBulanLalu) * 100 : 0;
+
+        $last7 = [];
         if ($hargaTerbaruData) {
-            $prediksiLama = Prediction::where('status', 'completed')
+            $pred7 = Prediction::where('status', 'completed')
                 ->where('commodity_name', $hargaTerbaruData->commodity_name)
-                ->where('created_at', '<=', Carbon::now()->subMonth())
                 ->orderBy('created_at', 'desc')
                 ->first();
-            if ($prediksiLama) {
-                $hargaBulanLalu = $prediksiLama->current_price ?? $hargaTerbaru;
+            if ($pred7) {
+                $last7 = array_slice($pred7->payload['forecast'] ?? [], 0, 7);
             }
         }
 
-        $hargaKemarin = $hargaBulanLalu;
-        $hargaChange  = $hargaTerbaru - $hargaBulanLalu;
-        $hargaPercent = $hargaBulanLalu > 0 ? ($hargaChange / $hargaBulanLalu) * 100 : 0;
-
-        $last7 = $hargaTerbaruData ? array_slice($hargaTerbaruData->forecast, 0, 7) : [];
         if (count($last7) > 1) {
             $mean              = array_sum($last7) / count($last7);
             $variance          = array_sum(array_map(fn($x) => pow($x - $mean, 2), $last7)) / count($last7);
@@ -248,22 +325,17 @@ return view('user.home', compact(
             $indexVolatilitas  = 0;
         }
 
-        // Pie chart PDF
         try {
-            $grouped = $allPredictions
-                ->groupBy('commodity_name')
-                ->map(fn($group) => $group->first())
-                ->values()
-                ->filter(fn($p) => !empty($p->kategori) && ($p->current_price ?? 0) > 0)
+            $grouped = $recentPrices
+                ->filter(fn($p) => !empty($p->kategori) && $p->harga_sekarang > 0)
                 ->groupBy('kategori')
-                ->map(fn($items) => (int) round($items->avg(fn($p) => $p->current_price ?? 0)))
+                ->map(fn($grp) => (int) round($grp->avg(fn($p) => $p->harga_sekarang)))
                 ->filter(fn($val) => $val > 0)
                 ->sortDesc();
 
             $chartLabels = array_values($grouped->keys()->toArray());
             $chartValues = array_values($grouped->values()->map(fn($v) => (int) $v)->toArray());
         } catch (\Exception $e) {
-            Log::error('Pie Chart PDF Error: ' . $e->getMessage());
             $chartLabels = [];
             $chartValues = [];
         }
@@ -290,4 +362,3 @@ return view('user.home', compact(
         return $pdf->download($filename);
     }
 }
-
