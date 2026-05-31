@@ -291,12 +291,15 @@ class _ChatAiScreenState extends State<ChatAiScreen>
 
     if (!foundAny || total == 0) return null;
 
-    // Format angka ke Rupiah
-    final formatted = total.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '\${m[1]}.',
-        );
-    return 'Rp $formatted';
+    // Format angka ke Rupiah (manual chunking, hindari regex interpolation bug)
+    final s = total.toString();
+    final buf = StringBuffer();
+    final mod = s.length % 3;
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (i - mod) % 3 == 0) buf.write('.');
+      buf.write(s[i]);
+    }
+    return 'Rp ${buf.toString()}';
   }
 
   Future<void> _generateRekomendasi() async {
