@@ -31,6 +31,9 @@ CHANGELOG (fixes):
 import os, warnings, secrets
 from datetime import datetime, timedelta
 from functools import wraps
+from zoneinfo import ZoneInfo
+
+WIB = ZoneInfo("Asia/Jakarta")
 
 import numpy as np
 import pandas as pd
@@ -103,7 +106,7 @@ def get_series(commodity_name: str, days: int = None) -> pd.Series:
     """
     query = {"commodity_name": commodity_name}
     if days:
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(WIB) - timedelta(days=days)
         query["date"] = {"$gte": cutoff}
 
     cursor = col_price.find(
@@ -144,7 +147,7 @@ def _generate_pred_dates(steps: int) -> list[str]:
     Sebelumnya: today = s.index[-1]  → bisa mundur ke masa lalu
     Sekarang  : today = datetime.utcnow().date()  → selalu hari ini
     """
-    today = datetime.utcnow().date()
+    today = datetime.now(WIB).date()
     return [(today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(steps)]
 
 
@@ -515,7 +518,7 @@ def api_external_prediksi(komoditas):
         sort=[("created_at", DESCENDING)],
     )
     if cached:
-        age = (datetime.utcnow() - cached["created_at"]).total_seconds()
+        age = (datetime.now(WIB) - cached["created_at"].replace(tzinfo=WIB)).total_seconds()
         if age < 86400:
             payload = cached["payload"]
             payload["from_cache"] = True
@@ -548,7 +551,7 @@ def api_external_prediksi(komoditas):
     col_prediction.insert_one({
         "commodity_name": komoditas,
         "steps":          steps,
-        "created_at":     datetime.utcnow(),
+        "created_at":     datetime.now(WIB),
         "created_by":     "laravel_api",
         "payload":        payload,
     })
@@ -643,7 +646,7 @@ def api_run_prediksi():
     col_prediction.insert_one({
         "commodity_name": k,
         "steps":          steps,
-        "created_at":     datetime.utcnow(),
+        "created_at":     datetime.now(WIB),
         "created_by":     "admin",
         "status":         "completed",
         "accuracy_mae":   acc.get("mae"),
@@ -679,7 +682,7 @@ def api_prediction_logs():
             "accuracy_mape": d.get("accuracy_mape"),
             "created_by":    d.get("created_by", "system"),
             "created_at": (
-                d["created_at"].strftime("%b %d, %Y %H:%M")
+                d["created_at"].astimezone(WIB).strftime("%b %d, %Y %H:%M")
                 if d.get("created_at") else "—"
             ),
         })
