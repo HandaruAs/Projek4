@@ -3329,3 +3329,18 @@ html.dark .footer-name    { color: #e2e8f0; }
 html.dark .footer-email   { color: rgba(148,163,184,.5); }
 html.dark .nav-item.active i { background: rgba(59,130,246,.3); color: #93c5fd; }
 html.dark .nav-item.active::before { background: #93c5fd; }
+
+/* ── Dark mode: Pie/Doughnut Chart Legend ── */
+html.dark #chartLegend > div {
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  padding-bottom: 4px;
+}
+html.dark #chartLegend > div > span:nth-child(2) {
+  color: #94a3b8 !important;  /* nama label */
+}
+html.dark #chartLegend > div > span:nth-child(3) {
+  color: #e2e8f0 !important;  /* nilai Rp */
+}
+html.dark #chartLegend > div > span:nth-child(4) {
+  color: #64748b !important;  /* persentase */
+}

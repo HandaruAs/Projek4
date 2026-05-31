@@ -54,7 +54,7 @@
         <div class="stat-icon icon-blue"><i class="fas fa-boxes-stacked"></i></div>
     </div>
 
-</div>
+</div>  
 {{-- ── FILTER BAR ── --}}
 <form method="GET" action="{{ url()->current() }}">
     <x-filter-bar

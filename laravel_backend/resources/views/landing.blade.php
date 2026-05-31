@@ -6,6 +6,7 @@
 
 {{-- ==================== NAVBAR ==================== --}}
 <nav class="fixed top-0 left-0 w-full z-50 bg-white/40 backdrop-blur-sm border-b border-white/30">
+    <div class="max-w-screen-2xl mx-auto px-6 md:px-12">
         <div class="flex justify-between items-center h-16 md:h-20">
 
             {{-- Logo & Brand --}}
@@ -54,8 +55,8 @@
     {{-- Background Image --}}
     <div class="absolute inset-0 z-0">
         <img src="{{ asset('images/Commodity.png') }}"
-             alt="Background"
-             class="w-full h-full object-cover">
+            alt="Background"
+            class="w-full h-full object-cover">
         {{-- Overlay gelap --}}
         <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
     </div>
@@ -71,7 +72,7 @@
         </p>
         <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <a href="{{ route('register') }}"
-               class="px-10 py-4 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl hover:from-blue-800 hover:to-blue-600 transform hover:-translate-y-1 transition-all duration-200">
+                class="px-10 py-4 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl hover:from-blue-800 hover:to-blue-600 transform hover:-translate-y-1 transition-all duration-200">
                 Daftar Sekarang <i class="fas fa-arrow-right ml-2"></i>
             </a>
         </div>
@@ -165,14 +166,14 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-sm">
-                <div class="text-blue-700 text-2xl mb-3"><i class="fas fa-clock"></i></div>
-                <h4 class="text-lg font-bold text-gray-900">Real-time Data</h4>
-                <p class="text-gray-600 text-sm mt-1">Update data setiap hari dari sumber terpercaya.</p>
+                <div class="text-blue-700 text-2xl mb-3"><i class="fas fa-database"></i></div>
+                <h4 class="text-lg font-bold text-gray-900">Data Historis</h4>
+                <p class="text-gray-600 text-sm mt-1">Analisis berbasis data harga historis komoditas yang terstruktur.</p>
             </div>
             <div class="bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-sm">
-                <div class="text-blue-700 text-2xl mb-3"><i class="fas fa-chart-bar"></i></div>
-                <h4 class="text-lg font-bold text-gray-900">AI Prophet</h4>
-                <p class="text-gray-600 text-sm mt-1">Model time-series forecasting dari Meta (Facebook).</p>
+                <div class="text-blue-700 text-2xl mb-3"><i class="fas fa-chart-line"></i></div>
+                <h4 class="text-lg font-bold text-gray-900">Holt-Winters</h4>
+                <p class="text-gray-600 text-sm mt-1">Model Triple Exponential Smoothing untuk menangkap tren & musiman.</p>
             </div>
             <div class="bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-sm">
                 <div class="text-blue-700 text-2xl mb-3"><i class="fas fa-bullseye"></i></div>
@@ -180,9 +181,9 @@
                 <p class="text-gray-600 text-sm mt-1">MAPE < 5% untuk komoditas utama.</p>
             </div>
             <div class="bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-sm">
-                <div class="text-blue-700 text-2xl mb-3"><i class="fas fa-smile"></i></div>
-                <h4 class="text-lg font-bold text-gray-900">Mudah Digunakan</h4>
-                <p class="text-gray-600 text-sm mt-1">Interface intuitif, tanpa perlu keahlian teknis.</p>
+                <div class="text-blue-700 text-2xl mb-3"><i class="fas fa-bolt"></i></div>
+                <h4 class="text-lg font-bold text-gray-900">Groq AI</h4>
+                <p class="text-gray-600 text-sm mt-1">Inferensi ultra-cepat dengan LLM Llama via Groq Cloud.</p>
             </div>
         </div>
     </div>
