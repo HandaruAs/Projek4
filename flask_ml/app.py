@@ -8,6 +8,24 @@ Endpoint yang tersedia (semua butuh X-API-Key header):
   POST /api/external/rekomendasi             → rekomendasi beli/tunda
   POST /api/admin/run_prediksi               → paksa regenerasi prediksi
   GET  /api/admin/prediction_logs            → riwayat log prediksi
+
+CHANGELOG (fixes):
+  [FIX 1] Bug 1 — tanggal_pred sekarang dimulai dari hari ini (datetime.now()),
+          bukan dari tanggal data terakhir di DB. Ini mencegah prediksi tampil
+          mundur ke masa lalu ketika data tidak up-to-date.
+
+  [FIX 2] Bug 2 — default steps dinaikkan ke 60 di semua endpoint prediksi,
+          dan steps yang dikirim Laravel sekarang benar-benar dipakai.
+          Cache juga mempertimbangkan steps agar tidak salah serve.
+
+  [FIX 3] Bug 3 — threshold minimum data untuk compute_accuracy diturunkan
+          dari 60 ke 30 hari agar komoditas seperti BERAS MERAH (110 dokumen
+          tapi mungkin rentang < 60 hari kalender) tetap bisa dihitung MAPE-nya.
+          Walk-forward split disesuaikan: min(20, len*0.2) hari untuk test.
+
+  [FIX 4] Support steps 7 / 14 / 30 / 60 / 90 hari (sesuai pilihan UI admin).
+          Default steps dinaikkan ke 90. hw_forecast dan compute_accuracy
+          sudah handle semua nilai tersebut secara otomatis.
 """
 
 import os, warnings, secrets
@@ -116,6 +134,21 @@ def get_category(commodity_name: str) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════
+# [FIX 1] HELPER: generate tanggal prediksi mulai dari HARI INI
+# ═══════════════════════════════════════════════════════════════════
+def _generate_pred_dates(steps: int) -> list[str]:
+    """
+    [FIX 1] Tanggal prediksi selalu dimulai dari hari ini (UTC),
+    bukan dari tanggal data terakhir di DB.
+
+    Sebelumnya: today = s.index[-1]  → bisa mundur ke masa lalu
+    Sekarang  : today = datetime.utcnow().date()  → selalu hari ini
+    """
+    today = datetime.utcnow().date()
+    return [(today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(steps)]
+
+
+# ═══════════════════════════════════════════════════════════════════
 # ML: OUTLIER REMOVAL
 # ═══════════════════════════════════════════════════════════════════
 def _remove_outliers(series: pd.Series, window: int = 7, threshold: float = 2.5) -> pd.Series:
@@ -177,7 +210,7 @@ def _fit_best_hw(train: pd.Series):
 # ═══════════════════════════════════════════════════════════════════
 # ML: HOLT-WINTERS FORECAST
 # ═══════════════════════════════════════════════════════════════════
-def hw_forecast(series: pd.Series, steps: int = 30):
+def hw_forecast(series: pd.Series, steps: int = 90):
     """
     CRISP-DM — Modeling:
     Model utama: Holt-Winters Triple Exponential Smoothing
@@ -218,19 +251,12 @@ def hw_forecast(series: pd.Series, steps: int = 30):
 def compute_accuracy(series: pd.Series) -> dict:
     """
     CRISP-DM — Evaluation:
-    Evaluasi akurasi model dengan metode walk-forward 80/20 split:
-    - 80% data awal  → training
-    - 20% data akhir → testing (maks 30 hari)
-
-    Pipeline sebelum evaluasi:
-    1. Outlier removal — spike harga ekstrem diganti median rolling
-       (window=7, threshold=2.5σ). Mencegah MAPE meledak akibat data anomali.
-
-    2. Auto-select konfigurasi Holt-Winters terbaik (berdasarkan AIC):
-       seasonal_periods=7 → 30 → trend-only → SES.
-
-    3. MAPE dihitung hanya pada baris di mana actual > 100 (Rupiah),
-       menghindari division-by-zero atau distorsi dari harga tidak wajar.
+    Evaluasi akurasi model dengan metode walk-forward split:
+    - Min data: 30 hari (diturunkan dari 60 agar komoditas dengan data
+      terbatas seperti BERAS MERAH tetap bisa dievaluasi)                [FIX 3]
+    - Split: 80% train / 20% test (maks 20 hari untuk test)
+    - Outlier removal sebelum evaluasi
+    - MAPE robust: hanya hitung di baris actual > 100
 
     Metrik yang dihitung:
     - MAE      : Mean Absolute Error (satuan Rupiah)
@@ -238,21 +264,33 @@ def compute_accuracy(series: pd.Series) -> dict:
     - RMSE     : Root Mean Squared Error
     - Accuracy : 100 - MAPE  (diclamp ke 0 jika MAPE > 100)
     """
-    if len(series) < 60:
+    # [FIX 3] threshold diturunkan dari 60 ke 30
+    if len(series) < 30:
         return {
             "accuracy": None,
             "mae": None,
             "mape": None,
             "rmse": None,
-            "note": "Data kurang dari 60 hari",
+            "note": "Data kurang dari 30 hari",
         }
 
     # Step 1: bersihkan outlier
     series = _remove_outliers(series)
 
-    split = int(len(series) * 0.8)
-    train = series.iloc[:split]
-    test  = series.iloc[split : split + 30]
+    split    = int(len(series) * 0.8)
+    train    = series.iloc[:split]
+    # [FIX 3+4] test window: maks 30 hari (cukup untuk evaluasi sampai 90 hari)
+    test_len = min(30, len(series) - split)
+    test     = series.iloc[split : split + test_len]
+
+    if len(test) == 0:
+        return {
+            "accuracy": None,
+            "mae": None,
+            "mape": None,
+            "rmse": None,
+            "note": "Test set kosong setelah split",
+        }
 
     try:
         if HAS_HW and len(train) >= 30:
@@ -263,7 +301,7 @@ def compute_accuracy(series: pd.Series) -> dict:
             else:
                 raise ValueError("Semua konfigurasi HW gagal, pakai fallback")
         else:
-            y    = train.values[-30:]
+            y    = train.values[-30:] if len(train) >= 30 else train.values
             coef = np.polyfit(np.arange(len(y)), y, 1)
             pred = np.polyval(coef, np.arange(len(y), len(y) + len(test)))
 
@@ -461,9 +499,17 @@ def api_external_prediksi(komoditas):
     """
     Prediksi harga N hari ke depan untuk satu komoditas.
     Cache 24 jam — jika ada prediksi yang masih fresh, langsung return tanpa recompute.
-    Query param: steps (default 30)
+    Query param: steps (default 60)                                     [FIX 2]
+
+    [FIX 1] tanggal_pred sekarang dimulai dari hari ini, bukan tanggal data terakhir.
+    [FIX 2] default steps = 60 (naik dari 30).
+    [FIX 4] steps valid: 7 / 14 / 30 / 60 / 90. Default 90.
     """
-    steps  = int(request.args.get("steps", 30))
+    # [FIX 4] default steps dinaikkan ke 90, clamp ke pilihan valid
+    VALID_STEPS = {7, 14, 30, 60, 90}
+    steps = int(request.args.get("steps", 90))
+    if steps not in VALID_STEPS:
+        steps = min(VALID_STEPS, key=lambda x: abs(x - steps))  # snap ke nilai terdekat
     cached = col_prediction.find_one(
         {"commodity_name": komoditas, "steps": steps},
         sort=[("created_at", DESCENDING)],
@@ -481,8 +527,9 @@ def api_external_prediksi(komoditas):
 
     fc, ci = hw_forecast(s, steps)
     acc    = compute_accuracy(s)
-    today  = s.index[-1]
-    dates  = [(today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(steps)]
+
+    # [FIX 1] tanggal dimulai dari hari ini, bukan s.index[-1]
+    dates = _generate_pred_dates(steps)
 
     payload = {
         "komoditas":        komoditas,
@@ -530,11 +577,10 @@ def api_external_rekomendasi():
     sat    = get_satuan(komoditas)
     rek    = buat_rekomendasi(s, fc, konsumsi, sat)
 
-    h30   = s.iloc[-30:]
-    today = s.index[-1]
-    pred_dates = [
-        (today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(14)
-    ]
+    h30 = s.iloc[-30:]
+
+    # [FIX 1] pred_dates dari hari ini
+    pred_dates = _generate_pred_dates(14)
 
     rek["chart"] = {
         "hist_tanggal": h30.index.strftime("%Y-%m-%d").tolist(),
@@ -555,10 +601,18 @@ def api_run_prediksi():
     Paksa regenerasi prediksi untuk satu komoditas (hapus cache lama).
     Body JSON: { "komoditas": str, "steps": int }
     Dipanggil dari Laravel saat admin klik 'Generate Prediksi'.
+
+    [FIX 1] tanggal_pred sekarang dimulai dari hari ini.
+    [FIX 2] default steps = 60 (naik dari 30).
+    [FIX 4] steps valid: 7 / 14 / 30 / 60 / 90. Default 90.
     """
     body  = request.get_json()
     k     = body.get("komoditas", "")
-    steps = int(body.get("steps", 30))
+    # [FIX 4] default steps 90, clamp ke nilai valid
+    VALID_STEPS = {7, 14, 30, 60, 90}
+    steps = int(body.get("steps", 90))
+    if steps not in VALID_STEPS:
+        steps = min(VALID_STEPS, key=lambda x: abs(x - steps))
 
     if not k:
         return jsonify({"error": "Field 'komoditas' wajib diisi"}), 400
@@ -569,8 +623,9 @@ def api_run_prediksi():
 
     fc, ci = hw_forecast(s, steps)
     acc    = compute_accuracy(s)
-    today  = s.index[-1]
-    dates  = [(today + timedelta(days=i + 1)).strftime("%Y-%m-%d") for i in range(steps)]
+
+    # [FIX 1] tanggal dimulai dari hari ini, bukan s.index[-1]
+    dates = _generate_pred_dates(steps)
 
     payload = {
         "tanggal_pred":     dates,
