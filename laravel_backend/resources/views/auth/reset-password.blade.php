@@ -114,8 +114,8 @@
                         <input
                             type="password" id="password" name="password"
                             class="form-input"
-                            placeholder="Minimal 8 karakter"
-                            required minlength="8"
+                            placeholder="Minimal 6 karakter"
+                            required minlength="6"
                             oninput="checkStrength(this.value)"
                         >
                         <button type="button" class="toggle-password" onclick="toggleVis('password','eye1')">
@@ -131,7 +131,7 @@
                     </div>
 
                     <ul class="req-list" id="req-list">
-                        <li id="req-len"><i class="fas fa-circle-xmark"></i> Minimal 8 karakter</li>
+                        <li id="req-len"><i class="fas fa-circle-xmark"></i> Minimal 6 karakter</li>
                         <li id="req-upper"><i class="fas fa-circle-xmark"></i> Huruf kapital</li>
                         <li id="req-num"><i class="fas fa-circle-xmark"></i> Angka</li>
                         <li id="req-sym"><i class="fas fa-circle-xmark"></i> Simbol (!@#$...)</li>

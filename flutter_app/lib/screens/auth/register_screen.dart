@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/providers/auth_provider.dart';
 import 'package:flutter_app/screens/auth/login_screen.dart';
-import 'package:flutter_app/screens/User/main_screen.dart'; // ✅ hanya import UserMainScreen
+import 'package:flutter_app/screens/User/main_screen.dart';
 import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -18,8 +18,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  // Password hint tracking
+  bool _hasMinLength = false;
+  bool _hasUpperCase = false;
+  bool _hasLowerCase = false;
+  bool _hasNumber = false;
+  bool _hasSpecialChar = false;
+  bool _showPasswordHints = false;
 
   @override
   void dispose() {
@@ -29,6 +38,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+
+  void _validatePasswordHints(String value) {
+    setState(() {
+      _hasMinLength = value.length >= 6;
+      _hasUpperCase = value.contains(RegExp(r'[A-Z]'));
+      _hasLowerCase = value.contains(RegExp(r'[a-z]'));
+      _hasNumber = value.contains(RegExp(r'[0-9]'));
+      _hasSpecialChar = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>_]'));
+      _showPasswordHints = value.isNotEmpty;
+    });
+  }
+
+  bool get _isPasswordValid =>
+      _hasMinLength &&
+      _hasUpperCase &&
+      _hasLowerCase &&
+      _hasNumber &&
+      _hasSpecialChar;
 
   Future<void> _handleRegister() async {
     if (_formKey.currentState?.validate() ?? false) {
@@ -43,19 +70,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
 
       if (success) {
-        // ✅ Tidak perlu cek role — semua langsung ke UserMainScreen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const UserMainScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Registration failed'),
+            content: Text(authProvider.errorMessage ?? 'Registrasi gagal'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
+  }
+
+  Widget _buildHintItem(bool isValid, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              isValid ? Icons.check_circle_rounded : Icons.circle_outlined,
+              key: ValueKey(isValid),
+              size: 16,
+              color: isValid ? Colors.green : Colors.grey,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: isValid ? Colors.green[700] : Colors.grey[600],
+              fontWeight: isValid ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -83,6 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
+                          // ── Nama Lengkap ──
                           TextFormField(
                             controller: _nameController,
                             decoration: const InputDecoration(
@@ -98,6 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(height: 16),
 
+                          // ── Email ──
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -117,9 +173,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(height: 16),
 
+                          // ── Password ──
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
+                            onChanged: _validatePasswordHints,
                             decoration: InputDecoration(
                               hintText: 'Password',
                               prefixIcon: const Icon(Icons.lock_outline),
@@ -140,14 +198,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Password tidak boleh kosong';
                               }
-                              if (value.length < 6) {
-                                return 'Password minimal 6 karakter';
+                              if (!_isPasswordValid) {
+                                return 'Password belum memenuhi semua ketentuan';
                               }
                               return null;
                             },
                           ),
+
+                          // ── Password Hints ──
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: _showPasswordHints
+                                ? Container(
+                                    margin: const EdgeInsets.only(top: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: _isPasswordValid
+                                            ? Colors.green.withOpacity(0.5)
+                                            : Colors.grey[300]!,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _buildHintItem(
+                                            _hasMinLength, 'Minimal 6 karakter'),
+                                        _buildHintItem(
+                                            _hasUpperCase, 'Huruf besar (A-Z)'),
+                                        _buildHintItem(
+                                            _hasLowerCase, 'Huruf kecil (a-z)'),
+                                        _buildHintItem(
+                                            _hasNumber, 'Angka (0-9)'),
+                                        _buildHintItem(_hasSpecialChar,
+                                            'Karakter spesial (!@#\$%^&*_)'),
+                                      ],
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+
                           const SizedBox(height: 16),
 
+                          // ── Konfirmasi Password ──
                           TextFormField(
                             controller: _confirmPasswordController,
                             obscureText: _obscureConfirmPassword,
@@ -181,8 +281,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 32),
 
+                    // ── Tombol Daftar ──
                     ElevatedButton(
                       onPressed:
                           authProvider.isLoading ? null : _handleRegister,
@@ -194,8 +296,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: TextStyle(fontSize: 16),
                       ),
                     ),
+
                     const SizedBox(height: 16),
 
+                    // ── Link ke Login ──
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

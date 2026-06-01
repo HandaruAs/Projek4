@@ -21,9 +21,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isSuccess = false;
+
+  // Password hint tracking
+  bool _hasMinLength = false;
+  bool _hasUpperCase = false;
+  bool _hasLowerCase = false;
+  bool _hasNumber = false;
+  bool _hasSpecialChar = false;
+  bool _showPasswordHints = false;
 
   @override
   void dispose() {
@@ -31,6 +40,24 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     _confirmController.dispose();
     super.dispose();
   }
+
+  void _validatePasswordHints(String value) {
+    setState(() {
+      _hasMinLength = value.length >= 6;
+      _hasUpperCase = value.contains(RegExp(r'[A-Z]'));
+      _hasLowerCase = value.contains(RegExp(r'[a-z]'));
+      _hasNumber = value.contains(RegExp(r'[0-9]'));
+      _hasSpecialChar = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>_]'));
+      _showPasswordHints = value.isNotEmpty;
+    });
+  }
+
+  bool get _isPasswordValid =>
+      _hasMinLength &&
+      _hasUpperCase &&
+      _hasLowerCase &&
+      _hasNumber &&
+      _hasSpecialChar;
 
   Future<void> _handleReset() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -57,6 +84,34 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     }
   }
 
+  Widget _buildHintItem(bool isValid, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              isValid ? Icons.check_circle_rounded : Icons.circle_outlined,
+              key: ValueKey(isValid),
+              size: 16,
+              color: isValid ? Colors.green : Colors.grey,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: isValid ? Colors.green[700] : Colors.grey[600],
+              fontWeight: isValid ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,7 +136,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   children: [
                     const SizedBox(height: 20),
 
-                    // Icon
+                    // ── Icon ──
                     Center(
                       child: Container(
                         width: 80,
@@ -100,7 +155,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     const SizedBox(height: 24),
 
                     if (!_isSuccess) ...[
-                      // Title
+                      // ── Title ──
                       Text(
                         'Password Baru',
                         style: Theme.of(context)
@@ -119,7 +174,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Form
+                      // ── Form ──
                       Form(
                         key: _formKey,
                         child: Column(
@@ -128,6 +183,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
+                              onChanged: _validatePasswordHints,
                               decoration: InputDecoration(
                                 hintText: 'Password Baru',
                                 prefixIcon: const Icon(Icons.lock_outlined),
@@ -139,19 +195,61 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                     color: Colors.grey,
                                   ),
                                   onPressed: () => setState(
-                                      () => _obscurePassword = !_obscurePassword),
+                                    () => _obscurePassword = !_obscurePassword,
+                                  ),
                                 ),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Password tidak boleh kosong';
                                 }
-                                if (value.length < 6) {
-                                  return 'Password minimal 6 karakter';
+                                if (!_isPasswordValid) {
+                                  return 'Password belum memenuhi semua ketentuan';
                                 }
                                 return null;
                               },
                             ),
+
+                            // ── Password Hints ──
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                              child: _showPasswordHints
+                                  ? Container(
+                                      margin: const EdgeInsets.only(top: 10),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[100],
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: _isPasswordValid
+                                              ? Colors.green.withOpacity(0.5)
+                                              : Colors.grey[300]!,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          _buildHintItem(
+                                              _hasMinLength, 'Minimal 6 karakter'),
+                                          _buildHintItem(
+                                              _hasUpperCase, 'Huruf besar (A-Z)'),
+                                          _buildHintItem(
+                                              _hasLowerCase, 'Huruf kecil (a-z)'),
+                                          _buildHintItem(
+                                              _hasNumber, 'Angka (0-9)'),
+                                          _buildHintItem(_hasSpecialChar,
+                                              'Karakter spesial (!@#\$%^&*_)'),
+                                        ],
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+
                             const SizedBox(height: 16),
 
                             // Konfirmasi password
@@ -170,7 +268,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                     color: Colors.grey,
                                   ),
                                   onPressed: () => setState(
-                                      () => _obscureConfirm = !_obscureConfirm),
+                                    () => _obscureConfirm = !_obscureConfirm,
+                                  ),
                                 ),
                               ),
                               validator: (value) {
@@ -210,7 +309,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         ),
                       ),
                     ] else ...[
-                      // ── SUCCESS STATE ──────────────────────────
+                      // ── SUCCESS STATE ──
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
@@ -247,7 +346,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             const SizedBox(height: 24),
                             ElevatedButton(
                               onPressed: () {
-                                // Kembali ke login dan hapus semua riwayat navigasi
                                 Navigator.of(context).popUntil(
                                   (route) => route.isFirst,
                                 );
