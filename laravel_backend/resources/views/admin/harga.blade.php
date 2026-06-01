@@ -88,16 +88,16 @@
     <table id="hargaTable">
         <thead>
             <tr>
-                <th>#</th>
-                <th>Commodity</th>
-                <th>Category</th>
-                <th>Price (IDR)</th>
-                <th>Satuan</th>
-                <th>Date</th>
-                <th>Pred. Berakhir</th>
-                <th>Perubahan</th>
-                <th>Pred Status</th>
-                <th>Status</th>
+                <th style="text-align:center;">#</th>
+                <th style="text-align:left;">Commodity</th>
+                <th style="text-align:center;">Category</th>
+                <th style="text-align:center;">Price (IDR)</th>
+                <th style="text-align:center;">Satuan</th>
+                <th style="text-align:center;">Date</th>
+                <th style="text-align:center;">Pred. Berakhir</th>
+                <th style="text-align:center;">Perubahan</th>
+                <th style="text-align:center;">Pred Status</th>
+                <th style="text-align:center;">Status</th>
             </tr>
         </thead>
         <tbody id="harga-tbody">
@@ -105,16 +105,16 @@
             {{-- ── Baris Prediksi ── --}}
             @if(!request('search') && !request('category') && !request('date'))
                 @foreach($predictionRows as $pred)
-                <tr style="background:rgba(59,130,246,0.04);border-left:3px solid #3b82f6;" title="">
-                    <td class="date-text">—</td>
-                    <td class="commodity-name">
+                <tr style="background:rgba(59,130,246,0.04);border-left:3px solid #3b82f6;">
+                    <td class="date-text" style="text-align:center;">—</td>
+                    <td class="commodity-name" style="text-align:left;">
                         {{ $pred->commodity_name }}
                         <div style="font-size:10px;color:var(--text-3);margin-top:2px;">
                             Dibuat: {{ $pred->created_at ?? '-' }}
                         </div>
                     </td>
-                    <td><span class="region-text">{{ $pred->category }}</span></td>
-                    <td class="price-text">
+                    <td style="text-align:center;"><span class="region-text">{{ $pred->category }}</span></td>
+                    <td class="price-text" style="text-align:center;">
                         @if($pred->harga_sekarang)
                             Rp {{ number_format($pred->harga_sekarang, 0, ',', '.') }}
                             @if($pred->harga_terakhir)
@@ -126,12 +126,11 @@
                             <span class="date-text">—</span>
                         @endif
                     </td>
-                    <td><span class="region-text">{{ $pred->satuan ?? '-' }}</span></td>
-                    <td class="date-text">
+                    <td style="text-align:center;"><span class="region-text">{{ $pred->satuan ?? '-' }}</span></td>
+                    <td class="date-text" style="text-align:center;">
                         {{ $pred->date ? \Carbon\Carbon::parse($pred->date)->format('M d, Y') : '-' }}
                     </td>
-                    {{-- ── KOLOM BARU: Pred. Berakhir ── --}}
-                    <td>
+                    <td style="text-align:center;">
                         @if(!empty($pred->tanggal_akhir))
                             <span style="font-size:11px;padding:3px 10px;
                                 background:#fef3c7;color:#d97706;
@@ -144,7 +143,7 @@
                             <span class="date-text">—</span>
                         @endif
                     </td>
-                    <td>
+                    <td style="text-align:center;">
                         @php $pct = $pred->selisih_persen ?? null; @endphp
                         @if($pct === null)
                             <span class="date-text">—</span>
@@ -162,7 +161,7 @@
                             </span>
                         @endif
                     </td>
-                    <td>
+                    <td style="text-align:center;">
                         @if($pred->pred_status === 'completed')
                             <span style="font-size:11px;padding:3px 10px;background:#f0fdf4;color:#16a34a;border-radius:999px;font-weight:600;">
                                 Completed
@@ -181,7 +180,7 @@
                             </span>
                         @endif
                     </td>
-                    <td>
+                    <td style="text-align:center;">
                         <span style="font-size:11px;padding:3px 10px;
                             background:#eff6ff;color:#3b82f6;
                             border-radius:999px;font-weight:600;">
@@ -203,16 +202,16 @@
                     : null;
             @endphp
             <tr>
-                <td class="date-text">{{ $hargaList->firstItem() + $index }}</td>
-                <td class="commodity-name">{{ $item->commodity_name ?? '-' }}</td>
-                <td>
+                <td class="date-text" style="text-align:center;">{{ $hargaList->firstItem() + $index }}</td>
+                <td class="commodity-name" style="text-align:left;">{{ $item->commodity_name ?? '-' }}</td>
+                <td style="text-align:center;">
                     @if(!empty($item->category))
                         <span class="region-text">{{ $item->category }}</span>
                     @else
                         <span class="date-text">—</span>
                     @endif
                 </td>
-                <td class="price-text">
+                <td class="price-text" style="text-align:center;">
                     Rp {{ number_format($item->harga_sekarang, 0, ',', '.') }}
                     @if($hargaPrediksi)
                         <div style="font-size:10px;color:var(--text-3);margin-top:2px;">
@@ -220,19 +219,18 @@
                         </div>
                     @endif
                 </td>
-                <td>
+                <td style="text-align:center;">
                     @if(!empty($item->satuan))
                         <span class="region-text">{{ $item->satuan }}</span>
                     @else
                         <span class="date-text">—</span>
                     @endif
                 </td>
-                <td class="date-text">
+                <td class="date-text" style="text-align:center;">
                     {{ \Carbon\Carbon::parse($item->date)->format('M d, Y') }}
                 </td>
-                {{-- Kolom Pred. Berakhir kosong untuk baris historis --}}
-                <td><span class="date-text">—</span></td>
-                <td>
+                <td style="text-align:center;"><span class="date-text">—</span></td>
+                <td style="text-align:center;">
                     @if($selisihHist !== null)
                         @if($selisihHist > 0)
                             <span class="stat-change down" style="font-size:11px;">
@@ -251,8 +249,8 @@
                         <span class="date-text">—</span>
                     @endif
                 </td>
-                <td><span class="date-text">—</span></td>
-                <td>
+                <td style="text-align:center;"><span class="date-text">—</span></td>
+                <td style="text-align:center;">
                     <span style="font-size:11px;padding:3px 10px;
                         background:#f0fdf4;color:#16a34a;
                         border-radius:999px;font-weight:600;">
@@ -301,6 +299,12 @@
 }
 .row-pred-updated { animation: rowFlash 1.5s ease-out; }
 .row-hist-updated { animation: rowFlashGreen 1.5s ease-out; }
+
+/* Alignment fix */
+#hargaTable th,
+#hargaTable td {
+    vertical-align: middle;
+}
 </style>
 
 <script>
@@ -370,19 +374,19 @@
         return `
         <tr style="background:rgba(59,130,246,0.04);border-left:3px solid #3b82f6;"
             class="${changed ? 'row-pred-updated' : ''}">
-            <td class="date-text">—</td>
-            <td class="commodity-name">
+            <td class="date-text" style="text-align:center;">—</td>
+            <td class="commodity-name" style="text-align:left;">
                 ${item.commodity_name ?? '-'}
                 <div style="font-size:10px;color:var(--text-3);margin-top:2px;">Dibuat: ${item.created_at ?? '-'}</div>
             </td>
-            <td><span class="region-text">${item.category ?? '-'}</span></td>
-            <td class="price-text">${priceStr}${hargaTerakhirInfo}</td>
-            <td><span class="region-text">${item.satuan ?? '-'}</span></td>
-            <td class="date-text">${formatDate(item.date)}</td>
-            <td>${tanggalAkhirBadge(item.tanggal_akhir)}</td>
-            <td>${trendBadge(item.selisih_persen ?? null)}</td>
-            <td>${predStatusBadge(item.pred_status)}</td>
-            <td>
+            <td style="text-align:center;"><span class="region-text">${item.category ?? '-'}</span></td>
+            <td class="price-text" style="text-align:center;">${priceStr}${hargaTerakhirInfo}</td>
+            <td style="text-align:center;"><span class="region-text">${item.satuan ?? '-'}</span></td>
+            <td class="date-text" style="text-align:center;">${formatDate(item.date)}</td>
+            <td style="text-align:center;">${tanggalAkhirBadge(item.tanggal_akhir)}</td>
+            <td style="text-align:center;">${trendBadge(item.selisih_persen ?? null)}</td>
+            <td style="text-align:center;">${predStatusBadge(item.pred_status)}</td>
+            <td style="text-align:center;">
                 <span style="font-size:11px;padding:3px 10px;background:#eff6ff;color:#3b82f6;border-radius:999px;font-weight:600;">Prediksi</span>
             </td>
         </tr>`;
@@ -400,16 +404,16 @@
 
         return `
         <tr class="${changed ? 'row-hist-updated' : ''}">
-            <td class="date-text">${no}</td>
-            <td class="commodity-name">${item.commodity_name ?? '-'}</td>
-            <td>${item.category ? `<span class="region-text">${item.category}</span>` : `<span class="date-text">—</span>`}</td>
-            <td class="price-text">${priceStr}${predInfo}</td>
-            <td>${item.satuan ? `<span class="region-text">${item.satuan}</span>` : `<span class="date-text">—</span>`}</td>
-            <td class="date-text">${formatDate(item.date)}</td>
-            <td><span class="date-text">—</span></td>
-            <td>${trendBadge(item.selisih_persen ?? null)}</td>
-            <td><span class="date-text">—</span></td>
-            <td>
+            <td class="date-text" style="text-align:center;">${no}</td>
+            <td class="commodity-name" style="text-align:left;">${item.commodity_name ?? '-'}</td>
+            <td style="text-align:center;">${item.category ? `<span class="region-text">${item.category}</span>` : `<span class="date-text">—</span>`}</td>
+            <td class="price-text" style="text-align:center;">${priceStr}${predInfo}</td>
+            <td style="text-align:center;">${item.satuan ? `<span class="region-text">${item.satuan}</span>` : `<span class="date-text">—</span>`}</td>
+            <td class="date-text" style="text-align:center;">${formatDate(item.date)}</td>
+            <td style="text-align:center;"><span class="date-text">—</span></td>
+            <td style="text-align:center;">${trendBadge(item.selisih_persen ?? null)}</td>
+            <td style="text-align:center;"><span class="date-text">—</span></td>
+            <td style="text-align:center;">
                 <span style="font-size:11px;padding:3px 10px;background:#f0fdf4;color:#16a34a;border-radius:999px;font-weight:600;">Historis</span>
             </td>
         </tr>`;

@@ -3344,3 +3344,20 @@ html.dark #chartLegend > div > span:nth-child(3) {
 html.dark #chartLegend > div > span:nth-child(4) {
   color: #64748b !important;  /* persentase */
 }
+/* ── FIX: Sejajarkan header dan isi tabel ── */
+.table-responsive table thead th,
+.table-responsive table tbody td {
+    padding: 12px 16px !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+}
+
+.table-responsive table td.price-text {
+    text-align: right !important;
+}
+
+/* Kolom harga (ke-3) rata kanan */
+.table-responsive table th:nth-child(3),
+.table-responsive table td:nth-child(3) {
+    text-align: right !important;
+}

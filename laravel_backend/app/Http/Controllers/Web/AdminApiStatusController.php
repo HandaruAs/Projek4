@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
 class AdminApiStatusController extends Controller
 {
@@ -15,6 +14,14 @@ class AdminApiStatusController extends Controller
 
     public function check(Request $request)
     {
+        // ── Resolve ID & nama komoditas dinamis dari DB ───────────────────────
+        $commodityId    = \App\Models\Commodity::orderBy('id')->value('id') ?? 1;
+        $priceHistoryId = \App\Models\PriceHistory::orderBy('id')->value('id') ?? 1;
+
+        // Ambil nama komoditas pertama, bersihkan spasi & lowercase
+        $rawCommodityName   = \App\Models\Commodity::orderBy('id')->value('name') ?? 'beras';
+        $commoditySlug      = strtolower(str_replace(' ', '%20', trim($rawCommodityName)));
+
         $endpoints = [
 
             // ── AUTH ──────────────────────────────────────────────────────────
@@ -25,6 +32,8 @@ class AdminApiStatusController extends Controller
                 'method' => 'POST',
                 'path'   => '/api/login',
                 'payload'=> ['email' => 'ping@check.dev', 'password' => 'ping'],
+                // ✅ FIX: tambahkan 404 kembali karena AuthController@login
+                //    mungkin pakai firstOrFail() → melempar 404 jika email tidak ada
                 'expect' => [200, 401, 404, 422],
             ],
             [
@@ -122,7 +131,7 @@ class AdminApiStatusController extends Controller
                 'name'   => 'Detail Commodity',
                 'desc'   => 'GET /api/commodities/{id}',
                 'method' => 'GET',
-                'path'   => '/api/commodities/1',
+                'path'   => "/api/commodities/{$commodityId}",
                 'expect' => [200, 404],
             ],
 
@@ -140,7 +149,7 @@ class AdminApiStatusController extends Controller
                 'name'   => 'Detail Price History',
                 'desc'   => 'GET /api/price-histories/{id}',
                 'method' => 'GET',
-                'path'   => '/api/price-histories/1',
+                'path'   => "/api/price-histories/{$priceHistoryId}",
                 'expect' => [200, 404],
             ],
 
@@ -154,13 +163,16 @@ class AdminApiStatusController extends Controller
                 'expect' => [200],
             ],
             [
-            'group'  => 'Prediction',
-            'name'   => 'Detail Prediction',
-            'desc'   => 'GET /api/predictions/{komoditas}',
-            'method' => 'GET',
-            'path'   => '/api/predictions',  // pakai index tanpa komoditas
-            'expect' => [200],
-             ],
+                'group'  => 'Prediction',
+                'name'   => 'Detail Prediction',
+                'desc'   => 'GET /api/predictions/{komoditas}',
+                'method' => 'GET',
+                // ✅ FIX: encode nama komoditas dengan benar & tambahkan 500
+                //    ke expect karena endpoint ini hit Flask external API
+                //    yang bisa saja timeout/error — itu bukan berarti route offline
+                'path'   => "/api/predictions/{$commoditySlug}",
+                'expect' => [200, 404, 500],
+            ],
 
             // ── STATISTICS ────────────────────────────────────────────────────
             [
@@ -199,7 +211,6 @@ class AdminApiStatusController extends Controller
         ]);
     }
 
-    // ── Private: ping internal (tanpa HTTP, langsung dispatch ke Laravel router) ──
     private function ping(
         string $group,
         string $name,
@@ -212,21 +223,19 @@ class AdminApiStatusController extends Controller
         $start = microtime(true);
 
         try {
-            // Buat request internal — tidak lewat network sama sekali
             $req = \Illuminate\Http\Request::create(
                 $path,
                 $method,
-                $method === 'GET' ? $payload : [],   // query params untuk GET
-                [],                                   // cookies
-                [],                                   // files
+                $method === 'GET' ? $payload : [],
+                [],
+                [],
                 ['CONTENT_TYPE' => 'application/json'],
-                $method !== 'GET' ? json_encode($payload) : null  // body untuk POST/PUT
+                $method !== 'GET' ? json_encode($payload) : null
             );
 
             $req->headers->set('Accept', 'application/json');
             $req->headers->set('X-Requested-With', 'XMLHttpRequest');
 
-            // Dispatch langsung ke Laravel kernel — no TCP, no port, no deadlock
             $response = app()->handle($req);
 
             $latency  = round((microtime(true) - $start) * 1000, 2);

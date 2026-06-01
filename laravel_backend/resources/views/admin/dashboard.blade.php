@@ -72,44 +72,46 @@
         </div>
     </div>
 
-    <table>
+    <table class="dashboard-table">
         <thead>
             <tr>
-                <th>Commodity</th>
-                <th>Category</th>
-                <th>Price (IDR)</th>
-                <th>Change</th>
-                <th>Date</th>
-                <th>Status</th>
+                <th style="text-align:left;">Commodity</th>
+                <th style="text-align:center;">Category</th>
+                <th style="text-align:center;">Price (IDR)</th>
+                <th style="text-align:center;">Change</th>
+                <th style="text-align:center;">Date</th>
+                <th style="text-align:center;">Status</th>
             </tr>
         </thead>
         <tbody>
             @forelse($recentPrices as $item)
             <tr>
-                <td class="commodity-name">{{ $item->commodity_name }}</td>
-                <td class="region-text">{{ $item->category }}</td>
-                <td class="price-text">
+                <td class="commodity-name" style="text-align:left;">{{ $item->commodity_name }}</td>
+                <td style="text-align:center;">
+                    <span class="region-text">{{ $item->category }}</span>
+                </td>
+                <td class="price-text" style="text-align:center;">
                     Rp {{ number_format($item->harga_sekarang, 0, ',', '.') }}
                 </td>
-                <td>
+                <td style="text-align:center;">
                     @if($item->selisih > 0)
-                        <span class="stat-change up" style="font-size:12px">
+                        <span class="stat-change up" style="font-size:12px;">
                             <i class="fas fa-arrow-up"></i> {{ number_format($item->persen, 2) }}%
                         </span>
                     @elseif($item->selisih < 0)
-                        <span class="stat-change down" style="font-size:12px">
+                        <span class="stat-change down" style="font-size:12px;">
                             <i class="fas fa-arrow-down"></i> {{ number_format(abs($item->persen), 2) }}%
                         </span>
                     @else
-                        <span class="stat-change neutral" style="font-size:12px">
+                        <span class="stat-change neutral" style="font-size:12px;">
                             <i class="fas fa-minus"></i> 0%
                         </span>
                     @endif
                 </td>
-                <td class="date-text">
+                <td class="date-text" style="text-align:center;">
                     {{ $item->date ? \Carbon\Carbon::parse($item->date)->format('M d, Y') : '-' }}
                 </td>
-                <td>
+                <td style="text-align:center;">
                     <span style="font-size:11px; padding:3px 10px;
                                  background:#eff6ff; color:#3b82f6;
                                  border-radius:999px; font-weight:600;">
@@ -138,3 +140,24 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<style>
+/* Pastikan th dan td di tabel dashboard sejajar */
+.dashboard-table th,
+.dashboard-table td {
+    vertical-align: middle;
+}
+
+/* Kolom Commodity rata kiri, sisanya center */
+.dashboard-table th:first-child,
+.dashboard-table td:first-child {
+    text-align: left;
+}
+
+.dashboard-table th:not(:first-child),
+.dashboard-table td:not(:first-child) {
+    text-align: center;
+}
+</style>
+@endpush
