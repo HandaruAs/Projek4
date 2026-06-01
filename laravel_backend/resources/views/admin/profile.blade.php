@@ -25,7 +25,8 @@
   </div>
   @endif
 
-  @if($errors->any())
+  {{-- ── ALERT ERROR — hanya tampil jika ada submit sebelumnya --}}
+  @if($errors->any() && old('_token'))
   <div class="u-alert u-alert--error">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -155,7 +156,7 @@
     {{-- ── RIGHT: FORM ───────────────────────────────── --}}
     <div class="u-profil-right">
 
-      <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+      <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" novalidate>
         @csrf
         @method('PUT')
 
@@ -190,7 +191,7 @@
               @enderror
             </div>
 
-            {{-- Nama --}}
+            {{-- Nama — HAPUS atribut `required` agar browser tidak validasi saat page load --}}
             <div class="u-profil-field" style="margin-bottom: 0;">
               <label class="u-profil-field__label" for="name">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -203,13 +204,16 @@
               <input type="text" id="name" name="name"
                      class="u-profil-input @error('name') is-error @enderror"
                      value="{{ old('name', $user->name ?? '') }}"
-                     placeholder="Masukkan nama lengkap"
-              @error('name')
-                <div class="u-profil-field__error">{{ $message }}</div>
-              @enderror
+                     placeholder="Masukkan nama lengkap">
+              {{-- Error hanya muncul jika ada submit sebelumnya (old('_token') ada) --}}
+              @if(old('_token'))
+                @error('name')
+                  <div class="u-profil-field__error">{{ $message }}</div>
+                @enderror
+              @endif
             </div>
 
-            {{-- Email - Tidak bisa diubah --}}
+            {{-- Email - read-only, tidak bisa diubah --}}
             <div class="u-profil-field" style="margin-bottom: 0;">
               <label class="u-profil-field__label" for="email">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -219,17 +223,14 @@
                 </svg>
                 Alamat Email
               </label>
-              <input type="email" id="email" name="email"
-                     class="u-profil-input @error('email') is-error @enderror"
-                     value="{{ old('email', $user->email ?? '') }}"
-                     placeholder="nama@email.com"
+              <input type="email" id="email"
+                     class="u-profil-input"
+                     value="{{ $user->email ?? '' }}"
                      readonly
                      disabled
                      style="background-color: #f5f5f5; color: #9ca3af; cursor: not-allowed; opacity: 1;">
+              {{-- Hidden input untuk tetap kirim email saat submit --}}
               <input type="hidden" name="email" value="{{ $user->email ?? '' }}">
-              @error('email')
-                <div class="u-profil-field__error">{{ $message }}</div>
-              @enderror
             </div>
 
             {{-- Telepon --}}
