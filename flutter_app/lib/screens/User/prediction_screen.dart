@@ -4,10 +4,6 @@ import 'package:flutter_app/widgets/loading_widget.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-// ─────────────────────────────────────────────
-// MODEL  (tidak diubah)
-// ─────────────────────────────────────────────
-
 class _WeekRow {
   final String minggu;
   final String periode;
@@ -108,10 +104,6 @@ class _PredData {
   }
 }
 
-// ─────────────────────────────────────────────
-// SCREEN
-// ─────────────────────────────────────────────
-
 class UserPredictionScreen extends StatefulWidget {
   final String? initialCommodity;
   const UserPredictionScreen({super.key, this.initialCommodity});
@@ -133,7 +125,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
   bool _isPredLoad = false;
   String? _error;
 
-  // Indeks bar yang sedang di-touch pada grafik
   int _touchedBarIndex = -1;
 
   late AnimationController _fadeCtrl;
@@ -142,10 +133,9 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
   final _fmt =
       NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
 
-  // Warna tema utama
-  static const _blue = Color(0xFF1976D2);
+  static const _blue  = Color(0xFF1976D2);
   static const _green = Color(0xFF10B981);
-  static const _red = Color(0xFFEF4444);
+  static const _red   = Color(0xFFEF4444);
   static const _amber = Color(0xFFF59E0B);
 
   @override
@@ -155,6 +145,18 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
         vsync: this, duration: const Duration(milliseconds: 400));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _init();
+  }
+
+  // ── BARU: reaktif saat initialCommodity berubah dari luar ──
+  // Karena pakai ValueKey di main_screen, widget ini sudah rebuild otomatis.
+  // didUpdateWidget ini sebagai fallback keamanan jika key tidak berubah.
+  @override
+  void didUpdateWidget(UserPredictionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialCommodity != null &&
+        widget.initialCommodity != oldWidget.initialCommodity) {
+      _init();
+    }
   }
 
   @override
@@ -205,10 +207,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
     }
   }
 
-  // ─────────────────────────────────────────────
-  // BUILD
-  // ─────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -232,7 +230,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // ── App Bar ─────────────────────────────
             SliverAppBar(
               expandedHeight: 120,
               pinned: true,
@@ -273,15 +270,11 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // ── FILTER KOMODITAS ──────────────────
                   _buildFilterCard(isDark, cardBg, textPri, textSub),
                   const SizedBox(height: 16),
 
-                  // ── ERROR ─────────────────────────────
                   if (_error != null)
                     _errorWidget(_error!, textSub)
-
-                  // ── LOADING PREDIKSI ──────────────────
                   else if (_isPredLoad)
                     const Center(
                       child: Padding(
@@ -289,32 +282,21 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                         child: CircularProgressIndicator(color: _blue),
                       ),
                     )
-
-                  // ── KONTEN PREDIKSI ───────────────────
                   else if (_predData != null)
                     FadeTransition(
                       opacity: _fadeAnim,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 3 stat cards
                           _buildStatRow(_predData!, isDark, cardBg, textPri),
                           const SizedBox(height: 16),
-
-                          // ── GRAFIK INTERAKTIF ─────────
-                          _buildChart(
-                              _predData!, isDark, cardBg, textPri, textSub),
+                          _buildChart(_predData!, isDark, cardBg, textPri, textSub),
                           const SizedBox(height: 16),
-
-                          // Tabel mingguan
-                          _buildWeeklyTable(
-                              _predData!, isDark, cardBg, textPri, textSub),
+                          _buildWeeklyTable(_predData!, isDark, cardBg, textPri, textSub),
                           const SizedBox(height: 16),
                         ],
                       ),
                     )
-
-                  // ── EMPTY ──────────────────────────────
                   else if (_komoditasList.isEmpty)
                     _emptyWidget(
                       'Belum ada prediksi',
@@ -336,7 +318,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
     );
   }
 
-  // ── Filter Komoditas ─────────────────────────────────────
   Widget _buildFilterCard(
       bool isDark, Color cardBg, Color textPri, Color textSub) {
     return Container(
@@ -417,13 +398,11 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
     );
   }
 
-  // ── 3 Stat Cards ────────────────────────────────────────
   Widget _buildStatRow(_PredData d, bool isDark, Color cardBg, Color textPri) {
     final isUp = d.trenPersen >= 0;
 
     return Column(
       children: [
-        // Card besar: Estimasi Harga
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
@@ -494,8 +473,7 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color:
-                          (isUp ? Colors.red : _green).withValues(alpha: 0.25),
+                      color: (isUp ? Colors.red : _green).withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -525,11 +503,8 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
           ),
         ),
         const SizedBox(height: 12),
-
-        // Row dua card kecil
         Row(
           children: [
-            // Tren
             Expanded(
               child: _miniStatCard(
                 icon: isUp
@@ -546,7 +521,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
               ),
             ),
             const SizedBox(width: 10),
-            // Kepercayaan
             Expanded(
               child: _miniStatCard(
                 icon: Icons.verified_rounded,
@@ -649,7 +623,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
     );
   }
 
-  // ── Grafik Interaktif ────────────────────────────────────
   Widget _buildChart(
       _PredData d, bool isDark, Color cardBg, Color textPri, Color textSub) {
     if (d.mingguan.isEmpty) return const SizedBox.shrink();
@@ -672,7 +645,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header grafik
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
@@ -729,8 +701,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
               ],
             ),
           ),
-
-          // Tooltip kalau ada bar yang di-touch
           if (_touchedBarIndex >= 0 && _touchedBarIndex < d.mingguan.length)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -738,8 +708,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
             )
           else
             const SizedBox(height: 8),
-
-          // Bar Chart
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
             child: SizedBox(
@@ -867,8 +835,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
               ),
             ),
           ),
-
-          // Legend
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
             child: Row(
@@ -890,7 +856,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
     );
   }
 
-  // Tooltip detail saat bar di-tap
   Widget _buildTooltip(_WeekRow row, bool isDark) {
     final isUp = row.deltaPct >= 0;
     return AnimatedContainer(
@@ -899,9 +864,7 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
       decoration: BoxDecoration(
         color: _blue.withValues(alpha: isDark ? 0.15 : 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _blue.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: _blue.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -951,7 +914,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
     );
   }
 
-  // ── Tabel Mingguan ───────────────────────────────────────
   Widget _buildWeeklyTable(
       _PredData d, bool isDark, Color cardBg, Color textPri, Color textSub) {
     return Container(
@@ -959,7 +921,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
@@ -985,8 +946,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
             ),
           ),
           const SizedBox(height: 12),
-
-          // Header kolom
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
@@ -1017,8 +976,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
               ],
             ),
           ),
-
-          // Rows
           if (d.mingguan.isEmpty)
             Padding(
               padding: const EdgeInsets.all(24),
@@ -1059,7 +1016,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(
                     children: [
-                      // Minggu
                       Expanded(
                         flex: 1,
                         child: Row(
@@ -1085,7 +1041,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                           ],
                         ),
                       ),
-                      // Periode
                       Expanded(
                         flex: 3,
                         child: Text(
@@ -1097,7 +1052,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                                   : const Color(0xFF94A3B8)),
                         ),
                       ),
-                      // Estimasi
                       Expanded(
                         flex: 2,
                         child: Text(
@@ -1110,7 +1064,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                           ),
                         ),
                       ),
-                      // Delta
                       Expanded(
                         flex: 2,
                         child: Container(
@@ -1139,14 +1092,11 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                 ),
               );
             }),
-
           const SizedBox(height: 4),
         ],
       ),
     );
   }
-
-  // ── Helpers ─────────────────────────────────────────────
 
   BoxDecoration _cardDecor(bool isDark, Color cardBg) {
     return BoxDecoration(
@@ -1189,7 +1139,6 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
     );
   }
 
-  /// Format angka besar jadi singkat, misal 15000 → 15rb
   String _fmtShort(double val) {
     if (val >= 1000000) return '${(val / 1000000).toStringAsFixed(1)}jt';
     if (val >= 1000) return '${(val / 1000).toStringAsFixed(0)}rb';
@@ -1212,8 +1161,7 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
               color: _red.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child:
-                const Icon(Icons.error_outline_rounded, color: _red, size: 18),
+            child: const Icon(Icons.error_outline_rounded, color: _red, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1236,8 +1184,7 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                 color: _blue.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child:
-                  const Icon(Icons.show_chart_rounded, size: 40, color: _blue),
+              child: const Icon(Icons.show_chart_rounded, size: 40, color: _blue),
             ),
             const SizedBox(height: 16),
             Text(title,

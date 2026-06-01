@@ -26,6 +26,10 @@
             .shadow-soft {
                 box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
             }
+            html
+             {
+                scroll-padding-top: 80px;
+            }
         }
     </style>
     @stack('styles')
@@ -39,23 +43,58 @@
 
     {{-- Optional JavaScript untuk Mobile Menu --}}
     <script>
-        // Toggle Mobile Menu
-        const btn = document.getElementById('mobile-menu-button');
-        const menu = document.getElementById('mobile-menu');
-        
-        if(btn) {
-            btn.addEventListener('click', () => {
-                menu.classList.toggle('hidden');
-            });
-        }
-
-        // Tutup menu saat link di klik
-        document.querySelectorAll('#mobile-menu a').forEach(link => {
-            link.addEventListener('click', () => {
-                menu.classList.add('hidden');
-            });
+    // Toggle Mobile Menu
+    const btn = document.getElementById('mobile-menu-button');
+    const menu = document.getElementById('mobile-menu');
+    
+    if(btn) {
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
         });
-    </script>
+    }
+
+    // Tutup menu saat link di klik
+    document.querySelectorAll('#mobile-menu a').forEach(link => {
+        link.addEventListener('click', () => {
+            menu.classList.add('hidden');
+        });
+    });
+
+    // ── Smooth scroll + offset untuk fixed navbar ──
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const target = document.querySelector(this.getAttribute('href'));
+            if (!target) return;
+            e.preventDefault();
+            const navbarHeight = document.querySelector('nav')?.offsetHeight || 80;
+            const offsetTop = target.getBoundingClientRect().top + window.scrollY - navbarHeight;
+            window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+        });
+    });
+
+    // ── Active nav link saat scroll ──
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('nav a[href^="#"]');
+
+    function updateActiveLink() {
+        const navbarHeight = document.querySelector('nav')?.offsetHeight || 80;
+        let current = '';
+        sections.forEach(section => {
+            if (window.scrollY >= section.offsetTop - navbarHeight - 10) {
+                current = section.getAttribute('id');
+            }
+        });
+        navLinks.forEach(link => {
+            link.classList.remove('text-blue-700', 'font-semibold');
+            if (link.getAttribute('href') === '#' + current) {
+                link.classList.add('text-blue-700', 'font-semibold');
+            }
+        });
+    }
+
+    window.addEventListener('scroll', updateActiveLink);
+    updateActiveLink();
+</script>
     @stack('scripts')
 </body>
 </html>

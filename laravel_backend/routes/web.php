@@ -56,6 +56,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     // Harga
     Route::get('/harga', [HargaController::class, 'index'])->name('harga.index');
+    Route::get('/admin/harga/realtime', [HargaController::class, 'realtimeData'])->name('admin.harga.realtime');
 
     // Prediksi
     Route::get('/prediksi',              [PrediksiController::class, 'index'])->name('prediksi.index');
