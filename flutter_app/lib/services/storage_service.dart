@@ -4,7 +4,13 @@ import 'package:flutter_app/models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  // Tambah AndroidOptions agar lebih cepat di Android/MIUI
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
+
   static const String _tokenKey = 'auth_token';
   static const String _userKey  = 'user_data';
 

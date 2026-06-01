@@ -7,6 +7,7 @@ use App\Models\Commodity;
 use App\Models\Prediction;
 use App\Models\PriceHistory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use MongoDB\BSON\ObjectId;
 use Carbon\Carbon;
@@ -291,6 +292,14 @@ class CommodityController extends Controller
             ->sortBy('date')
             ->values()
             ->toArray();
+
+        \Log::info('Forecast response size', [
+            'commodity'      => $commodity->name,
+            'forecast_count' => count($forecastItems),
+            'history_count'  => count($histories),
+            'total_days'     => $totalDays,
+            'time_ms'        => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000),
+        ]);
 
         return response()->json([
             'success'          => true,

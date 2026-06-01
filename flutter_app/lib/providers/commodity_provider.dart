@@ -1,7 +1,17 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/commodity_model.dart';
 import 'package:flutter_app/models/price_model.dart';
 import 'package:flutter_app/services/api_service.dart';
+
+// ── Top-level functions untuk compute() isolate ─────────────
+CommodityForecastModel _parseForecast(Map<String, dynamic> json) {
+  return CommodityForecastModel.fromJson(json);
+}
+
+CommodityModel _parseCommodityDetail(Map<String, dynamic> json) {
+  return CommodityModel.fromJson(json);
+}
 
 class CommodityProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -56,15 +66,99 @@ class CommodityProvider extends ChangeNotifier {
     }
   }
 
-  // ── Load detail komoditas ────────────────────────────────
-  Future<void> loadCommodityDetail(String commodityId) async {
-    _setLoading(true);
-    _clearError();
+  // ── Load detail + history secara parallel ────────────────
+  // ✅ FIX: forecast TIDAK ikut Future.wait — jalan sendiri di background
+  //         sehingga UI langsung muncul tanpa nunggu forecast selesai
+  Future<void> loadDetailAndHistory(
+    String commodityId,
+    String period,
+  ) async {
+    // Reset state
+    _isLoadingDetail   = true;
+    _isLoadingHistory  = true;
+    _detailError       = null;
+    _historyError      = null;
+    Future.microtask(() => notifyListeners());
 
+    // Detail + history jalan parallel, forecast jalan sendiri
+    await Future.wait([
+      _loadDetailInternal(commodityId),
+      _loadHistoryInternal(commodityId, period),
+    ]);
+
+    // Forecast dijalankan SETELAH detail & history selesai
+    // Tidak di-await → UI tidak freeze
+    loadForecast(commodityId);
+  }
+
+  // ── State untuk detail & history ────────────────────────
+  bool    _isLoadingDetail  = false;
+  bool    _isLoadingHistory = false;
+  String? _detailError;
+  String? _historyError;
+
+  bool    get isLoadingDetail  => _isLoadingDetail;
+  bool    get isLoadingHistory => _isLoadingHistory;
+  String? get detailError      => _detailError;
+  String? get historyError     => _historyError;
+
+  Future<void> _loadDetailInternal(String commodityId) async {
     try {
       final response = await _apiService.getCommodityDetail(commodityId);
       if (response['success'] == true && response['data'] != null) {
-        _selectedCommodity = CommodityModel.fromJson(response['data']);
+        _selectedCommodity = await compute(
+          _parseCommodityDetail,
+          Map<String, dynamic>.from(response['data']),
+        );
+      } else {
+        _detailError = response['message'] ?? 'Komoditas tidak ditemukan';
+      }
+    } catch (e) {
+      _detailError = 'Koneksi gagal: $e';
+    } finally {
+      _isLoadingDetail = false;
+      Future.microtask(() => notifyListeners());
+    }
+  }
+
+  Future<void> _loadHistoryInternal(String commodityId, String period) async {
+    _selectedPeriod = period;
+    _priceHistory   = [];
+
+    try {
+      final response = await _apiService.getPriceHistory(
+        commodityId,
+        period,
+        commodityName: _selectedCommodity?.name,
+      );
+      if (response['success'] == true && response['data'] != null) {
+        final List data = response['data'];
+        _priceHistory = data.map((e) => PriceModel.fromJson(e)).toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+      } else {
+        _historyError = response['message'] ?? 'Gagal memuat histori harga';
+        _priceHistory = [];
+      }
+    } catch (e) {
+      _historyError = 'Koneksi gagal: $e';
+      _priceHistory = [];
+    } finally {
+      _isLoadingHistory = false;
+      Future.microtask(() => notifyListeners());
+    }
+  }
+
+  // ── Load detail komoditas (standalone) ──────────────────
+  Future<void> loadCommodityDetail(String commodityId) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final response = await _apiService.getCommodityDetail(commodityId);
+      if (response['success'] == true && response['data'] != null) {
+        _selectedCommodity = await compute(
+          _parseCommodityDetail,
+          Map<String, dynamic>.from(response['data']),
+        );
       } else {
         _errorMessage = response['message'] ?? 'Komoditas tidak ditemukan';
       }
@@ -75,9 +169,8 @@ class CommodityProvider extends ChangeNotifier {
     }
   }
 
-  // ── Load forecast (endpoint baru) ────────────────────────
-  // Dipanggil sekali saat detail screen dibuka.
-  // Return data historis + forecast + available periods.
+  // ── Load forecast ─────────────────────────────────────────
+  // ✅ FIX: berjalan sendiri di background, tidak blocking UI
   Future<void> loadForecast(String commodityId) async {
     if (_isLoadingForecast) return;
     _isLoadingForecast = true;
@@ -88,7 +181,8 @@ class CommodityProvider extends ChangeNotifier {
       final response = await _apiService.getCommodityForecast(commodityId);
 
       if (response['success'] == true) {
-        _forecast = CommodityForecastModel.fromJson(
+        _forecast = await compute(
+          _parseForecast,
           Map<String, dynamic>.from(response),
         );
       } else {
@@ -104,7 +198,7 @@ class CommodityProvider extends ChangeNotifier {
     }
   }
 
-  // ── Load histori harga (data lampau) ─────────────────────
+  // ── Load histori harga (standalone, untuk ganti period) ──
   Future<void> loadPriceHistory(
     String commodityId, {
     String period = '7days',
@@ -121,7 +215,6 @@ class CommodityProvider extends ChangeNotifier {
         period,
         commodityName: _selectedCommodity?.name,
       );
-
       if (response['success'] == true && response['data'] != null) {
         final List data = response['data'];
         _priceHistory = data.map((e) => PriceModel.fromJson(e)).toList()
@@ -145,15 +238,14 @@ class CommodityProvider extends ChangeNotifier {
 
     try {
       final response = await _apiService.predictPrice(commodityName, quantity);
-
       if (response['success'] == true && response['data'] != null) {
         final data          = response['data'] as Map<String, dynamic>;
         final List forecast = data['forecast'] as List? ?? [];
         final hargaTerakhir = (data['harga_terakhir'] as num?)?.toDouble() ?? 0.0;
 
         final hargaPrediksi = forecast.isNotEmpty
-            ? forecast.take(14).map((e) => (e as num).toDouble()).reduce((a, b) => a + b) /
-                forecast.take(14).length
+            ? forecast.take(14).map((e) => (e as num).toDouble())
+                .reduce((a, b) => a + b) / forecast.take(14).length
             : hargaTerakhir;
 
         final selisih = (hargaPrediksi - hargaTerakhir) * quantity * 4;
@@ -214,6 +306,8 @@ class CommodityProvider extends ChangeNotifier {
     _selectedCommodity = null;
     _priceHistory      = [];
     _forecast          = CommodityForecastModel.empty();
+    _detailError       = null;
+    _historyError      = null;
     notifyListeners();
   }
 
