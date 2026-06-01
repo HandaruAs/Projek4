@@ -256,6 +256,19 @@ class ApiService {
     }
   }
 
+  /// GET /api/commodities/{id}/forecast
+  /// Return historis 30 hari + seluruh forecast + available_periods + harga dinamis
+  Future<Map<String, dynamic>> getCommodityForecast(String commodityId) async {
+    try {
+      final response = await _dio.get('/commodities/$commodityId/forecast');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
+    }
+  }
+
   // ══════════════════════════════════════════════════════════
   // PRICE HISTORIES
   // ══════════════════════════════════════════════════════════
@@ -263,15 +276,15 @@ class ApiService {
   Future<Map<String, dynamic>> getPriceHistory(
     String commodityId,
     String period, {
-    String? commodityName, // tambah parameter ini
+    String? commodityName,
   }) async {
     try {
       int perPage;
       switch (period) {
-        case '7days':  perPage = 7;  break;
-        case '30days': perPage = 30; break;
+        case '7days':   perPage = 7;  break;
+        case '30days':  perPage = 30; break;
         case '3months': perPage = 90; break;
-        default: perPage = 30;
+        default:        perPage = 30;
       }
 
       final response = await _dio.get(
@@ -303,27 +316,26 @@ class ApiService {
     }
   }
 
-    Future<Map<String, dynamic>> getLatestPrices({
-      String? category,
-      String? search,
-    }) async {
-      try {
-        final params = <String, String>{};
-        if (category != null && category != 'Semua')
-          params['category'] = category;
-        if (search != null && search.isNotEmpty) params['search'] = search;
+  Future<Map<String, dynamic>> getLatestPrices({
+    String? category,
+    String? search,
+  }) async {
+    try {
+      final params = <String, String>{};
+      if (category != null && category != 'Semua') params['category'] = category;
+      if (search != null && search.isNotEmpty) params['search'] = search;
 
-        final response = await _dio.get(
-          '/prices/latest',
-          queryParameters: params.isNotEmpty ? params : null,
-        );
-        return Map<String, dynamic>.from(response.data);
-      } on DioException catch (e) {
-        if (e.response != null)
-          return Map<String, dynamic>.from(e.response!.data);
-        throw _handleError(e);
-      }
+      final response = await _dio.get(
+        '/prices/latest',
+        queryParameters: params.isNotEmpty ? params : null,
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      if (e.response != null)
+        return Map<String, dynamic>.from(e.response!.data);
+      throw _handleError(e);
     }
+  }
 
   Future<Map<String, dynamic>> getTopPrices({int limit = 3}) async {
     try {
@@ -350,6 +362,10 @@ class ApiService {
     }
   }
 
+  // ══════════════════════════════════════════════════════════
+  // PREDICTIONS
+  // ══════════════════════════════════════════════════════════
+
   Future<List<String>> getPredictableCommodities() async {
     try {
       final response = await _dio.get('/predictions');
@@ -363,10 +379,6 @@ class ApiService {
       return [];
     }
   }
-
-  // ══════════════════════════════════════════════════════════
-  // PREDICTIONS
-  // ══════════════════════════════════════════════════════════
 
   Future<Map<String, dynamic>> getPrediction(String komoditas) async {
     try {

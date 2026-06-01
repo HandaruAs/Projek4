@@ -29,6 +29,8 @@ Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
 // ── Public ───────────────────────────────────────────────
 Route::get('/commodities',          [CommodityController::class, 'index']);
 Route::get('/commodities/{id}',     [CommodityController::class, 'show']);
+Route::get('/commodities/{id}/forecast', [CommodityController::class, 'forecast']);
+Route::get('/commodities/{id}',          [CommodityController::class, 'show']);
 Route::get('/categories',           [CategoryController::class, 'index']);
 Route::get('/price-histories',      [PriceHistoryController::class, 'index']);
 Route::get('/price-histories/flask/{commodityName}', [PriceHistoryController::class, 'fromFlask']);
