@@ -10,15 +10,7 @@ class ApiService {
   ApiService._internal();
 
   final Dio _dio = Dio(BaseOptions(
-<<<<<<< HEAD
-<<<<<<< HEAD
-    baseUrl: 'http://10.10.181.162:8000/api',
-=======
-    baseUrl: 'http://10.10.183.93:8000/api',
->>>>>>> 89e33609f6fe0ae3332f1e969ca41cf44d6bcfd0
-=======
     baseUrl: dotenv.env['BASE_URL'] ?? 'http://localhost:8000/api',
->>>>>>> 8ab0f297abab7c06acdc0f09d53b72dd297bf79c
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -264,8 +256,6 @@ class ApiService {
     }
   }
 
-  /// GET /api/commodities/{id}/forecast
-  /// Return historis 30 hari + seluruh forecast + available_periods + harga dinamis
   Future<Map<String, dynamic>> getCommodityForecast(String commodityId) async {
     try {
       final response = await _dio.get('/commodities/$commodityId/forecast');
@@ -305,7 +295,6 @@ class ApiService {
 
       final data = Map<String, dynamic>.from(response.data);
 
-      // Fallback ke Flask kalau data kosong
       if (data['success'] == true &&
           (data['data'] == null || (data['data'] as List).isEmpty) &&
           commodityName != null) {
