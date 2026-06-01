@@ -185,7 +185,6 @@
                     <th>Harga (IDR)</th>
                     <th>
                         Tanggal Harga
-                        {{-- Tooltip penjelasan kolom --}}
                         <span style="
                             display: inline-flex;
                             align-items: center;
@@ -205,6 +204,7 @@
                     </th>
                     <th>Perubahan</th>
                     <th>Status Prediksi</th>
+                    <th>Detail</th>
                 </tr>
             </thead>
             <tbody>
@@ -225,7 +225,6 @@
                     <td>
                         @if($item->tanggal_harga)
                             @if($item->belum_mulai)
-                                {{-- Belum mulai: tampilkan tanggal aktual + label kecil --}}
                                 <div>
                                     <span style="font-size: 12px; color: #374151; font-weight: 500;">
                                         <i class="fas fa-calendar-day" style="margin-right:4px; font-size:10px; color:#9ca3af;"></i>
@@ -237,13 +236,11 @@
                                     </span>
                                 </div>
                             @elseif($item->dalam_range)
-                                {{-- Aktif: tanggal hari ini, warna biru --}}
                                 <span style="font-size: 12px; color: #1d4ed8; font-weight: 600;">
                                     <i class="fas fa-calendar-day" style="margin-right:4px; font-size:10px;"></i>
                                     {{ \Carbon\Carbon::parse($item->tanggal_harga)->locale('id')->isoFormat('DD MMM YYYY') }}
                                 </span>
                             @else
-                                {{-- Kadaluarsa: tanggal akhir prediksi --}}
                                 <span style="font-size: 12px; color: #92400e; font-weight: 400;">
                                     <i class="fas fa-calendar-day" style="margin-right:4px; font-size:10px;"></i>
                                     {{ \Carbon\Carbon::parse($item->tanggal_harga)->locale('id')->isoFormat('DD MMM YYYY') }}
@@ -304,7 +301,6 @@
                                 Kadaluarsa
                             </span>
                         @elseif($item->belum_mulai)
-                            {{-- Belum mulai: badge biru + info kapan mulai + keterangan harga aktual --}}
                             <div>
                                 <span style="
                                     background: #eff6ff;
@@ -337,6 +333,15 @@
                                 Tidak ada data
                             </span>
                         @endif
+                    </td>
+
+                    {{-- Detail Button --}}
+                    <td class="detail-cell">
+                        <a href="{{ route('user.prediksi', ['komoditas' => $item->commodity_name]) }}"
+                           class="btn-detail"
+                           title="Lihat prediksi harga untuk {{ $item->commodity_name }}">
+                            <i class="fas fa-chart-line"></i> Detail
+                        </a>
                     </td>
                 </tr>
                 @endforeach
@@ -409,6 +414,49 @@
 </div>
 
 @endsection
+
+@push('styles')
+<style>
+    .btn-detail {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-detail:hover {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        transform: translateY(-1px);
+        color: white;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+    }
+
+    .btn-detail i {
+        font-size: 11px;
+    }
+
+    .detail-cell {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.3); }
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
