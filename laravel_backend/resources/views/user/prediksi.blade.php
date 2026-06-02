@@ -238,7 +238,7 @@
 <style>
 .mape-good  { font-weight:600; color:#16a34a; }
 .mape-warn  { font-weight:600; color:#d97706; }
-.mape-bad   { font-weight:600; color:#dc2626; } 
+.mape-bad   { font-weight:600; color:#dc2626; }
 .mape-muted { font-weight:600; color:var(--muted,#9ca3af); }
 </style>
 @endpush
