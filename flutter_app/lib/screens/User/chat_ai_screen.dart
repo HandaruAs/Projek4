@@ -44,6 +44,17 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     },
   ));
 
+  // AI endpoints bypass Laravel, hit Flask directly
+  final Dio _dioAi = Dio(BaseOptions(
+    baseUrl: dotenv.env['FLASK_BASE'] ?? 'http://localhost:5001/api',
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 60),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+  ));
+
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
 
@@ -322,7 +333,7 @@ class _ChatAiScreenState extends State<ChatAiScreen>
       setState(() => _totalEstimasi = total);
     } on DioException catch (e) {
       _removeLastMessage();
-      _addBotMessage('⚠️ Gagal mendapatkan rekomendasi: \${e.message}');
+      _addBotMessage('⚠️ Gagal mendapatkan rekomendasi: ${e.message}');
     } catch (_) {
       _removeLastMessage();
       _addBotMessage('⚠️ Gagal terhubung ke server.');
@@ -411,13 +422,11 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     );
   }
 
-  // ── FIX #2: leading eksplisit putih ─────────────────────────
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: _blue,
       foregroundColor: Colors.white,
       elevation: 0,
-      // Tombol back dengan warna putih eksplisit
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
         onPressed: () => Navigator.of(context).pop(),
@@ -551,7 +560,7 @@ class _ChatAiScreenState extends State<ChatAiScreen>
 
   Widget _buildMessageBubble(ChatMessage msg, bool isDark) {
     final botBubbleBg = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final userBubbleBg = _blue;
+    const userBubbleBg = _blue;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -635,7 +644,6 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     );
   }
 
-  // ── TOTAL ESTIMASI CARD ──────────────────────────────────────
   Widget _buildTotalCard(String total, bool isDark) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
@@ -773,7 +781,6 @@ class _ChatAiScreenState extends State<ChatAiScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Label hint scroll – hanya tampil saat ada pilihan horizontal
             if (_step != 4 && _step != 6 && !_isLoadingAI && _step != 0)
               Padding(
                 padding: const EdgeInsets.only(
@@ -940,10 +947,11 @@ class _ChatAiScreenState extends State<ChatAiScreen>
                       padding: const EdgeInsets.only(right: 8, bottom: 6),
                       child: GestureDetector(
                         onTap: () => setState(() {
-                          if (isSelected)
+                          if (isSelected) {
                             _selectedKomSet.remove(nama);
-                          else
+                          } else {
                             _selectedKomSet.add(nama);
+                          }
                         }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
@@ -1004,7 +1012,6 @@ class _ChatAiScreenState extends State<ChatAiScreen>
     );
   }
 
-  // ── FIX #1: horizontal scroll untuk follow-up buttons ───────
   Widget _buildFollowUpButtons(bool isDark) {
     final options = [
       {'label': '🔄 Coba Budget Berbeda', 'action': 'resetStep3'},
@@ -1015,7 +1022,6 @@ class _ChatAiScreenState extends State<ChatAiScreen>
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      // Hilangkan padding bawaan SingleChildScrollView agar sejajar
       child: Row(
         children: options.asMap().entries.map((entry) {
           final isLast = entry.key == options.length - 1;

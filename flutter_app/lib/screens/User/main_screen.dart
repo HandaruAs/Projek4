@@ -38,16 +38,16 @@ class _UserMainScreenState extends State<UserMainScreen>
   ];
 
   List<Widget> get _screens => [
-    UserHomeScreen(onOpenCommodity: _openCommodityDetail),
-    // ── UBAH: pass initialCommodity + ValueKey agar rebuild saat komoditas beda ──
-    UserPredictionScreen(
-      key: ValueKey(_initialPredictionCommodity ?? '__default__'),
-      initialCommodity: _initialPredictionCommodity,
-    ),
-    const UserStatisticsScreen(),
-    const UserSimulationScreen(),
-    const ProfileScreen(),
-  ];
+        UserHomeScreen(onOpenCommodity: _openCommodityDetail),
+        // ── UBAH: pass initialCommodity + ValueKey agar rebuild saat komoditas beda ──
+        UserPredictionScreen(
+          key: ValueKey(_initialPredictionCommodity ?? '__default__'),
+          initialCommodity: _initialPredictionCommodity,
+        ),
+        const UserStatisticsScreen(),
+        const UserSimulationScreen(),
+        const ProfileScreen(),
+      ];
 
   int _unreadCount = 0;
   Timer? _badgeTimer;
@@ -134,7 +134,7 @@ class _UserMainScreenState extends State<UserMainScreen>
     await _fetchUnreadCount();
 
     if (result != null && mounted) {
-      final action   = result['action'] as String?;
+      final action = result['action'] as String?;
       final tabIndex = result['tabIndex'] as int?;
 
       if (action == 'navigate_tab' && tabIndex != null) {
@@ -191,12 +191,10 @@ class _UserMainScreenState extends State<UserMainScreen>
           ),
         ],
       ),
-
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
       ),
-
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: ScaleTransition(
@@ -206,14 +204,14 @@ class _UserMainScreenState extends State<UserMainScreen>
             child: Container(
               width: 58,
               height: 58,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
                 ),
                 shape: BoxShape.circle,
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
                     color: Color.fromRGBO(21, 101, 192, 0.45),
                     blurRadius: 16,
@@ -249,7 +247,6 @@ class _UserMainScreenState extends State<UserMainScreen>
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 6,
@@ -258,9 +255,12 @@ class _UserMainScreenState extends State<UserMainScreen>
           child: Row(
             children: [
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Beranda'),
-              _buildNavItem(1, Icons.trending_up_outlined, Icons.trending_up, 'Prediksi'),
-              _buildNavItem(2, Icons.bar_chart_outlined, Icons.bar_chart, 'Statistik'),
-              _buildNavItem(3, Icons.calculate_outlined, Icons.calculate, 'Simulasi'),
+              _buildNavItem(
+                  1, Icons.trending_up_outlined, Icons.trending_up, 'Prediksi'),
+              _buildNavItem(
+                  2, Icons.bar_chart_outlined, Icons.bar_chart, 'Statistik'),
+              _buildNavItem(
+                  3, Icons.calculate_outlined, Icons.calculate, 'Simulasi'),
               _buildNavItem(4, Icons.person_outline, Icons.person, 'Profil'),
             ],
           ),

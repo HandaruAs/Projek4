@@ -34,8 +34,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   void dispose() {
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     _timer?.cancel();
     super.dispose();
   }
@@ -62,8 +66,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
   }
 
-  String get _otpValue =>
-      _controllers.map((c) => c.text).join();
+  String get _otpValue => _controllers.map((c) => c.text).join();
 
   void _onOtpChanged(String value, int index) {
     if (value.length == 1 && index < 5) {
@@ -112,7 +115,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       );
     } else {
       // Kosongkan field OTP dan fokus ke pertama
-      for (final c in _controllers) c.clear();
+      for (final c in _controllers) {
+        c.clear();
+      }
       _focusNodes[0].requestFocus();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -131,7 +136,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     if (success) {
       _startCountdown();
-      for (final c in _controllers) c.clear();
+      for (final c in _controllers) {
+        c.clear();
+      }
       _focusNodes[0].requestFocus();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -142,7 +149,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Gagal mengirim ulang OTP'),
+          content:
+              Text(authProvider.errorMessage ?? 'Gagal mengirim ulang OTP'),
           backgroundColor: Colors.red,
         ),
       );
@@ -227,8 +235,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                     // Verify button
                     ElevatedButton(
-                      onPressed:
-                          authProvider.isLoading ? null : _handleVerify,
+                      onPressed: authProvider.isLoading ? null : _handleVerify,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         backgroundColor: const Color(0xFF1976D2),
@@ -239,7 +246,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       ),
                       child: const Text(
                         'Verifikasi',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -248,9 +256,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     Center(
                       child: _canResend
                           ? TextButton(
-                              onPressed: authProvider.isLoading
-                                  ? null
-                                  : _handleResend,
+                              onPressed:
+                                  authProvider.isLoading ? null : _handleResend,
                               child: const Text(
                                 'Kirim Ulang Kode OTP',
                                 style: TextStyle(
@@ -308,8 +315,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFF1976D2), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2),
             ),
             filled: true,
             fillColor: Colors.grey.shade50,

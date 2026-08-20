@@ -26,7 +26,7 @@ class NotificationApiService {
 
     // Debug — hapus setelah fix terkonfirmasi
     print(
-        'TOKEN RETRIEVED: ${token != null ? token.substring(0, 20) + "..." : "NULL"}');
+        'TOKEN RETRIEVED: ${token != null ? "${token.substring(0, 20)}..." : "NULL"}');
 
     if (token != null && token.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Bearer $token';

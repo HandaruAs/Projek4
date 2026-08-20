@@ -14,7 +14,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifications = true;
-  bool _priceAlerts   = true;
+  bool _priceAlerts = true;
 
   void _confirmLogout() {
     showDialog(
@@ -41,7 +41,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Keluar'),
           ),
@@ -75,7 +76,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1976D2),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Lanjutkan'),
           ),
@@ -92,7 +94,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: ListView(
         children: [
-
           // ── SECTION: Akun ──
           const _SectionHeader(label: 'Akun'),
 
@@ -137,9 +138,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Alert Harga',
             subtitle: 'Notifikasi saat harga berubah signifikan',
             value: _priceAlerts,
-            onChanged: _notifications
-                ? (v) => setState(() => _priceAlerts = v)
-                : null,
+            onChanged:
+                _notifications ? (v) => setState(() => _priceAlerts = v) : null,
           ),
 
           const Divider(height: 1, indent: 16),
@@ -303,8 +303,8 @@ class _SettingsSwitchTile extends StatelessWidget {
           color: (isDisabled ? Colors.grey : iconColor).withOpacity(0.12),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon,
-            color: isDisabled ? Colors.grey : iconColor, size: 20),
+        child:
+            Icon(icon, color: isDisabled ? Colors.grey : iconColor, size: 20),
       ),
       title: Text(title,
           style: TextStyle(
@@ -317,7 +317,7 @@ class _SettingsSwitchTile extends StatelessWidget {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFF1976D2),
+        activeThumbColor: const Color(0xFF1976D2),
       ),
     );
   }

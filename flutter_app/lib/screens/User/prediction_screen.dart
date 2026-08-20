@@ -27,10 +27,6 @@ class _HistoryRow {
   _HistoryRow({
     required this.komoditas,
     required this.generated,
-    this.days,
-    this.mae,
-    this.rmse,
-    this.mape,
   });
 }
 
@@ -119,7 +115,7 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
   List<String> _komoditasList = [];
   String? _selected;
   _PredData? _predData;
-  List<_HistoryRow> _history = [];
+  final List<_HistoryRow> _history = [];
 
   bool _isLoading = true;
   bool _isPredLoad = false;
@@ -133,9 +129,9 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
   final _fmt =
       NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
 
-  static const _blue  = Color(0xFF1976D2);
+  static const _blue = Color(0xFF1976D2);
   static const _green = Color(0xFF10B981);
-  static const _red   = Color(0xFFEF4444);
+  static const _red = Color(0xFFEF4444);
   static const _amber = Color(0xFFF59E0B);
 
   @override
@@ -265,14 +261,12 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                 ),
               ),
             ),
-
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildFilterCard(isDark, cardBg, textPri, textSub),
                   const SizedBox(height: 16),
-
                   if (_error != null)
                     _errorWidget(_error!, textSub)
                   else if (_isPredLoad)
@@ -290,9 +284,11 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                         children: [
                           _buildStatRow(_predData!, isDark, cardBg, textPri),
                           const SizedBox(height: 16),
-                          _buildChart(_predData!, isDark, cardBg, textPri, textSub),
+                          _buildChart(
+                              _predData!, isDark, cardBg, textPri, textSub),
                           const SizedBox(height: 16),
-                          _buildWeeklyTable(_predData!, isDark, cardBg, textPri, textSub),
+                          _buildWeeklyTable(
+                              _predData!, isDark, cardBg, textPri, textSub),
                           const SizedBox(height: 16),
                         ],
                       ),
@@ -354,7 +350,7 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
           else
             DropdownButtonFormField<String>(
               isExpanded: true,
-              value: _selected,
+              initialValue: _selected,
               dropdownColor: isDark ? const Color(0xFF252836) : Colors.white,
               icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _blue),
               style: TextStyle(
@@ -473,7 +469,8 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: (isUp ? Colors.red : _green).withValues(alpha: 0.25),
+                      color:
+                          (isUp ? Colors.red : _green).withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -1161,7 +1158,8 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
               color: _red.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.error_outline_rounded, color: _red, size: 18),
+            child:
+                const Icon(Icons.error_outline_rounded, color: _red, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1184,7 +1182,8 @@ class _UserPredictionScreenState extends State<UserPredictionScreen>
                 color: _blue.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.show_chart_rounded, size: 40, color: _blue),
+              child:
+                  const Icon(Icons.show_chart_rounded, size: 40, color: _blue),
             ),
             const SizedBox(height: 16),
             Text(title,

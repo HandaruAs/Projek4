@@ -19,46 +19,50 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   final NumberFormat _rupiahFmt =
       NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
-  String _searchQuery      = '';
+  String _searchQuery = '';
   String _selectedCategory = 'Semua';
-  int    _currentPage      = 1;
+  int _currentPage = 1;
   static const int _perPage = 10;
 
   static const Map<String, Color> _catColors = {
     'sayur mayur': Color(0xFF4CAF50),
-    'bawang':      Color(0xFF9C27B0),
-    'ikan segar':  Color(0xFF2196F3),
-    'buah':        Color(0xFFFF9800),
-    'beras':       Color(0xFF795548),
-    'daging':      Color(0xFFF44336),
-    'minyak':      Color(0xFFFFAB00),
-    'bumbu':       Color(0xFFFF5722),
-    'telur ayam':  Color(0xFFFFB300),
-    'gula':        Color(0xFF8D6E63),
+    'bawang': Color(0xFF9C27B0),
+    'ikan segar': Color(0xFF2196F3),
+    'buah': Color(0xFFFF9800),
+    'beras': Color(0xFF795548),
+    'daging': Color(0xFFF44336),
+    'minyak': Color(0xFFFFAB00),
+    'bumbu': Color(0xFFFF5722),
+    'telur ayam': Color(0xFFFFB300),
+    'gula': Color(0xFF8D6E63),
   };
 
   static const Map<String, IconData> _catIcons = {
     'sayur mayur': Icons.eco,
-    'bawang':      Icons.bubble_chart,
-    'ikan segar':  Icons.set_meal,
-    'buah':        Icons.apple,
-    'beras':       Icons.grain,
-    'daging':      Icons.kebab_dining,
-    'minyak':      Icons.opacity,
-    'bumbu':       Icons.spa,
-    'telur ayam':  Icons.egg,
-    'gula':        Icons.cake,
+    'bawang': Icons.bubble_chart,
+    'ikan segar': Icons.set_meal,
+    'buah': Icons.apple,
+    'beras': Icons.grain,
+    'daging': Icons.kebab_dining,
+    'minyak': Icons.opacity,
+    'bumbu': Icons.spa,
+    'telur ayam': Icons.egg,
+    'gula': Icons.cake,
   };
 
-  Color    _color(String cat) {
+  Color _color(String cat) {
     final k = cat.toLowerCase();
-    for (final e in _catColors.entries) if (k.contains(e.key)) return e.value;
+    for (final e in _catColors.entries) {
+      if (k.contains(e.key)) return e.value;
+    }
     return const Color(0xFF1976D2);
   }
 
   IconData _icon(String cat) {
     final k = cat.toLowerCase();
-    for (final e in _catIcons.entries) if (k.contains(e.key)) return e.value;
+    for (final e in _catIcons.entries) {
+      if (k.contains(e.key)) return e.value;
+    }
     return Icons.inventory_2;
   }
 
@@ -70,9 +74,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadAll());
     _searchController.addListener(() => setState(() {
-      _searchQuery = _searchController.text;
-      _currentPage = 1;
-    }));
+          _searchQuery = _searchController.text;
+          _currentPage = 1;
+        }));
   }
 
   @override
@@ -93,19 +97,24 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   List<PriceLatestModel> _filtered(PriceProvider p) {
     var list = p.latestPrices;
     if (_selectedCategory != 'Semua') {
-      list = list.where((x) =>
-          x.category.toLowerCase() == _selectedCategory.toLowerCase()).toList();
+      list = list
+          .where((x) =>
+              x.category.toLowerCase() == _selectedCategory.toLowerCase())
+          .toList();
     }
     if (_searchQuery.isNotEmpty) {
-      list = list.where((x) =>
-          x.commodityName.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+      list = list
+          .where((x) => x.commodityName
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()))
+          .toList();
     }
     return list;
   }
 
   List<PriceLatestModel> _paginated(List<PriceLatestModel> all) {
     final start = (_currentPage - 1) * _perPage;
-    final end   = (start + _perPage).clamp(0, all.length);
+    final end = (start + _perPage).clamp(0, all.length);
     if (start >= all.length) return [];
     return all.sublist(start, end);
   }
@@ -116,8 +125,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
     return Consumer<PriceProvider>(
       builder: (context, provider, _) {
-        final filtered   = _filtered(provider);
-        final paginated  = _paginated(filtered);
+        final filtered = _filtered(provider);
+        final paginated = _paginated(filtered);
         final totalPages = (filtered.length / _perPage).ceil();
 
         return RefreshIndicator(
@@ -125,13 +134,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(child: _buildHeader(isDark)),
-
               if (provider.categories.isNotEmpty)
-                SliverToBoxAdapter(child: _buildCategoryChips(provider.categories)),
-
+                SliverToBoxAdapter(
+                    child: _buildCategoryChips(provider.categories)),
               SliverToBoxAdapter(
                   child: _buildFeaturedSection(provider, isDark)),
-
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
@@ -142,9 +149,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1A1A2E),
+                            color:
+                                isDark ? Colors.white : const Color(0xFF1A1A2E),
                           )),
                       if (!provider.isLoading)
                         Text('${filtered.length} item',
@@ -154,10 +160,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ),
                 ),
               ),
-
               if (provider.isLoading)
-                const SliverFillRemaining(
-                    child: Center(child: LoadingWidget()))
+                const SliverFillRemaining(child: Center(child: LoadingWidget()))
               else if (filtered.isEmpty)
                 SliverFillRemaining(
                   child: Center(
@@ -183,11 +187,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     ),
                   ),
                 ),
-
               if (!provider.isLoading && totalPages > 1)
-                SliverToBoxAdapter(
-                    child: _buildPagination(totalPages, isDark)),
-
+                SliverToBoxAdapter(child: _buildPagination(totalPages, isDark)),
               const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
           ),
@@ -259,8 +260,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                           TextStyle(color: Colors.grey[500], fontSize: 13),
                       border: InputBorder.none,
                       isDense: true,
-                      contentPadding:
-                          const EdgeInsets.symmetric(vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                   ),
                 ),
@@ -273,8 +273,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                         _currentPage = 1;
                       });
                     },
-                    child:
-                        Icon(Icons.close, size: 16, color: Colors.grey[500]),
+                    child: Icon(Icons.close, size: 16, color: Colors.grey[500]),
                   ),
               ],
             ),
@@ -298,12 +297,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           itemCount: cats.length,
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (_, i) {
-            final cat      = cats[i];
+            final cat = cats[i];
             final isActive = cat == _selectedCategory;
             return GestureDetector(
               onTap: () => setState(() {
                 _selectedCategory = cat;
-                _currentPage      = 1;
+                _currentPage = 1;
               }),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -324,11 +323,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 child: Text(cat,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight:
-                          isActive ? FontWeight.w600 : FontWeight.w400,
-                      color: isActive
-                          ? const Color(0xFF1565C0)
-                          : Colors.white,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      color: isActive ? const Color(0xFF1565C0) : Colors.white,
                     )),
               ),
             );
@@ -356,8 +352,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         if (provider.isLoadingTop)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-                child: CircularProgressIndicator(strokeWidth: 2)),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           )
         else if (provider.topPrices.isEmpty)
           const SizedBox.shrink()
@@ -379,8 +374,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   }
 
   Widget _buildFeaturedCard(PriceLatestModel item, bool isDark) {
-    final color  = _color(item.category);
-    final icon   = _icon(item.category);
+    final color = _color(item.category);
+    final icon = _icon(item.category);
     final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return GestureDetector(
@@ -391,12 +386,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-              color: color.withValues(alpha: 0.2), width: 0.8),
+          border: Border.all(color: color.withValues(alpha: 0.2), width: 0.8),
           boxShadow: [
             BoxShadow(
-              color:
-                  Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -417,8 +410,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ),
                   child: Icon(icon, color: color, size: 16),
                 ),
-                if (item.isPrediction)
-                  _buildStatusBadge(item, mini: true),
+                if (item.isPrediction) _buildStatusBadge(item, mini: true),
               ],
             ),
             const SizedBox(height: 8),
@@ -436,21 +428,17 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             Text(item.category,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    TextStyle(fontSize: 10, color: Colors.grey[500])),
+                style: TextStyle(fontSize: 10, color: Colors.grey[500])),
             const Spacer(),
             Text(
               _rupiahFmt.format(item.hargaSekarang),
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: color),
+                  fontSize: 13, fontWeight: FontWeight.w700, color: color),
             ),
             const SizedBox(height: 4),
             // ── % perubahan ──────────────────────────────────────
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: item.isNaik
                     ? const Color(0xFF3B6D11)
@@ -487,16 +475,15 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   // ── List item ────────────────────────────────────────────────────────────
 
   Widget _buildListItem(PriceLatestModel item, bool isDark) {
-    final color  = _color(item.category);
-    final icon   = _icon(item.category);
+    final color = _color(item.category);
+    final icon = _icon(item.category);
     final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return GestureDetector(
       onTap: () => _onTapCommodity(item.commodityId),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(12),
@@ -511,7 +498,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           children: [
             // ── Icon ────────────────────────────────────────────
             Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
@@ -530,9 +518,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? Colors.white
-                          : const Color(0xFF1A1A2E),
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -541,8 +527,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   Row(
                     children: [
                       Text(item.category,
-                          style: TextStyle(
-                              fontSize: 11, color: Colors.grey[500])),
+                          style:
+                              TextStyle(fontSize: 11, color: Colors.grey[500])),
                       if (item.isPrediction) ...[
                         const SizedBox(width: 6),
                         _buildStatusBadge(item, mini: true),
@@ -562,16 +548,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? Colors.white
-                        : const Color(0xFF1A1A2E),
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   item.satuan.isNotEmpty ? '/ ${item.satuan}' : '',
-                  style:
-                      TextStyle(fontSize: 10, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: 10, color: Colors.grey[400]),
                 ),
                 const SizedBox(height: 2),
                 Row(
@@ -624,17 +607,17 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
     switch (item.statusPrediksi) {
       case 'aktif':
-        bgColor   = const Color(0xFFDCFCE7);
+        bgColor = const Color(0xFFDCFCE7);
         textColor = const Color(0xFF166534);
         badgeIcon = Icons.check_circle_rounded;
         break;
       case 'kadaluarsa':
-        bgColor   = const Color(0xFFFEF3C7);
+        bgColor = const Color(0xFFFEF3C7);
         textColor = const Color(0xFF92400E);
         badgeIcon = Icons.access_time_rounded;
         break;
       case 'belum_mulai':
-        bgColor   = const Color(0xFFEFF6FF);
+        bgColor = const Color(0xFFEFF6FF);
         textColor = const Color(0xFF1D4ED8);
         badgeIcon = Icons.calendar_month_rounded;
         break;
@@ -658,9 +641,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             Text(
               item.statusLabel,
               style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: textColor),
+                  fontSize: 9, fontWeight: FontWeight.w700, color: textColor),
             ),
           ],
         ),
@@ -681,9 +662,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           Text(
             item.statusLabel,
             style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: textColor),
+                fontSize: 11, fontWeight: FontWeight.w600, color: textColor),
           ),
         ],
       ),
@@ -705,7 +684,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               isDark: isDark),
           const SizedBox(width: 8),
           ...List.generate(totalPages, (i) {
-            final page     = i + 1;
+            final page = i + 1;
             final isActive = page == _currentPage;
 
             if (totalPages > 5 &&
@@ -718,8 +697,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   child: Text('...', style: TextStyle(color: Colors.grey)),
                 );
               }
-              if (page == totalPages - 1 &&
-                  _currentPage < totalPages - 2) {
+              if (page == totalPages - 1 && _currentPage < totalPages - 2) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 2),
                   child: Text('...', style: TextStyle(color: Colors.grey)),
@@ -733,14 +711,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               child: GestureDetector(
                 onTap: () => setState(() => _currentPage = page),
                 child: Container(
-                  width: 34, height: 34,
+                  width: 34,
+                  height: 34,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isActive
                         ? const Color(0xFF1976D2)
-                        : (isDark
-                            ? const Color(0xFF2C2C2C)
-                            : Colors.grey[100]),
+                        : (isDark ? const Color(0xFF2C2C2C) : Colors.grey[100]),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -750,9 +727,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       fontSize: 13,
                       color: isActive
                           ? Colors.white
-                          : (isDark
-                              ? Colors.grey[300]
-                              : Colors.grey[700]),
+                          : (isDark ? Colors.grey[300] : Colors.grey[700]),
                     ),
                   ),
                 ),
@@ -779,15 +754,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
-        width: 34, height: 34,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
           color: enabled
               ? const Color(0xFF1976D2)
               : (isDark ? const Color(0xFF2C2C2C) : Colors.grey[200]),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon,
-            size: 18, color: enabled ? Colors.white : Colors.grey),
+        child:
+            Icon(icon, size: 18, color: enabled ? Colors.white : Colors.grey),
       ),
     );
   }

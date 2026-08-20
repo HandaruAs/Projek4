@@ -270,7 +270,7 @@ class _UserSimulationScreenState extends State<UserSimulationScreen>
             // Ganti Consumer<CommodityProvider> di dropdown dengan ini
             DropdownButtonFormField<String>(
               isExpanded: true,
-              value: _selectedCommodityName,
+              initialValue: _selectedCommodityName,
               dropdownColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
               style: TextStyle(
                   color: isDark ? Colors.white : Colors.black, fontSize: 14),

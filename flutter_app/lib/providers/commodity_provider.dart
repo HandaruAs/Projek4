@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_app/models/commodity_model.dart';
 import 'package:flutter_app/models/price_model.dart';
 import 'package:flutter_app/services/api_service.dart';
@@ -16,32 +15,32 @@ CommodityModel _parseCommodityDetail(Map<String, dynamic> json) {
 class CommodityProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
-  List<CommodityModel>     _commodities          = [];
-  CommodityModel?          _selectedCommodity;
-  List<PriceModel>         _priceHistory         = [];
-  CommodityForecastModel   _forecast             = CommodityForecastModel.empty();
-  Map<String, dynamic>?    _predictionResult;
+  List<CommodityModel> _commodities = [];
+  CommodityModel? _selectedCommodity;
+  List<PriceModel> _priceHistory = [];
+  CommodityForecastModel _forecast = CommodityForecastModel.empty();
+  Map<String, dynamic>? _predictionResult;
 
-  bool    _isLoading         = false;
-  bool    _isLoadingForecast = false;
+  bool _isLoading = false;
+  bool _isLoadingForecast = false;
   String? _errorMessage;
   String? _forecastError;
-  String  _selectedPeriod    = '7days';
+  String _selectedPeriod = '7days';
 
   List<String> _predictableCommodities = [];
 
   // ── Getters ──────────────────────────────────────────────
-  List<CommodityModel>   get commodities             => _commodities;
-  CommodityModel?        get selectedCommodity       => _selectedCommodity;
-  List<PriceModel>       get priceHistory            => _priceHistory;
-  CommodityForecastModel get forecast                => _forecast;
-  Map<String, dynamic>?  get predictionResult        => _predictionResult;
-  bool                   get isLoading               => _isLoading;
-  bool                   get isLoadingForecast       => _isLoadingForecast;
-  String?                get errorMessage            => _errorMessage;
-  String?                get forecastError           => _forecastError;
-  String                 get selectedPeriod          => _selectedPeriod;
-  List<String>           get predictableCommodities  => _predictableCommodities;
+  List<CommodityModel> get commodities => _commodities;
+  CommodityModel? get selectedCommodity => _selectedCommodity;
+  List<PriceModel> get priceHistory => _priceHistory;
+  CommodityForecastModel get forecast => _forecast;
+  Map<String, dynamic>? get predictionResult => _predictionResult;
+  bool get isLoading => _isLoading;
+  bool get isLoadingForecast => _isLoadingForecast;
+  String? get errorMessage => _errorMessage;
+  String? get forecastError => _forecastError;
+  String get selectedPeriod => _selectedPeriod;
+  List<String> get predictableCommodities => _predictableCommodities;
 
   // ── Load semua komoditas ─────────────────────────────────
   Future<void> loadCommodities({bool forceReload = false}) async {
@@ -56,11 +55,11 @@ class CommodityProvider extends ChangeNotifier {
         _commodities = data.map((e) => CommodityModel.fromJson(e)).toList();
       } else {
         _errorMessage = response['message'] ?? 'Gagal memuat data komoditas';
-        _commodities  = [];
+        _commodities = [];
       }
     } catch (e) {
       _errorMessage = 'Koneksi gagal: $e';
-      _commodities  = [];
+      _commodities = [];
     } finally {
       _setLoading(false);
     }
@@ -74,10 +73,10 @@ class CommodityProvider extends ChangeNotifier {
     String period,
   ) async {
     // Reset state
-    _isLoadingDetail   = true;
-    _isLoadingHistory  = true;
-    _detailError       = null;
-    _historyError      = null;
+    _isLoadingDetail = true;
+    _isLoadingHistory = true;
+    _detailError = null;
+    _historyError = null;
     Future.microtask(() => notifyListeners());
 
     // Detail + history jalan parallel, forecast jalan sendiri
@@ -92,15 +91,15 @@ class CommodityProvider extends ChangeNotifier {
   }
 
   // ── State untuk detail & history ────────────────────────
-  bool    _isLoadingDetail  = false;
-  bool    _isLoadingHistory = false;
+  bool _isLoadingDetail = false;
+  bool _isLoadingHistory = false;
   String? _detailError;
   String? _historyError;
 
-  bool    get isLoadingDetail  => _isLoadingDetail;
-  bool    get isLoadingHistory => _isLoadingHistory;
-  String? get detailError      => _detailError;
-  String? get historyError     => _historyError;
+  bool get isLoadingDetail => _isLoadingDetail;
+  bool get isLoadingHistory => _isLoadingHistory;
+  String? get detailError => _detailError;
+  String? get historyError => _historyError;
 
   Future<void> _loadDetailInternal(String commodityId) async {
     try {
@@ -123,7 +122,7 @@ class CommodityProvider extends ChangeNotifier {
 
   Future<void> _loadHistoryInternal(String commodityId, String period) async {
     _selectedPeriod = period;
-    _priceHistory   = [];
+    _priceHistory = [];
 
     try {
       final response = await _apiService.getPriceHistory(
@@ -174,7 +173,7 @@ class CommodityProvider extends ChangeNotifier {
   Future<void> loadForecast(String commodityId) async {
     if (_isLoadingForecast) return;
     _isLoadingForecast = true;
-    _forecastError     = null;
+    _forecastError = null;
     Future.microtask(() => notifyListeners());
 
     try {
@@ -187,11 +186,11 @@ class CommodityProvider extends ChangeNotifier {
         );
       } else {
         _forecastError = response['message'] ?? 'Gagal memuat forecast';
-        _forecast      = CommodityForecastModel.empty();
+        _forecast = CommodityForecastModel.empty();
       }
     } catch (e) {
       _forecastError = 'Koneksi gagal: $e';
-      _forecast      = CommodityForecastModel.empty();
+      _forecast = CommodityForecastModel.empty();
     } finally {
       _isLoadingForecast = false;
       Future.microtask(() => notifyListeners());
@@ -206,7 +205,7 @@ class CommodityProvider extends ChangeNotifier {
     _setLoading(true);
     _clearError();
     _selectedPeriod = period;
-    _priceHistory   = [];
+    _priceHistory = [];
     notifyListeners();
 
     try {
@@ -239,24 +238,28 @@ class CommodityProvider extends ChangeNotifier {
     try {
       final response = await _apiService.predictPrice(commodityName, quantity);
       if (response['success'] == true && response['data'] != null) {
-        final data          = response['data'] as Map<String, dynamic>;
+        final data = response['data'] as Map<String, dynamic>;
         final List forecast = data['forecast'] as List? ?? [];
-        final hargaTerakhir = (data['harga_terakhir'] as num?)?.toDouble() ?? 0.0;
+        final hargaTerakhir =
+            (data['harga_terakhir'] as num?)?.toDouble() ?? 0.0;
 
         final hargaPrediksi = forecast.isNotEmpty
-            ? forecast.take(14).map((e) => (e as num).toDouble())
-                .reduce((a, b) => a + b) / forecast.take(14).length
+            ? forecast
+                    .take(14)
+                    .map((e) => (e as num).toDouble())
+                    .reduce((a, b) => a + b) /
+                forecast.take(14).length
             : hargaTerakhir;
 
         final selisih = (hargaPrediksi - hargaTerakhir) * quantity * 4;
 
         _predictionResult = {
-          'current_price':   hargaTerakhir,
+          'current_price': hargaTerakhir,
           'predicted_price': hargaPrediksi,
-          'total_cost':      hargaPrediksi * quantity * 4,
-          'selisih':         selisih,
-          'period':          'Bulan depan',
-          'insight':         'AI memprediksi harga ${data['komoditas']} sekitar '
+          'total_cost': hargaPrediksi * quantity * 4,
+          'selisih': selisih,
+          'period': 'Bulan depan',
+          'insight': 'AI memprediksi harga ${data['komoditas']} sekitar '
               'Rp ${hargaPrediksi.toStringAsFixed(0)} per kg bulan depan '
               'berdasarkan tren historis terkini.',
         };
@@ -279,7 +282,7 @@ class CommodityProvider extends ChangeNotifier {
     try {
       _predictableCommodities = await _apiService.getPredictableCommodities();
     } catch (e) {
-      _errorMessage           = 'Gagal memuat daftar komoditas: $e';
+      _errorMessage = 'Gagal memuat daftar komoditas: $e';
       _predictableCommodities = [];
     } finally {
       _setLoading(false);
@@ -304,10 +307,10 @@ class CommodityProvider extends ChangeNotifier {
   // ── Clear ────────────────────────────────────────────────
   void clearSelectedCommodity() {
     _selectedCommodity = null;
-    _priceHistory      = [];
-    _forecast          = CommodityForecastModel.empty();
-    _detailError       = null;
-    _historyError      = null;
+    _priceHistory = [];
+    _forecast = CommodityForecastModel.empty();
+    _detailError = null;
+    _historyError = null;
     notifyListeners();
   }
 

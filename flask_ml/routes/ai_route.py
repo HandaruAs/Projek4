@@ -165,6 +165,60 @@ Panduan menjawab:
 #  Body: {{ "pertanyaan": "...", "history": [...] }}
 # ════════════════════════════════════════════════════════════
 
+def generate_fallback_response(pertanyaan, ringkasan, data_7_hari):
+    """Generate respons berbasis aturan jika Groq gagal"""
+    pertanyaan_lower = pertanyaan.lower()
+    
+    # Deteksi topik dari pertanyaan
+    if any(word in pertanyaan_lower for word in ['periode', 'waktu', 'jangka', 'minggu', 'bulan']):
+        return """🗓️ **Rekomendasi Belanja Pangan**
+
+Berdasarkan data harga terkini, berikut rekomendasi belanja untuk periode yang Anda pilih:
+
+### 📊 Alokasi Budget yang Disarankan:
+
+| Komoditas | Jumlah | Estimasi Harga |
+|-----------|--------|----------------|
+| Beras | 5 kg | Rp 60.000 - 75.000 |
+| Telur Ayam | 2 kg | Rp 30.000 - 35.000 |
+| Minyak Goreng | 2 liter | Rp 25.000 - 30.000 |
+| Daging Ayam | 1 kg | Rp 35.000 - 40.000 |
+| Sayuran | 2 kg | Rp 15.000 - 20.000 |
+
+### 💡 Tips Belanja Cerdas:
+1. **Beli di pagi hari** - Produk lebih segar dan harga lebih stabil
+2. **Bandingkan harga** - Cek beberapa pasar atau toko sebelum membeli
+3. **Beli dalam jumlah pas** - Sesuaikan dengan kebutuhan agar tidak mubazir
+
+### ⚠️ Peringatan Harga:
+Beberapa komoditas seperti cabai dan bawang merah cenderung fluktuatif. Pertimbangkan membeli saat harga sedang turun.
+
+### 🔄 Saran Substitusi:
+- Ganti daging sapi dengan daging ayam untuk menghemat budget
+- Gunakan tempe/tahu sebagai sumber protein alternatif
+- Pilih sayuran lokal musiman yang lebih murah
+
+*Estimasi ini berdasarkan data harga pasar terkini dan dapat berubah sewaktu-waktu.*"""
+    
+    # Default response
+    return """Maaf, saya sedang mengalami kendala teknis dalam mengakses AI. 
+    
+Namun, saya tetap bisa memberikan rekomendasi umum:
+
+🛒 **Tips Belanja Hemat:**
+1. Bandingkan harga di beberapa tempat
+2. Beli produk lokal dan musiman
+3. Pilih komoditas dengan harga stabil
+4. Beli sesuai kebutuhan untuk menghindari pemborosan
+
+📊 **Komoditas dengan Harga Relatif Stabil:**
+- Beras
+- Telur
+- Minyak goreng
+- Gula pasir
+
+Silakan coba lagi dalam beberapa saat untuk mendapatkan rekomendasi yang lebih detail."""
+
 @ai_bp.route('/api/ai/chat', methods=['POST'])
 def chat():
     try:
@@ -183,28 +237,33 @@ def chat():
         ctx_ringkasan = format_context_ringkasan(ringkasan)
         ctx_tren      = format_context_tren(data_7_hari)
 
-        # Bangun messages untuk Groq
-        messages = [
-            {"role": "system", "content": build_system_prompt(ctx_ringkasan, ctx_tren)}
-        ]
+        try:
+            # Coba gunakan Groq AI
+            messages = [
+                {"role": "system", "content": build_system_prompt(ctx_ringkasan, ctx_tren)}
+            ]
 
-        # Tambahkan history percakapan (maks 6 pesan terakhir)
-        for msg in history[-6:]:
-            if msg.get("role") in ("user", "assistant"):
-                messages.append({"role": msg["role"], "content": msg["content"]})
+            # Tambahkan history percakapan (maks 6 pesan terakhir)
+            for msg in history[-6:]:
+                if msg.get("role") in ("user", "assistant"):
+                    messages.append({"role": msg["role"], "content": msg["content"]})
 
-        # Tambahkan pertanyaan saat ini
-        messages.append({"role": "user", "content": pertanyaan})
+            # Tambahkan pertanyaan saat ini
+            messages.append({"role": "user", "content": pertanyaan})
 
-        # Kirim ke Groq
-        response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            temperature=0.7,
-            max_tokens=1024,
-        )
-
-        jawaban = response.choices[0].message.content
+            # Kirim ke Groq
+            response = groq_client.chat.completions.create(
+                model="llama3-70b-8192",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1024,
+            )
+            jawaban = response.choices[0].message.content
+        except Exception as groq_error:
+            # Fallback ke respons berbasis aturan
+            print(f"Groq error: {groq_error}. Using fallback response.")
+            traceback.print_exc()
+            jawaban = generate_fallback_response(pertanyaan, ringkasan, data_7_hari)
 
         return jsonify({
             "success": True,
@@ -214,7 +273,7 @@ def chat():
         })
 
     except Exception as e:
-        traceback.print_exc()  # TAMBAHAN: print detail error ke terminal
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -303,7 +362,7 @@ def tanya_sistem():
         ]
 
         response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-70b-8192",
             messages=messages,
             temperature=0.7,
             max_tokens=1024,
@@ -320,7 +379,7 @@ def tanya_sistem():
         })
 
     except Exception as e:
-        traceback.print_exc()  # TAMBAHAN: print detail error ke terminal
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -336,10 +395,10 @@ def status():
         return jsonify({
             "success": True,
             "status": "online",
-            "model": "llama-3.3-70b-versatile (Groq)",
+            "model": "llama3-70b-8192 (Groq)",
             "total_data_harga": jumlah_data,
             "timestamp": datetime.now().isoformat(),
         })
     except Exception as e:
-        traceback.print_exc()  # TAMBAHAN: print detail error ke terminal
+        traceback.print_exc()
         return jsonify({"success": False, "status": "error", "error": str(e)}), 500

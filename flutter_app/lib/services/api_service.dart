@@ -42,8 +42,9 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -64,8 +65,9 @@ class ApiService {
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -78,8 +80,9 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -92,8 +95,9 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -113,8 +117,9 @@ class ApiService {
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -138,8 +143,9 @@ class ApiService {
       final response = await _dio.get('/profile');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -182,8 +188,9 @@ class ApiService {
         return Map<String, dynamic>.from(response.data);
       }
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -194,8 +201,9 @@ class ApiService {
       final response = await _dio.delete('/profile/avatar');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -213,8 +221,9 @@ class ApiService {
       });
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -239,8 +248,9 @@ class ApiService {
 
       return data;
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -250,8 +260,9 @@ class ApiService {
       final response = await _dio.get('/commodities/$commodityId');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -261,8 +272,9 @@ class ApiService {
       final response = await _dio.get('/commodities/$commodityId/forecast');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -279,10 +291,17 @@ class ApiService {
     try {
       int perPage;
       switch (period) {
-        case '7days':   perPage = 7;  break;
-        case '30days':  perPage = 30; break;
-        case '3months': perPage = 90; break;
-        default:        perPage = 30;
+        case '7days':
+          perPage = 7;
+          break;
+        case '30days':
+          perPage = 30;
+          break;
+        case '3months':
+          perPage = 90;
+          break;
+        default:
+          perPage = 30;
       }
 
       final response = await _dio.get(
@@ -307,8 +326,9 @@ class ApiService {
 
       return data;
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -319,7 +339,8 @@ class ApiService {
   }) async {
     try {
       final params = <String, String>{};
-      if (category != null && category != 'Semua') params['category'] = category;
+      if (category != null && category != 'Semua')
+        params['category'] = category;
       if (search != null && search.isNotEmpty) params['search'] = search;
 
       final response = await _dio.get(
@@ -328,8 +349,9 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -342,8 +364,9 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -353,8 +376,9 @@ class ApiService {
       final response = await _dio.get('/prices/categories');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -383,8 +407,9 @@ class ApiService {
       final response = await _dio.get('/predictions/$encoded');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -404,8 +429,9 @@ class ApiService {
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
@@ -419,8 +445,9 @@ class ApiService {
       final response = await _dio.get('/statistics');
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
-      if (e.response != null)
+      if (e.response != null) {
         return Map<String, dynamic>.from(e.response!.data);
+      }
       throw _handleError(e);
     }
   }
