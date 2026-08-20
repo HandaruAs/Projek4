@@ -3,7 +3,7 @@ from pymongo import MongoClient, DESCENDING
 from groq import Groq
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-import traceback  # TAMBAHAN
+import traceback
 import os
 
 load_dotenv()
